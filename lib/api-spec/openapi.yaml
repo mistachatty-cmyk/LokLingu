@@ -3,20 +3,30 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Lok Lingu API — voice-controlled language learning arcade runner
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: users
+    description: User management
+  - name: scores
+    description: Score submission and retrieval
+  - name: leaderboard
+    description: Global and filtered leaderboards
+  - name: words
+    description: Word lists by language and category
+  - name: stats
+    description: Aggregate statistics
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +34,359 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /users:
+    post:
+      operationId: createUser
+      tags: [users]
+      summary: Create or get a user by username
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserInput"
+      responses:
+        "200":
+          description: User found or created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/{id}:
+    get:
+      operationId: getUser
+      tags: [users]
+      summary: Get user by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: User not found
+
+  /scores:
+    post:
+      operationId: submitScore
+      tags: [scores]
+      summary: Submit a game score
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScoreInput"
+      responses:
+        "201":
+          description: Score submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Score"
+
+  /scores/user/{userId}:
+    get:
+      operationId: getUserScores
+      tags: [scores]
+      summary: Get all scores for a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User scores
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Score"
+
+  /leaderboard:
+    get:
+      operationId: getLeaderboard
+      tags: [leaderboard]
+      summary: Get global leaderboard (top scores)
+      parameters:
+        - name: language
+          in: query
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Leaderboard entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeaderboardEntry"
+
+  /leaderboard/summary:
+    get:
+      operationId: getLeaderboardSummary
+      tags: [leaderboard]
+      summary: Get leaderboard stats summary (total players, highest ever count, etc.)
+      responses:
+        "200":
+          description: Leaderboard summary stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeaderboardSummary"
+
+  /words/{language}/{category}:
+    get:
+      operationId: getWords
+      tags: [words]
+      summary: Get word list for a language and category
+      parameters:
+        - name: language
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: category
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Word list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Word"
+        "404":
+          description: Language or category not found
+
+  /words/languages:
+    get:
+      operationId: getLanguages
+      tags: [words]
+      summary: Get all available languages and categories
+      responses:
+        "200":
+          description: Available languages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Language"
+
+  /stats/global:
+    get:
+      operationId: getGlobalStats
+      tags: [stats]
+      summary: Get global app statistics
+      responses:
+        "200":
+          description: Global stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GlobalStats"
+
+  /stats/user/{userId}:
+    get:
+      operationId: getUserStats
+      tags: [stats]
+      summary: Get stats for a specific user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserStats"
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    UserInput:
+      type: object
+      required: [username]
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 32
+
+    User:
+      type: object
+      required: [id, username, createdAt]
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        tokenBalance:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    ScoreInput:
+      type: object
+      required: [userId, language, category, count]
+      properties:
+        userId:
+          type: integer
+        language:
+          type: string
+        category:
+          type: string
+        count:
+          type: integer
+          minimum: 0
+
+    Score:
+      type: object
+      required: [id, userId, language, category, count, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        language:
+          type: string
+        category:
+          type: string
+        count:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    LeaderboardEntry:
+      type: object
+      required: [rank, userId, username, count, language, category]
+      properties:
+        rank:
+          type: integer
+        userId:
+          type: integer
+        username:
+          type: string
+        count:
+          type: integer
+        language:
+          type: string
+        category:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    LeaderboardSummary:
+      type: object
+      required: [totalPlayers, totalGames, allTimeHighCount, topPlayer]
+      properties:
+        totalPlayers:
+          type: integer
+        totalGames:
+          type: integer
+        allTimeHighCount:
+          type: integer
+        topPlayer:
+          type: ["string", "null"]
+
+    Word:
+      type: object
+      required: [word, translation, index]
+      properties:
+        word:
+          type: string
+        translation:
+          type: string
+        index:
+          type: integer
+        pronunciation:
+          type: ["string", "null"]
+
+    Language:
+      type: object
+      required: [code, name, categories]
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        categories:
+          type: array
+          items:
+            type: string
+
+    GlobalStats:
+      type: object
+      required: [totalPlayers, totalGames, totalWordsSpoken, allTimeHighCount]
+      properties:
+        totalPlayers:
+          type: integer
+        totalGames:
+          type: integer
+        totalWordsSpoken:
+          type: integer
+        allTimeHighCount:
+          type: integer
+
+    UserStats:
+      type: object
+      required: [userId, username, totalGames, bestCount, totalWordsSpoken, favoriteLanguage, favoriteCategory]
+      properties:
+        userId:
+          type: integer
+        username:
+          type: string
+        totalGames:
+          type: integer
+        bestCount:
+          type: integer
+        totalWordsSpoken:
+          type: integer
+        favoriteLanguage:
+          type: ["string", "null"]
+        favoriteCategory:
+          type: ["string", "null"]
+        personalBests:
+          type: array
+          items:
+            $ref: "#/components/schemas/Score"

@@ -1,0 +1,39 @@
+Act as an expert full-stack developer and PWA (Progressive Web App) architect. I am building "Lok Lingu," a voice-controlled and drawing-controlled language app designed for the Lock Services Ecosystem. I need you to create the complete, functioning application baseline, including the core game loop architecture and PWA deployment configurations, and push the initial version to a new GitHub repository named "Lok Lingu."
+
+### 1. Project Context & Visual DNA
+- **Ecosystem:** Delivered as a Progressive Web App (PWA) to bypass app stores and execute in a standalone mobile view (referencing image_30.png).
+- **Core Loop (Infinite Runner):** The game is an infinite arcade runner where a target word approaches (image_32.png). The current prompt (e.g., 'UNO' and 'ONE') is large and centered on the screen (image_32.png). 
+- **Strict Streamlined UI:** Every gameplay screen and every one of the 21 theoretical customization themes must strictly adhere to the ultra-simplified centered word layout (Word over Translation). Themes are differentiated only by materials, background, and minimal typography changes (referencing image_33.png and image_34.png).
+
+### 2. Dual-Nation Architecture (State Management)
+Implement two distinct input modes ("Communities" or "Nations"). The core `main.js` must handle seamless toggling:
+- **Voice Nation (Web Speech API):** Captures voice input.
+  - *Success (image_16.png):* Instantly shatters the word into green neon shards, triggers high-energy feedback, and advances the word loop.
+  - *Failure (image_1.png):* Triggers vibrating red feedback; the word 'bounces' off, loses a life, and resets the word loop for retry.
+- **Drawing Nation (Lokbook Engine):** Captures vector input on a transparent canvas (image_17.png).
+  - *Highly Responsive Validation:* drawn characters (U-N-O) validate instantly upon completion.
+  - *Success (Image 22):* Validated vector strokes must physically "fall away" or drop dynamically off the bottom of the screen instantly, seamlessly transitioning to the next word.
+  - *Failure (Image 23):* Failed strokes turn red and dynamically drop/fall away off the bottom, triggering retry logic.
+- **Shop Extention (Full-Screen Drawing):** Drawing Mode includes a premium shop unlock that removes the drawing box (Image 22) and activates the entire mobile viewport as a transparent interaction canvas.
+
+### 3. Ecosystem & Shop Monetization (Ledger Requirements)
+- **Shop Visuals (Image 34):** Build a basic implementation of the Theme Shop UI (thumbnails for 21 theoretical themes), showing Token Balance.
+- **Lokbook Branding (image_17.png):** The Drawing Nation UI must display a permanent "Powered by Lokbook Engine" badge that routes users to `https://lok-book.vercel.app`.
+- **Ecosystem Account (image_39.png):** Status displays must explicitly use the text ledger details: 
+  - Token Balance: 1,500 L-Tokens.
+  - Lock Pass (~$2.99/mo): *Removes Browser Ads*.
+  - Lock Passport (~$10/mo): *"Unlock premium features for Lock Services applications."*
+  - Lifetime Passport (~$200 one-time): *"Permanent premium for Lock Services applications."*
+
+### 4. Progression & Lock Token Bonuses
+- **Milestone Tracking:** Progression is milestone-based (e.g., "50 Correct Words," "Daily Streak"), not generic leveling. Reaching milestones yields explicit **Lock Token Bonuses**.
+- **Exclusive Unlocks:** High-tier Category C and D customization themes (theoretical Image 24 summarized) are unlocked *only* via milestone achievements.
+
+### 5. Repository Initialization & PWA Config
+- Initialize a local `git` repository named "Lok Lingu".
+- Add all necessary files (`index.html`, `main.js`, `style.css`, etc.) to the initial build.
+- Perform the initial commit and push.
+- Update the repository description to: "An infinite language arcade runner built for the Lock Services PWA ecosystem, featuring Voice Nation and Drawing Nation modes, powered by the Lokbook Engine."
+
+### 6. Tenet Integration & Anti-Gravity awareness
+**WARNING (Developer Context):** Ensure the application shell is modular and clean. The current build is a functional shell; explain in the `README.md` and codebase comments that the future **"Kinetic Soul Update" (Image 26)** must be loaded as a complex animated material/entity into the scene and bound to the game loop. The final deployment must be Anti-Gravity ready, optimized for final execution through that environment once complete.

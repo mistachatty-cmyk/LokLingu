@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "Lok Lingu"
+version = "1.0.0"
+id = "artifacts/lok-lingu"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25219
+
+[services.development]
+run = "pnpm --filter @workspace/lok-lingu run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/lok-lingu", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/lok-lingu/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25219"
+BASE_PATH = "/"
