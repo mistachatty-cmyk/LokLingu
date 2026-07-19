@@ -1,128 +1,320 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { useCreateUser, useGetLanguages } from "@workspace/api-client-react";
 import { useUser } from "../hooks/use-user";
-import { useTheme } from "../hooks/use-theme";
-import { Coins, Loader2, Play } from "lucide-react";
+import { useTheme, type Theme } from "../hooks/use-theme";
+import {
+  ChevronDown, ChevronUp, Coins, Loader2, Play, User as UserIcon,
+  Settings, Trophy, BarChart2, Palette, X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Home() {
   const [, setLocation] = useLocation();
-  const { username, saveUser } = useUser();
-  const { theme, setTheme } = useTheme();
-  
-  const [localUsername, setLocalUsername] = useState(username);
-  const [language, setLanguage] = useState("spanish");
-  const [category, setCategory] = useState("numbers");
-  
+  const { username, userId, saveUser } = useUser();
+  const { theme } = useTheme();
+
+  const [localUsername, setLocalUsername] = useState(username || "");
+  const [language, setLanguage] = useState(() => localStorage.getItem("lok-lingu-lang") || "es");
+  const [category, setCategory] = useState(() => localStorage.getItem("lok-lingu-cat") || "numbers");
+  const [showOptions, setShowOptions] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [editingUsername, setEditingUsername] = useState(false);
+  const usernameInputRef = useRef<HTMLInputElement>(null);
+
   const { data: languagesData, isLoading: isLoadingLanguages } = useGetLanguages();
   const createUser = useCreateUser();
 
+  const selectedLang = languagesData?.find((l) => l.code === language);
+  const categories = selectedLang?.categories ?? ["numbers"];
+
+  useEffect(() => {
+    if (categories.length && !categories.includes(category)) {
+      setCategory(categories[0]);
+    }
+  }, [categories, category]);
+
+  useEffect(() => {
+    if (editingUsername && usernameInputRef.current) {
+      usernameInputRef.current.focus();
+    }
+  }, [editingUsername]);
+
+  const displayName = localUsername.trim() || "Guest";
+  // Themes that have dark backgrounds and use glow effects
+  const LIGHT_THEMES: Theme[] = ["theme-arctic", "theme-sand", "theme-eink", "theme-typewriter", "theme-chalk"];
+  const isNeon = !LIGHT_THEMES.includes(theme);
+
   const handleStart = () => {
-    if (!localUsername.trim()) return;
-    
+    if (!localUsername.trim()) {
+      setShowProfile(true);
+      return;
+    }
+    localStorage.setItem("lok-lingu-lang", language);
+    localStorage.setItem("lok-lingu-cat", category);
     createUser.mutate(
       { data: { username: localUsername.trim() } },
       {
         onSuccess: (user) => {
           saveUser(user.id, user.username);
-          // Store selected language/category in local storage or state to pass to game
-          localStorage.setItem("lok-lingu-lang", language);
-          localStorage.setItem("lok-lingu-cat", category);
           setLocation("/game");
-        }
+        },
       }
     );
   };
 
-  const selectedLanguageData = languagesData?.find(l => l.code === language);
-  const categories = selectedLanguageData?.categories || ["numbers"];
-
-  // Default to first category if language changes and old category isn't there
-  useEffect(() => {
-    if (categories && !categories.includes(category)) {
-      setCategory(categories[0]);
+  const handleSaveProfile = () => {
+    setEditingUsername(false);
+    if (localUsername.trim()) {
+      createUser.mutate(
+        { data: { username: localUsername.trim() } },
+        { onSuccess: (user) => saveUser(user.id, user.username) }
+      );
     }
-  }, [categories, category]);
+  };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="p-6 flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] space-y-10"
-    >
-      <div className="w-full flex justify-between items-center px-2">
-        <h1 className="text-4xl font-bold tracking-tighter">LOK LINGU</h1>
-        <div className="flex items-center space-x-2 bg-card border border-border px-3 py-1.5 rounded-full shadow-sm">
-          <Coins className="w-4 h-4 text-primary" />
-          <span className="font-mono font-bold text-sm">1,500</span>
+    <div className="relative min-h-[100dvh] flex flex-col overflow-hidden">
+      {/* ── Profile Drawer overlay ───────────────────────────────────── */}
+      <AnimatePresence>
+        {showProfile && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+              onClick={() => setShowProfile(false)}
+            />
+            <motion.div
+              initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              className="fixed inset-y-0 left-0 w-72 bg-card border-r border-border z-50 flex flex-col p-6 space-y-6"
+            >
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold uppercase tracking-widest text-muted-foreground">Profile</h2>
+                <button onClick={() => setShowProfile(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Avatar */}
+              <div className="flex flex-col items-center space-y-3 py-4 border-b border-border">
+                <div className="w-20 h-20 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center text-3xl font-black text-primary select-none">
+                  {displayName[0]?.toUpperCase() ?? "?"}
+                </div>
+                {editingUsername ? (
+                  <div className="flex flex-col items-center space-y-2 w-full">
+                    <Input
+                      ref={usernameInputRef}
+                      value={localUsername}
+                      onChange={(e) => setLocalUsername(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleSaveProfile()}
+                      placeholder="Enter username..."
+                      maxLength={32}
+                      className="text-center font-mono"
+                    />
+                    <Button size="sm" onClick={handleSaveProfile} className="w-full">Save</Button>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <p className="font-bold text-lg">{displayName}</p>
+                    <button
+                      onClick={() => setEditingUsername(true)}
+                      className="text-xs text-muted-foreground hover:text-primary transition-colors underline underline-offset-2"
+                    >
+                      Edit username
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Quick links */}
+              <nav className="space-y-1">
+                {[
+                  { icon: Trophy, label: "Leaderboard", href: "/leaderboard" },
+                  { icon: BarChart2, label: "My Stats", href: "/stats" },
+                  { icon: Palette, label: "Themes", href: "/themes" },
+                ].map((item) => (
+                  <button
+                    key={item.href}
+                    onClick={() => { setShowProfile(false); setLocation(item.href); }}
+                    className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-accent transition-colors text-left"
+                  >
+                    <item.icon className="w-4 h-4 text-muted-foreground" />
+                    <span className="font-medium">{item.label}</span>
+                  </button>
+                ))}
+              </nav>
+
+              <div className="mt-auto border-t border-border pt-4">
+                <p className="text-xs text-muted-foreground">
+                  Lok Lingu · Lock Services Ecosystem
+                </p>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ── Top Bar ─────────────────────────────────────────────────── */}
+      <div className="flex items-center justify-between px-5 pt-safe pt-4 pb-2">
+        {/* Avatar + Username */}
+        <button
+          onClick={() => setShowProfile(true)}
+          className="flex items-center space-x-2.5 group"
+        >
+          <div className="w-9 h-9 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center font-black text-primary group-hover:border-primary transition-colors text-sm select-none">
+            {displayName[0]?.toUpperCase() ?? "?"}
+          </div>
+          <span className="font-bold text-sm tracking-wide truncate max-w-[100px]">{displayName}</span>
+        </button>
+
+        {/* LOK Tokens */}
+        <div className="flex flex-col items-end">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">LOK Tokens</span>
+          <div className="flex items-center space-x-1.5">
+            <Coins className="w-4 h-4 text-primary" />
+            <span className="font-mono font-black text-base leading-none">1,500</span>
+          </div>
         </div>
       </div>
 
-      <Card className="w-full max-w-sm border-border bg-card/50 backdrop-blur">
-        <CardContent className="p-6 space-y-6">
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Username</label>
-            <Input 
-              placeholder="Enter your alias..." 
-              value={localUsername} 
-              onChange={(e) => setLocalUsername(e.target.value)}
-              className="font-mono text-lg bg-background"
-            />
+      {/* ── Main Content ─────────────────────────────────────────────── */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 space-y-10">
+
+        {/* Logo + Title */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="flex flex-col items-center space-y-3"
+        >
+          {/* Icon */}
+          <div className={`w-20 h-20 rounded-2xl flex items-center justify-center border-2 border-primary/40 bg-primary/10 mb-1 ${isNeon ? "shadow-[0_0_30px_rgba(0,229,255,0.25)]" : ""}`}>
+            <span className="text-4xl select-none" style={{ fontFamily: "var(--word-font)" }}>L</span>
           </div>
+          <h1
+            className={`text-5xl font-black tracking-tighter uppercase ${isNeon ? "word-glow" : ""}`}
+            style={{ fontFamily: "var(--word-font)" }}
+          >
+            LOK LINGU
+          </h1>
+          <p className="text-xs text-muted-foreground font-mono uppercase tracking-[0.2em]">
+            Infinite Language Arcade
+          </p>
+        </motion.div>
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Target Language</label>
-              <Select value={language} onValueChange={setLanguage} disabled={isLoadingLanguages}>
-                <SelectTrigger className="w-full h-12 text-lg">
-                  <SelectValue placeholder="Select Language" />
-                </SelectTrigger>
-                <SelectContent>
-                  {languagesData?.map((l) => (
-                    <SelectItem key={l.code} value={l.code}>{l.name}</SelectItem>
-                  ))}
-                  {!languagesData && <SelectItem value="spanish">Spanish</SelectItem>}
-                </SelectContent>
-              </Select>
-            </div>
+        {/* Start + Options block */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.15 }}
+          className="w-full max-w-xs space-y-2"
+        >
+          {/* START button */}
+          <Button
+            onClick={handleStart}
+            disabled={createUser.isPending}
+            className={`w-full h-16 text-2xl font-black tracking-widest uppercase relative overflow-hidden transition-all
+              ${isNeon ? "neon-text-glow border-primary/50 hover:border-primary hover:bg-primary/15" : ""}`}
+            size="lg"
+          >
+            {createUser.isPending
+              ? <Loader2 className="w-6 h-6 animate-spin" />
+              : <><Play className="w-5 h-5 mr-3 fill-current" /> START</>
+            }
+          </Button>
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Category</label>
-              <Select value={category} onValueChange={setCategory} disabled={isLoadingLanguages}>
-                <SelectTrigger className="w-full h-12 text-lg capitalize">
-                  <SelectValue placeholder="Select Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((c) => (
-                    <SelectItem key={c} value={c} className="capitalize">{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          {/* OPTIONS toggle */}
+          <button
+            onClick={() => setShowOptions((v) => !v)}
+            className="w-full flex items-center justify-center space-x-1.5 py-2.5 px-4 rounded-lg border border-border hover:border-primary/40 hover:bg-accent transition-all text-sm font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
+          >
+            <Settings className="w-4 h-4" />
+            <span>Options</span>
+            {showOptions ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
 
-      <Button 
-        onClick={handleStart} 
-        disabled={!localUsername.trim() || createUser.isPending}
-        className={`w-full max-w-sm h-16 text-2xl font-bold tracking-widest uppercase transition-all ${
-          theme === 'theme-neon' ? 'neon-text-glow border border-primary hover:bg-primary/20' : ''
-        }`}
-        size="lg"
-      >
-        {createUser.isPending ? <Loader2 className="w-8 h-8 animate-spin" /> : (
-          <>
-            <Play className="w-6 h-6 mr-3 fill-current" />
-            Start Run
-          </>
-        )}
-      </Button>
-    </motion.div>
+          {/* OPTIONS drawer */}
+          <AnimatePresence>
+            {showOptions && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.25 }}
+                className="overflow-hidden"
+              >
+                <div className="border border-border rounded-xl bg-card p-4 space-y-4 mt-1">
+                  {/* Username (if not set) */}
+                  {!username && (
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Username</label>
+                      <Input
+                        placeholder="Enter your alias..."
+                        value={localUsername}
+                        onChange={(e) => setLocalUsername(e.target.value)}
+                        className="font-mono"
+                      />
+                    </div>
+                  )}
+
+                  {/* Language */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Language</label>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {isLoadingLanguages
+                        ? <div className="col-span-2 text-center text-xs text-muted-foreground py-2">Loading…</div>
+                        : languagesData?.map((l) => (
+                          <button
+                            key={l.code}
+                            onClick={() => setLanguage(l.code)}
+                            className={`px-3 py-2 rounded-lg border text-sm font-bold transition-all ${
+                              language === l.code
+                                ? "border-primary bg-primary/15 text-primary"
+                                : "border-border hover:border-primary/30 text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            {l.name}
+                          </button>
+                        ))
+                      }
+                    </div>
+                  </div>
+
+                  {/* Category */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Category</label>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {categories.map((c) => (
+                        <button
+                          key={c}
+                          onClick={() => setCategory(c)}
+                          className={`px-2 py-2 rounded-lg border text-xs font-bold capitalize transition-all ${
+                            category === c
+                              ? "border-primary bg-primary/15 text-primary"
+                              : "border-border hover:border-primary/30 text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          {c}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      </div>
+
+      {/* ── Footer hint ──────────────────────────────────────────────── */}
+      <div className="pb-safe pb-4 flex justify-center">
+        <p className="text-[10px] text-muted-foreground/50 font-mono uppercase tracking-widest">
+          Tap your avatar to access profile & settings
+        </p>
+      </div>
+    </div>
   );
 }

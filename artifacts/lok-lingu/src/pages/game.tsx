@@ -20,7 +20,7 @@ export default function Game() {
   const { userId } = useUser();
   const { theme } = useTheme();
   
-  const language = localStorage.getItem("lok-lingu-lang") || "spanish";
+  const language = localStorage.getItem("lok-lingu-lang") || "es";
   const category = localStorage.getItem("lok-lingu-cat") || "numbers";
   
   const { data: words, isLoading: isLoadingWords } = useGetWords(language, category, {
@@ -116,11 +116,11 @@ export default function Game() {
     recognition.interimResults = true;
     // Map language code to BCP-47 for speech recognition if needed, simplistic mapping here
     const langMap: Record<string, string> = {
-      spanish: "es-ES",
-      french: "fr-FR",
-      italian: "it-IT",
-      german: "de-DE",
-      portuguese: "it-IT" // Placeholder
+      es: "es-ES",
+      fr: "fr-FR",
+      it: "it-IT",
+      de: "de-DE",
+      ja: "ja-JP",
     };
     recognition.lang = langMap[language] || "es-ES";
     
@@ -201,7 +201,7 @@ export default function Game() {
         </div>
         <div className="text-right">
           <div className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Streak</div>
-          <div className={`text-5xl font-mono font-bold ${theme === 'theme-neon' ? 'neon-text-glow' : ''} text-primary`}>
+          <div className="text-5xl font-mono font-bold word-glow" style={{ color: 'var(--word-color)' }}>
             {count}
           </div>
         </div>
@@ -225,13 +225,16 @@ export default function Game() {
               transition={{ duration: status === "error" ? 0.4 : 0.2 }}
               className="text-center w-full px-4"
             >
-              <h1 className={`text-6xl md:text-8xl font-black mb-4 capitalize ${
-                theme === 'theme-neon' && status === 'idle' ? 'text-foreground' : ''
-              } ${
-                theme === 'theme-neon' && status === 'error' ? 'neon-text-glow-destructive text-destructive' : ''
-              } ${
-                theme === 'theme-neon' && status === 'success' ? 'neon-text-glow text-primary' : ''
-              }`}>
+              <h1
+                className={`game-word text-6xl md:text-8xl font-black mb-4 capitalize transition-colors ${
+                  status === 'idle' ? 'word-glow' : ''
+                } ${
+                  status === 'error' ? 'neon-text-glow-destructive text-destructive' : ''
+                } ${
+                  status === 'success' ? 'neon-text-glow text-primary' : ''
+                }`}
+                style={{ color: status === 'idle' ? 'var(--word-color)' : undefined }}
+              >
                 {currentWord.word}
               </h1>
               <p className="text-2xl md:text-3xl text-muted-foreground font-serif italic">
@@ -251,7 +254,7 @@ export default function Game() {
 
               <div className="bg-card border border-border rounded-xl p-8 shadow-2xl">
                 <div className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-2">Final Score</div>
-                <div className={`text-7xl font-mono font-black text-primary ${theme === 'theme-neon' ? 'neon-text-glow' : ''}`}>
+                <div className="game-word text-7xl font-mono font-black word-glow" style={{ color: 'var(--word-color)' }}>
                   {count}
                 </div>
               </div>
