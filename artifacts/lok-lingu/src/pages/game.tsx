@@ -104,6 +104,15 @@ export default function Game() {
     }, 600);
   }, [setStatusSync, language, category]);
 
+  // ── Exposed recognition ref for manual tap-to-restart ──────────
+  const recognitionRef = useRef<any>(null);
+
+  const tapMic = useCallback(() => {
+    if (!isListening && recognitionRef.current && !gameOverRef.current) {
+      try { recognitionRef.current.start(); } catch (_) {}
+    }
+  }, [isListening]);
+
   // ── Speech recognition — runs ONCE per game session ─────────────
   useEffect(() => {
     // Reset refs for fresh game
@@ -120,6 +129,7 @@ export default function Game() {
     }
 
     const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
     recognition.continuous     = true;
     recognition.interimResults = true;
     recognition.lang = LANG_MAP[language] || "es-ES";
@@ -332,9 +342,9 @@ export default function Game() {
 
       {/* ── Bottom Mic HUD ─────────────────────────────────────── */}
       {!gameOver && (
-        <div className="absolute bottom-0 left-0 w-full p-8 flex flex-col items-center z-10 pointer-events-none">
-          {/* Spoken text bubble */}
-          <div className="h-8 mb-5 flex items-center justify-center">
+        <div className="absolute bottom-0 left-0 w-full p-8 flex flex-col items-center z-10">
+          {/* Spoken text bubble — non-interactive */}
+          <div className="h-8 mb-5 flex items-center justify-center pointer-events-none">
             <AnimatePresence>
               {spokenText && (
                 <motion.span
@@ -349,8 +359,10 @@ export default function Game() {
             </AnimatePresence>
           </div>
 
-          {/* Mic button */}
-          <motion.div
+          {/* Mic button — tappable; restarts recognition if it stalled */}
+          <motion.button
+            onClick={tapMic}
+            aria-label={isListening ? "Microphone active" : "Tap to activate microphone"}
             animate={
               status === "success"
                 ? { scale: [1, 1.25, 1] }
@@ -364,21 +376,21 @@ export default function Game() {
               repeat: status === "idle" && isListening ? Infinity : 0,
               duration: 1.4,
             }}
-            className={`p-6 rounded-full shadow-xl backdrop-blur ${
+            className={`p-6 rounded-full shadow-xl backdrop-blur cursor-pointer active:scale-95 transition-transform ${
               status === "success"
                 ? "bg-primary/20 text-primary"
                 : status === "error"
                 ? "bg-destructive/20 text-destructive"
                 : isListening
                 ? "bg-card border-2 border-primary/50 text-primary"
-                : "bg-card border border-border text-foreground"
+                : "bg-card border-2 border-border text-muted-foreground hover:border-primary hover:text-primary"
             }`}
           >
             {status === "error" ? <X className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
-          </motion.div>
+          </motion.button>
 
-          <p className="mt-3 text-[10px] font-mono uppercase tracking-widest text-muted-foreground/50">
-            {isListening ? "Listening…" : "Starting mic…"}
+          <p className="mt-3 text-[10px] font-mono uppercase tracking-widest text-muted-foreground/50 pointer-events-none">
+            {isListening ? "Listening…" : "Tap mic to start"}
           </p>
         </div>
       )}

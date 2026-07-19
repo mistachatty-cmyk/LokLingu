@@ -4,8 +4,8 @@ import { useCreateUser, useGetLanguages } from "@workspace/api-client-react";
 import { useUser } from "../hooks/use-user";
 import { useTheme, type Theme } from "../hooks/use-theme";
 import {
-  ChevronDown, ChevronUp, Coins, Loader2, Play, User as UserIcon,
-  Settings, Trophy, BarChart2, Palette, X,
+  ChevronDown, ChevronUp, Coins, Loader2, Play,
+  Settings, Palette, X, Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,6 @@ export default function Home() {
   const [category, setCategory] = useState(() => localStorage.getItem("lok-lingu-cat") || "numbers");
   const [showOptions, setShowOptions] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
-  const [editingUsername, setEditingUsername] = useState(false);
   const usernameInputRef = useRef<HTMLInputElement>(null);
 
   const { data: languagesData, isLoading: isLoadingLanguages } = useGetLanguages();
@@ -35,12 +34,6 @@ export default function Home() {
       setCategory(categories[0]);
     }
   }, [categories, category]);
-
-  useEffect(() => {
-    if (editingUsername && usernameInputRef.current) {
-      usernameInputRef.current.focus();
-    }
-  }, [editingUsername]);
 
   const displayName = localUsername.trim() || "Guest";
   // Themes that have dark backgrounds and use glow effects
@@ -66,7 +59,6 @@ export default function Home() {
   };
 
   const handleSaveProfile = () => {
-    setEditingUsername(false);
     if (localUsername.trim()) {
       createUser.mutate(
         { data: { username: localUsername.trim() } },
@@ -91,66 +83,114 @@ export default function Home() {
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
               className="fixed inset-y-0 left-0 w-72 bg-card border-r border-border z-50 flex flex-col p-6 space-y-6"
             >
+              {/* Header */}
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold uppercase tracking-widest text-muted-foreground">Profile</h2>
-                <button onClick={() => setShowProfile(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+                <h2 className="text-base font-black uppercase tracking-widest">Settings</h2>
+                <button onClick={() => setShowProfile(false)} className="text-muted-foreground hover:text-foreground transition-colors p-1">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               {/* Avatar */}
-              <div className="flex flex-col items-center space-y-3 py-4 border-b border-border">
-                <div className="w-20 h-20 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center text-3xl font-black text-primary select-none">
+              <div className="flex flex-col items-center py-2 border-b border-border pb-6">
+                <div className="w-16 h-16 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center text-2xl font-black text-primary select-none mb-3">
                   {displayName[0]?.toUpperCase() ?? "?"}
                 </div>
-                {editingUsername ? (
-                  <div className="flex flex-col items-center space-y-2 w-full">
+                <p className="font-bold">{displayName}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-0.5">Player Profile</p>
+              </div>
+
+              {/* Settings list */}
+              <div className="space-y-5 flex-1 overflow-y-auto">
+
+                {/* Username */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Username</label>
+                  <div className="flex space-x-2">
                     <Input
                       ref={usernameInputRef}
                       value={localUsername}
                       onChange={(e) => setLocalUsername(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleSaveProfile()}
-                      placeholder="Enter username..."
+                      placeholder="Enter your alias…"
                       maxLength={32}
-                      className="text-center font-mono"
+                      className="font-mono flex-1"
                     />
-                    <Button size="sm" onClick={handleSaveProfile} className="w-full">Save</Button>
-                  </div>
-                ) : (
-                  <div className="text-center">
-                    <p className="font-bold text-lg">{displayName}</p>
-                    <button
-                      onClick={() => setEditingUsername(true)}
-                      className="text-xs text-muted-foreground hover:text-primary transition-colors underline underline-offset-2"
+                    <Button
+                      size="sm"
+                      onClick={handleSaveProfile}
+                      disabled={!localUsername.trim() || localUsername.trim() === username}
+                      className="px-3"
                     >
-                      Edit username
-                    </button>
+                      <Check className="w-4 h-4" />
+                    </Button>
                   </div>
-                )}
+                </div>
+
+                {/* Appearance */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Appearance</label>
+                  <button
+                    onClick={() => { setShowProfile(false); setLocation("/themes"); }}
+                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg border border-border hover:border-primary/40 hover:bg-accent transition-all text-left"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <Palette className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">Theme Shop</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground font-mono uppercase tracking-wider">
+                      {theme.replace("theme-", "")}
+                    </span>
+                  </button>
+                </div>
+
+                {/* Default language */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Default Language</label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {isLoadingLanguages
+                      ? <div className="col-span-2 text-xs text-muted-foreground py-2">Loading…</div>
+                      : languagesData?.map((l) => (
+                        <button
+                          key={l.code}
+                          onClick={() => { setLanguage(l.code); localStorage.setItem("lok-lingu-lang", l.code); }}
+                          className={`px-2 py-2 rounded-lg border text-xs font-bold transition-all ${
+                            language === l.code
+                              ? "border-primary bg-primary/15 text-primary"
+                              : "border-border hover:border-primary/30 text-muted-foreground"
+                          }`}
+                        >
+                          {l.name}
+                        </button>
+                      ))
+                    }
+                  </div>
+                </div>
+
+                {/* Category default */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Default Category</label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(languagesData?.find(l => l.code === language)?.categories ?? ["numbers"]).map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => { setCategory(c); localStorage.setItem("lok-lingu-cat", c); }}
+                        className={`px-2 py-2 rounded-lg border text-xs font-bold capitalize transition-all ${
+                          category === c
+                            ? "border-primary bg-primary/15 text-primary"
+                            : "border-border hover:border-primary/30 text-muted-foreground"
+                        }`}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
-              {/* Quick links */}
-              <nav className="space-y-1">
-                {[
-                  { icon: Trophy, label: "Leaderboard", href: "/leaderboard" },
-                  { icon: BarChart2, label: "My Stats", href: "/stats" },
-                  { icon: Palette, label: "Themes", href: "/themes" },
-                ].map((item) => (
-                  <button
-                    key={item.href}
-                    onClick={() => { setShowProfile(false); setLocation(item.href); }}
-                    className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-accent transition-colors text-left"
-                  >
-                    <item.icon className="w-4 h-4 text-muted-foreground" />
-                    <span className="font-medium">{item.label}</span>
-                  </button>
-                ))}
-              </nav>
-
-              <div className="mt-auto border-t border-border pt-4">
-                <p className="text-xs text-muted-foreground">
-                  Lok Lingu · Lock Services Ecosystem
-                </p>
+              {/* Footer */}
+              <div className="border-t border-border pt-4 mt-auto">
+                <p className="text-[10px] text-muted-foreground">Lok Lingu · Lock Services Ecosystem</p>
               </div>
             </motion.div>
           </>
@@ -167,7 +207,10 @@ export default function Home() {
           <div className="w-9 h-9 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center font-black text-primary group-hover:border-primary transition-colors text-sm select-none">
             {displayName[0]?.toUpperCase() ?? "?"}
           </div>
-          <span className="font-bold text-sm tracking-wide truncate max-w-[100px]">{displayName}</span>
+          <div className="flex flex-col items-start">
+            <span className="font-bold text-sm tracking-wide truncate max-w-[100px] leading-tight">{displayName}</span>
+            <span className="text-[9px] text-muted-foreground uppercase tracking-widest leading-tight">Settings</span>
+          </div>
         </button>
 
         {/* LOK Tokens */}
