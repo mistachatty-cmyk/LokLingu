@@ -5,7 +5,7 @@ import { useUser } from "../hooks/use-user";
 import { useTheme, type Theme } from "../hooks/use-theme";
 import {
   ChevronDown, ChevronUp, Coins, Loader2, Play,
-  Settings, Palette, X, Check,
+  Settings, Palette, X, Check, Mic, Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,9 +19,17 @@ export default function Home() {
   const [localUsername, setLocalUsername] = useState(username || "");
   const [language, setLanguage] = useState(() => localStorage.getItem("lok-lingu-lang") || "es");
   const [category, setCategory] = useState(() => localStorage.getItem("lok-lingu-cat") || "numbers");
+  const [mode, setMode] = useState<"voice" | "draw">(() =>
+    (localStorage.getItem("lok-lingu-mode") as "voice" | "draw") ?? "voice"
+  );
   const [showOptions, setShowOptions] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const usernameInputRef = useRef<HTMLInputElement>(null);
+
+  const switchMode = (m: "voice" | "draw") => {
+    setMode(m);
+    localStorage.setItem("lok-lingu-mode", m);
+  };
 
   const { data: languagesData, isLoading: isLoadingLanguages } = useGetLanguages();
   const createUser = useCreateUser();
@@ -52,7 +60,7 @@ export default function Home() {
       {
         onSuccess: (user) => {
           saveUser(user.id, user.username);
-          setLocation("/game");
+          setLocation(mode === "draw" ? "/draw" : "/game");
         },
       }
     );
@@ -255,6 +263,27 @@ export default function Home() {
           transition={{ duration: 0.5, delay: 0.15 }}
           className="w-full max-w-xs space-y-2"
         >
+          {/* ── Mode toggle: Voice / Draw ── */}
+          <div className="flex rounded-xl border border-border overflow-hidden mb-1">
+            {([
+              { id: "voice", icon: Mic,    label: "Voice" },
+              { id: "draw",  icon: Pencil, label: "Draw"  },
+            ] as const).map(({ id, icon: Icon, label }) => (
+              <button
+                key={id}
+                onClick={() => switchMode(id)}
+                className={`flex-1 flex items-center justify-center space-x-2 py-2.5 text-sm font-black uppercase tracking-widest transition-all ${
+                  mode === id
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-card text-muted-foreground hover:bg-accent hover:text-foreground"
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span>{label}</span>
+              </button>
+            ))}
+          </div>
+
           {/* START button */}
           <Button
             onClick={handleStart}
@@ -265,6 +294,8 @@ export default function Home() {
           >
             {createUser.isPending
               ? <Loader2 className="w-6 h-6 animate-spin" />
+              : mode === "draw"
+              ? <><Pencil className="w-5 h-5 mr-3" /> DRAW</>
               : <><Play className="w-5 h-5 mr-3 fill-current" /> START</>
             }
           </Button>
