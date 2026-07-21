@@ -4,7 +4,7 @@ import {
   useGetLeaderboardSummary,
   useGetLanguages,
 } from '@workspace/api-client-react';
-import { Trophy, Users, Star, Crown } from 'lucide-react';
+import { Trophy, Users, Star, Crown, AlertCircle } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -21,10 +21,10 @@ export default function Leaderboard() {
   const [category, setCategory] = useState<string>('all');
   const { theme } = useTheme();
 
-  const { data: summary } = useGetLeaderboardSummary();
-  const { data: languagesData } = useGetLanguages();
+  const { data: summary, isError: isSummaryError } = useGetLeaderboardSummary();
+  const { data: languagesData, isError: isLangError } = useGetLanguages();
 
-  const { data: leaderboard, isLoading } = useGetLeaderboard(
+  const { data: leaderboard, isLoading, isError: isLeaderboardError } = useGetLeaderboard(
     {
       language: language !== 'all' ? language : undefined,
       category: category !== 'all' ? category : undefined,
@@ -47,6 +47,11 @@ export default function Leaderboard() {
       <div className="text-center space-y-2">
         <h1 className="text-4xl font-black tracking-tighter uppercase">Legends</h1>
         <p className="text-muted-foreground font-serif italic">The unbroken streaks</p>
+        {(isSummaryError || isLangError) && (
+          <p className="text-[10px] text-destructive font-mono uppercase tracking-widest mt-1">
+            Could not load leaderboard data. Check connection.
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -120,7 +125,12 @@ export default function Leaderboard() {
       </div>
 
       <div className="space-y-3">
-        {isLoading ? (
+        {isLeaderboardError ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <AlertCircle className="w-8 h-8 mx-auto mb-2 text-destructive" />
+            Failed to load rankings.
+          </div>
+        ) : isLoading ? (
           <div className="text-center py-12 text-muted-foreground">Loading ranks...</div>
         ) : leaderboard?.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground font-serif italic">

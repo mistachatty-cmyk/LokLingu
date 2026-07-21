@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0a0a1a"/>
+      <stop offset="100%" stop-color="#0a0a0f"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00e5ff"/>
+      <stop offset="100%" stop-color="#009bb0"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)" stroke="#00b4c8" stroke-width="6"/>
+  <text x="256" y="320" text-anchor="middle" font-family="Outfit,sans-serif" font-weight="900" font-size="280" fill="url(#glow)" filter="url(#g)">L</text>
+  <filter id="g">
+    <feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#00e5ff" flood-opacity="0.6"/>
+  </filter>
+  <circle cx="410" cy="110" r="18" fill="#00e5ff" opacity="0.15"/>
+  <circle cx="440" cy="90" r="10" fill="#00e5ff" opacity="0.1"/>
+  <circle cx="380" cy="80" r="6" fill="#00e5ff" opacity="0.2"/>
+</svg>

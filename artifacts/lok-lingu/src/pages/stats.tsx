@@ -2,13 +2,13 @@ import { useUser } from '../hooks/use-user';
 import { useGetUserStats } from '@workspace/api-client-react';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Activity, Flame, Hash, Target } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Activity, Flame, Hash, Target, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function Stats() {
   const { userId, username } = useUser();
-  const { data: stats, isLoading } = useGetUserStats(userId!, {
+  const { data: stats, isLoading, isError } = useGetUserStats(userId!, {
     query: { enabled: !!userId, queryKey: ['userStats', userId] },
   });
 
@@ -23,6 +23,16 @@ export default function Stats() {
             Set Alias
           </Button>
         </Link>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="p-6 text-center pt-24 text-muted-foreground space-y-4">
+        <AlertCircle className="w-10 h-10 mx-auto text-destructive" />
+        <p>Failed to load stats.</p>
+        <Button variant="outline" onClick={() => window.location.reload()}>Retry</Button>
       </div>
     );
   }

@@ -2,8 +2,9 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useLocation } from 'wouter';
 import { useGetWords, useSubmitScore } from '@workspace/api-client-react';
 import { useUser } from '../hooks/use-user';
+import { useToast } from '../hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, RotateCcw, Home, Check, Eraser, Eye, EyeOff } from 'lucide-react';
+import { Heart, RotateCcw, Home, Check, Eraser, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DrawCanvas, type DrawCanvasHandle } from '@/components/draw-canvas';
 
@@ -19,14 +20,19 @@ const INK_COLORS = [
 export default function Draw() {
   const [, setLocation] = useLocation();
   const { userId } = useUser();
+  const { toast } = useToast();
 
   const language = localStorage.getItem('lok-lingu-lang') || 'es';
   const category = localStorage.getItem('lok-lingu-cat') || 'numbers';
 
-  const { data: words, isLoading: isLoadingWords } = useGetWords(language, category, {
+  const { data: words, isLoading: isLoadingWords, isError: isWordsError } = useGetWords(language, category, {
     query: { enabled: true, queryKey: ['words', language, category] },
   });
-  const submitScore = useSubmitScore();
+  const submitScore = useSubmitScore({
+    mutation: {
+      onError: () => toast({ title: 'Failed to submit score', variant: 'destructive' }),
+    },
+  });
 
   const [wordIndex, setWordIndex] = useState(0);
   const [count, setCount] = useState(0);
@@ -111,6 +117,17 @@ export default function Draw() {
   }, [userId, setLocation]);
 
   if (!userId) return null;
+
+  if (isWordsError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6 space-y-4">
+        <AlertCircle className="w-12 h-12 text-destructive" />
+        <p className="text-muted-foreground text-sm font-mono uppercase tracking-widest">Failed to load words.</p>
+        <Button variant="outline" onClick={() => window.location.reload()}>Retry</Button>
+        <Button variant="ghost" onClick={() => setLocation('/')}>Back to Menu</Button>
+      </div>
+    );
+  }
 
   if (isLoadingWords || !words) {
     return (

@@ -3,6 +3,7 @@ import { useLocation } from 'wouter';
 import { useCreateUser, useGetLanguages } from '@workspace/api-client-react';
 import { useUser } from '../hooks/use-user';
 import { useTheme, type Theme } from '../hooks/use-theme';
+import { useToast } from '../hooks/use-toast';
 import {
   ChevronDown,
   ChevronUp,
@@ -24,6 +25,7 @@ export default function Home() {
   const [, setLocation] = useLocation();
   const { username, userId, saveUser } = useUser();
   const { theme } = useTheme();
+  const { toast } = useToast();
 
   const [localUsername, setLocalUsername] = useState(username || '');
   const [language, setLanguage] = useState(() => localStorage.getItem('lok-lingu-lang') || 'es');
@@ -37,8 +39,14 @@ export default function Home() {
   const [showProfile, setShowProfile] = useState(false);
   const usernameInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: languagesData, isLoading: isLoadingLanguages } = useGetLanguages();
-  const createUser = useCreateUser();
+  const { data: languagesData, isLoading: isLoadingLanguages, isError: isLangError } = useGetLanguages();
+  const createUser = useCreateUser({
+    mutation: {
+      onError: () => {
+        toast({ title: 'Failed to save profile', description: 'Check your connection and try again.', variant: 'destructive' });
+      },
+    },
+  });
 
   const selectedLang = languagesData?.find((l) => l.code === language);
   const categories = selectedLang?.categories ?? ['numbers'];
@@ -303,6 +311,11 @@ export default function Home() {
           >
             LOK LINGU
           </h1>
+          {isLangError && (
+            <p className="text-[10px] text-destructive font-mono uppercase tracking-widest">
+              Could not load languages. Check connection.
+            </p>
+          )}
           <p className="text-xs text-muted-foreground font-mono uppercase tracking-[0.2em]">
             Infinite Language Arcade
           </p>
