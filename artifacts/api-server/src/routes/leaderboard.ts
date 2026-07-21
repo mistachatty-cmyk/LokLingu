@@ -1,12 +1,12 @@
-import { Router } from "express";
-import { db, scoresTable, usersTable } from "@workspace/db";
-import { eq, desc, sql, max } from "drizzle-orm";
-import { GetLeaderboardQueryParams } from "@workspace/api-zod";
+import { Router } from 'express';
+import { db, scoresTable, usersTable } from '@workspace/db';
+import { eq, desc, sql, max } from 'drizzle-orm';
+import { GetLeaderboardQueryParams } from '@workspace/api-zod';
 
 const router = Router();
 
 // GET /leaderboard/summary — must come before /leaderboard to avoid param conflict
-router.get("/leaderboard/summary", async (req, res) => {
+router.get('/leaderboard/summary', async (req, res) => {
   // Total players
   const [{ count: totalPlayers }] = await db
     .select({ count: sql<number>`count(*)::int` })
@@ -47,7 +47,7 @@ router.get("/leaderboard/summary", async (req, res) => {
 });
 
 // GET /leaderboard
-router.get("/leaderboard", async (req, res) => {
+router.get('/leaderboard', async (req, res) => {
   const queryRaw: Record<string, unknown> = {};
   if (req.query.language) queryRaw.language = req.query.language;
   if (req.query.category) queryRaw.category = req.query.category;
@@ -55,7 +55,7 @@ router.get("/leaderboard", async (req, res) => {
 
   const parsed = GetLeaderboardQueryParams.safeParse(queryRaw);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid query params" });
+    res.status(400).json({ error: 'Invalid query params' });
     return;
   }
 
@@ -67,7 +67,7 @@ router.get("/leaderboard", async (req, res) => {
       userId: scoresTable.userId,
       language: scoresTable.language,
       category: scoresTable.category,
-      bestCount: max(scoresTable.count).as("best_count"),
+      bestCount: max(scoresTable.count).as('best_count'),
     })
     .from(scoresTable)
     .$dynamic();
@@ -106,7 +106,7 @@ router.get("/leaderboard", async (req, res) => {
       language: r.language,
       category: r.category,
       createdAt: r.createdAt,
-    }))
+    })),
   );
 });
 

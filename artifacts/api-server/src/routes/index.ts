@@ -1,10 +1,10 @@
-import { Router, type IRouter } from "express";
-import healthRouter from "./health";
-import usersRouter from "./users";
-import scoresRouter from "./scores";
-import leaderboardRouter from "./leaderboard";
-import wordsRouter from "./words";
-import statsRouter from "./stats";
+import { Router, type IRouter } from 'express';
+import healthRouter from './health';
+import usersRouter from './users';
+import scoresRouter from './scores';
+import leaderboardRouter from './leaderboard';
+import wordsRouter from './words';
+import statsRouter from './stats';
 
 const router: IRouter = Router();
 

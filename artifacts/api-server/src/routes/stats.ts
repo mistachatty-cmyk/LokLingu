@@ -1,12 +1,12 @@
-import { Router } from "express";
-import { db, scoresTable, usersTable } from "@workspace/db";
-import { eq, desc, sql, max, count } from "drizzle-orm";
-import { GetUserStatsParams } from "@workspace/api-zod";
+import { Router } from 'express';
+import { db, scoresTable, usersTable } from '@workspace/db';
+import { eq, desc, sql, max, count } from 'drizzle-orm';
+import { GetUserStatsParams } from '@workspace/api-zod';
 
 const router = Router();
 
 // GET /stats/global
-router.get("/stats/global", async (req, res) => {
+router.get('/stats/global', async (req, res) => {
   const [{ totalPlayers }] = await db
     .select({ totalPlayers: sql<number>`count(distinct ${usersTable.id})::int` })
     .from(usersTable);
@@ -19,9 +19,7 @@ router.get("/stats/global", async (req, res) => {
     .select({ totalWordsSpoken: sql<number>`coalesce(sum(${scoresTable.count}), 0)::int` })
     .from(scoresTable);
 
-  const [topScore] = await db
-    .select({ maxCount: max(scoresTable.count) })
-    .from(scoresTable);
+  const [topScore] = await db.select({ maxCount: max(scoresTable.count) }).from(scoresTable);
 
   res.json({
     totalPlayers,
@@ -32,24 +30,20 @@ router.get("/stats/global", async (req, res) => {
 });
 
 // GET /stats/user/:userId
-router.get("/stats/user/:userId", async (req, res) => {
+router.get('/stats/user/:userId', async (req, res) => {
   const parsed = GetUserStatsParams.safeParse({ userId: Number(req.params.userId) });
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid user ID" });
+    res.status(400).json({ error: 'Invalid user ID' });
     return;
   }
 
   const { userId } = parsed.data;
 
   // Verify user exists
-  const [user] = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.id, userId))
-    .limit(1);
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
 
   if (!user) {
-    res.status(404).json({ error: "User not found" });
+    res.status(404).json({ error: 'User not found' });
     return;
   }
 

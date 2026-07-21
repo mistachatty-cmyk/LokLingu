@@ -1,12 +1,12 @@
-import { pgTable, serial, text, integer, timestamp } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod/v4";
+import { pgTable, serial, text, integer, timestamp } from 'drizzle-orm/pg-core';
+import { createInsertSchema } from 'drizzle-zod';
+import { z } from 'zod/v4';
 
-export const usersTable = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  tokenBalance: integer("token_balance").notNull().default(1500),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+export const usersTable = pgTable('users', {
+  id: serial('id').primaryKey(),
+  username: text('username').notNull().unique(),
+  tokenBalance: integer('token_balance').notNull().default(1500),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
 export const insertUserSchema = createInsertSchema(usersTable).omit({ id: true, createdAt: true });

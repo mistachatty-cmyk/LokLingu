@@ -7,6 +7,7 @@ import { Route, Switch, Router as WouterRouter } from 'wouter';
 import { Layout } from './components/layout';
 import Home from './pages/home';
 import Game from './pages/game';
+import Draw from './pages/draw';
 import Leaderboard from './pages/leaderboard';
 import Stats from './pages/stats';
 import Themes from './pages/themes';
@@ -19,6 +20,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/game" component={Game} />
+        <Route path="/draw" component={Draw} />
         <Route path="/leaderboard" component={Leaderboard} />
         <Route path="/stats" component={Stats} />
         <Route path="/themes" component={Themes} />

@@ -1,5 +1,5 @@
 /* ── Google Fonts ─────────────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;700;900&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400&family=Space+Mono:wght@400;700&family=Orbitron:wght@400;600;700;900&family=Bebas+Neue&family=Special+Elite&family=Rajdhani:wght@400;500;600;700&family=Josefin+Sans:ital,wght@0,300;0,400;0,600;0,700;1,300&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Press+Start+2P&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;700;900&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400&family=Space+Mono:wght@400;700&family=Orbitron:wght@400;600;700;900&family=Bebas+Neue&family=Special+Elite&family=Rajdhani:wght@400;500;600;700&family=Josefin+Sans:ital,wght@0,300;0,400;0,600;0,700;1,300&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Press+Start+2P&family=Unbounded:wght@400;500;600;700;900&family=DM+Serif+Display:ital@0;1&family=Zen+Kurenaido&family=Noto+Sans+JP:wght@300;400;500;700&family=Rock+Salt&family=Fredericka+the+Great&display=swap');
 
 @import 'tailwindcss';
 @import 'tw-animate-css';
@@ -794,6 +794,376 @@
   --opaque-button-border-intensity: 9;
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   CATEGORY A — GENERAL (new additions)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* 22 ─ SAKURA  (light pink / cherry blossom) ────────────────────── */
+:root.theme-sakura {
+  --app-font-sans: 'Josefin Sans', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Josefin Sans', sans-serif;
+  --word-color: hsl(340 60% 30%);
+  --word-glow: none;
+  --theme-tier: A;
+
+  --background: 340 50% 96%;
+  --foreground: 340 60% 25%;
+  --border: 340 30% 80%;
+  --input: 340 30% 88%;
+  --ring: 340 70% 55%;
+  --card: 340 45% 92%;
+  --card-foreground: 340 60% 25%;
+  --card-border: 340 30% 80%;
+  --popover: 340 45% 92%;
+  --popover-foreground: 340 60% 25%;
+  --popover-border: 340 30% 80%;
+  --primary: 340 70% 50%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 10 70% 60%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 340 30% 86%;
+  --muted-foreground: 340 30% 45%;
+  --accent: 340 40% 82%;
+  --accent-foreground: 340 60% 25%;
+  --destructive: 0 75% 48%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.75rem;
+  --opaque-button-border-intensity: -8;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CATEGORY B — PREMIUM (new additions)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* 23 ─ FOREST  (dark woodland green) ────────────────────────────── */
+:root.theme-forest {
+  --app-font-sans: 'DM Serif Display', serif;
+  --app-font-serif: 'DM Serif Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'DM Serif Display', serif;
+  --word-color: hsl(120 100% 75%);
+  --word-glow: 0 0 15px hsl(120 60% 40%), 0 0 35px hsl(120 50% 25%);
+  --theme-tier: B;
+
+  --background: 120 25% 6%;
+  --foreground: 120 60% 85%;
+  --border: 120 40% 18%;
+  --input: 120 40% 10%;
+  --ring: 120 100% 50%;
+  --card: 120 22% 9%;
+  --card-foreground: 120 60% 85%;
+  --card-border: 120 40% 18%;
+  --popover: 120 22% 9%;
+  --popover-foreground: 120 60% 85%;
+  --popover-border: 120 40% 18%;
+  --primary: 120 100% 45%;
+  --primary-foreground: 120 25% 6%;
+  --secondary: 90 60% 40%;
+  --secondary-foreground: 120 25% 6%;
+  --muted: 120 18% 14%;
+  --muted-foreground: 120 30% 48%;
+  --accent: 120 40% 14%;
+  --accent-foreground: 120 60% 85%;
+  --destructive: 0 85% 52%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.375rem;
+  --opaque-button-border-intensity: 9;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CATEGORY C — ULTIMATE (new additions)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* 24 ─ MIDNIGHT  (deep navy / gold stars) ───────────────────────── */
+:root.theme-midnight {
+  --app-font-sans: 'Unbounded', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Unbounded', sans-serif;
+  --word-color: hsl(45 100% 60%);
+  --word-glow: 0 0 25px hsl(45 100% 50%), 0 0 50px hsl(45 80% 35%);
+  --theme-tier: C;
+
+  --background: 225 50% 4%;
+  --foreground: 45 80% 90%;
+  --border: 225 40% 16%;
+  --input: 225 40% 9%;
+  --ring: 45 100% 55%;
+  --card: 225 45% 7%;
+  --card-foreground: 45 80% 90%;
+  --card-border: 225 40% 16%;
+  --popover: 225 45% 7%;
+  --popover-foreground: 45 80% 90%;
+  --popover-border: 225 40% 16%;
+  --primary: 45 100% 50%;
+  --primary-foreground: 225 50% 4%;
+  --secondary: 220 80% 50%;
+  --secondary-foreground: 225 50% 4%;
+  --muted: 225 30% 12%;
+  --muted-foreground: 45 30% 50%;
+  --accent: 225 40% 12%;
+  --accent-foreground: 45 80% 90%;
+  --destructive: 0 90% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+}
+
+/* 25 ─ STEEL  (industrial blue-grey) ────────────────────────────── */
+:root.theme-steel {
+  --app-font-sans: 'Barlow Condensed', sans-serif;
+  --app-font-serif: 'Barlow Condensed', sans-serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Barlow Condensed', sans-serif;
+  --word-color: hsl(210 20% 70%);
+  --word-glow: 0 0 12px rgba(180,200,220,0.3);
+  --theme-tier: C;
+
+  --background: 210 15% 8%;
+  --foreground: 210 20% 82%;
+  --border: 210 15% 22%;
+  --input: 210 15% 13%;
+  --ring: 210 30% 55%;
+  --card: 210 12% 11%;
+  --card-foreground: 210 20% 82%;
+  --card-border: 210 15% 22%;
+  --popover: 210 12% 11%;
+  --popover-foreground: 210 20% 82%;
+  --popover-border: 210 15% 22%;
+  --primary: 210 50% 50%;
+  --primary-foreground: 210 15% 8%;
+  --secondary: 200 40% 40%;
+  --secondary-foreground: 210 15% 8%;
+  --muted: 210 10% 16%;
+  --muted-foreground: 210 15% 48%;
+  --accent: 210 15% 18%;
+  --accent-foreground: 210 20% 82%;
+  --destructive: 0 80% 52%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.125rem;
+  --opaque-button-border-intensity: 9;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CATEGORY D — ANIMATED (new additions)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* 26 ─ HORIZON  (animated sunset gradient drift) ────────────────── */
+:root.theme-horizon {
+  --app-font-sans: 'DM Serif Display', serif;
+  --app-font-serif: 'DM Serif Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'DM Serif Display', serif;
+  --word-color: hsl(25 100% 70%);
+  --word-glow: 0 0 25px hsl(25 100% 55%), 0 0 60px hsl(350 100% 50%);
+  --theme-tier: D;
+
+  --background: 350 10% 5%;
+  --foreground: 25 80% 88%;
+  --border: 350 30% 18%;
+  --input: 350 30% 10%;
+  --ring: 25 100% 55%;
+  --card: 350 12% 8%;
+  --card-foreground: 25 80% 88%;
+  --card-border: 350 30% 18%;
+  --popover: 350 12% 8%;
+  --popover-foreground: 25 80% 88%;
+  --popover-border: 350 30% 18%;
+  --primary: 25 100% 50%;
+  --primary-foreground: 350 10% 5%;
+  --secondary: 350 80% 50%;
+  --secondary-foreground: 350 10% 5%;
+  --muted: 350 10% 14%;
+  --muted-foreground: 25 35% 52%;
+  --accent: 350 30% 14%;
+  --accent-foreground: 25 80% 88%;
+  --destructive: 0 90% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+}
+
+/* 27 ─ CYBERWAVE  (animated cyberpunk wave / glitch) ────────────── */
+:root.theme-cyberwave {
+  --app-font-sans: 'Unbounded', sans-serif;
+  --app-font-serif: 'Unbounded', sans-serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Unbounded', sans-serif;
+  --word-color: hsl(290 100% 65%);
+  --word-glow: 0 0 20px hsl(290 100% 55%), 0 0 50px hsl(330 100% 50%), 0 0 80px hsl(250 100% 50%);
+  --theme-tier: D;
+
+  --background: 260 30% 5%;
+  --foreground: 290 80% 85%;
+  --border: 290 50% 20%;
+  --input: 290 50% 12%;
+  --ring: 290 100% 55%;
+  --card: 260 25% 8%;
+  --card-foreground: 290 80% 85%;
+  --card-border: 290 50% 20%;
+  --popover: 260 25% 8%;
+  --popover-foreground: 290 80% 85%;
+  --popover-border: 290 50% 20%;
+  --primary: 290 100% 50%;
+  --primary-foreground: 260 30% 5%;
+  --secondary: 330 100% 50%;
+  --secondary-foreground: 260 30% 5%;
+  --muted: 260 20% 14%;
+  --muted-foreground: 290 35% 52%;
+  --accent: 290 50% 16%;
+  --accent-foreground: 290 80% 85%;
+  --destructive: 0 90% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0rem;
+  --opaque-button-border-intensity: 9;
+}
+
+/* 28 ─ OCEAN  (animated deep ocean wave) ────────────────────────── */
+:root.theme-ocean {
+  --app-font-sans: 'Josefin Sans', sans-serif;
+  --app-font-serif: 'Josefin Sans', sans-serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Josefin Sans', sans-serif;
+  --word-color: hsl(190 100% 65%);
+  --word-glow: 0 0 25px hsl(190 100% 55%), 0 0 60px hsl(220 100% 45%);
+  --theme-tier: D;
+
+  --background: 200 40% 5%;
+  --foreground: 190 80% 85%;
+  --border: 200 50% 18%;
+  --input: 200 50% 10%;
+  --ring: 190 100% 50%;
+  --card: 200 35% 8%;
+  --card-foreground: 190 80% 85%;
+  --card-border: 200 50% 18%;
+  --popover: 200 35% 8%;
+  --popover-foreground: 190 80% 85%;
+  --popover-border: 200 50% 18%;
+  --primary: 190 100% 50%;
+  --primary-foreground: 200 40% 5%;
+  --secondary: 220 80% 50%;
+  --secondary-foreground: 200 40% 5%;
+  --muted: 200 25% 14%;
+  --muted-foreground: 190 35% 50%;
+  --accent: 200 50% 14%;
+  --accent-foreground: 190 80% 85%;
+  --destructive: 0 90% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.75rem;
+  --opaque-button-border-intensity: 9;
+}
+
+/* 29 ─ EMBERS  (animated glowing embers / fire) ─────────────────── */
+:root.theme-embers {
+  --app-font-sans: 'Playfair Display', serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Playfair Display', serif;
+  --word-color: hsl(15 100% 65%);
+  --word-glow: 0 0 20px hsl(15 100% 55%), 0 0 50px hsl(0 100% 45%);
+  --theme-tier: D;
+
+  --background: 10 20% 5%;
+  --foreground: 15 80% 85%;
+  --border: 15 50% 18%;
+  --input: 15 50% 10%;
+  --ring: 15 100% 55%;
+  --card: 10 18% 8%;
+  --card-foreground: 15 80% 85%;
+  --card-border: 15 50% 18%;
+  --popover: 10 18% 8%;
+  --popover-foreground: 15 80% 85%;
+  --popover-border: 15 50% 18%;
+  --primary: 15 100% 50%;
+  --primary-foreground: 10 20% 5%;
+  --secondary: 350 80% 50%;
+  --secondary-foreground: 10 20% 5%;
+  --muted: 10 12% 14%;
+  --muted-foreground: 15 35% 50%;
+  --accent: 15 50% 14%;
+  --accent-foreground: 15 80% 85%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.375rem;
+  --opaque-button-border-intensity: 9;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CATEGORY E — LINGU TIER  (Language-Specific)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* 30 ─ FLAMENCO  (Spanish / Español tier — warm gold & red) ────── */
+:root.theme-flamenco {
+  --app-font-sans: 'Playfair Display', serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Playfair Display', serif;
+  --word-color: hsl(350 90% 60%);
+  --word-glow: 0 0 20px hsl(350 90% 50%), 0 0 45px hsl(30 100% 45%);
+  --theme-tier: E;
+
+  --background: 350 25% 6%;
+  --foreground: 30 80% 85%;
+  --border: 350 50% 20%;
+  --input: 350 50% 12%;
+  --ring: 350 90% 55%;
+  --card: 350 22% 9%;
+  --card-foreground: 30 80% 85%;
+  --card-border: 350 50% 20%;
+  --popover: 350 22% 9%;
+  --popover-foreground: 30 80% 85%;
+  --popover-border: 350 50% 20%;
+  --primary: 350 90% 55%;
+  --primary-foreground: 350 25% 6%;
+  --secondary: 30 100% 45%;
+  --secondary-foreground: 350 25% 6%;
+  --muted: 350 15% 14%;
+  --muted-foreground: 30 35% 50%;
+  --accent: 350 50% 16%;
+  --accent-foreground: 30 80% 85%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+}
+
+/* 31 ─ WABI  (Japanese / 日本語 tier — zen ink wash) ────────────── */
+:root.theme-wabi {
+  --app-font-sans: 'Noto Sans JP', sans-serif;
+  --app-font-serif: 'Zen Kurenaido', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Noto Sans JP', sans-serif;
+  --word-color: hsl(0 0% 25%);
+  --word-glow: none;
+  --theme-tier: E;
+
+  --background: 0 0% 94%;
+  --foreground: 0 0% 20%;
+  --border: 0 0% 78%;
+  --input: 0 0% 86%;
+  --ring: 0 0% 30%;
+  --card: 0 0% 90%;
+  --card-foreground: 0 0% 20%;
+  --card-border: 0 0% 78%;
+  --popover: 0 0% 90%;
+  --popover-foreground: 0 0% 20%;
+  --popover-border: 0 0% 78%;
+  --primary: 0 0% 20%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 40%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 0 0% 85%;
+  --muted-foreground: 0 0% 42%;
+  --accent: 0 0% 80%;
+  --accent-foreground: 0 0% 20%;
+  --destructive: 0 70% 42%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.25rem;
+  --opaque-button-border-intensity: -8;
+}
+
 /* ── Base layer ──────────────────────────────────────────────────── */
 @layer base {
   * { @apply border-border; }
@@ -881,6 +1251,157 @@
     50% { filter: hue-rotate(30deg); }
   }
   :root.theme-nebula .game-word { animation: nebula-drift 5s ease-in-out infinite; }
+
+  /* Horizon animated drift */
+  @keyframes horizon-drift {
+    0%, 100% { filter: hue-rotate(-5deg) brightness(1); }
+    50% { filter: hue-rotate(15deg) brightness(1.08); }
+  }
+  :root.theme-horizon .game-word { animation: horizon-drift 6s ease-in-out infinite; }
+
+  /* Cyberwave glitch + pulse */
+  @keyframes cyberwave-glitch {
+    0%, 100% { transform: skewX(0deg); filter: drop-shadow(0 0 8px hsl(290 100% 55%)); }
+    25% { transform: skewX(-2deg); filter: drop-shadow(0 0 12px hsl(330 100% 50%)); }
+    75% { transform: skewX(2deg); filter: drop-shadow(0 0 12px hsl(250 100% 50%)); }
+  }
+  :root.theme-cyberwave .game-word { animation: cyberwave-glitch 3s ease-in-out infinite; }
+
+  /* Ocean wave drift */
+  @keyframes ocean-drift {
+    0%, 100% { filter: hue-rotate(0deg) brightness(1); }
+    33% { filter: hue-rotate(10deg) brightness(1.05); }
+    66% { filter: hue-rotate(-8deg) brightness(0.95); }
+  }
+  :root.theme-ocean .game-word { animation: ocean-drift 5s ease-in-out infinite; }
+
+  /* Embers glow pulse */
+  @keyframes embers-pulse {
+    0%, 100% { filter: brightness(1) drop-shadow(0 0 8px hsl(15 100% 50%)); }
+    50% { filter: brightness(1.12) drop-shadow(0 0 20px hsl(0 100% 45%)); }
+  }
+  :root.theme-embers .game-word { animation: embers-pulse 2.5s ease-in-out infinite; }
+
+  /* Cyberwave animated background */
+  :root.theme-cyberwave body,
+  .theme-cyberwave body {
+    background: linear-gradient(135deg, hsl(260 30% 5%), hsl(290 25% 7%), hsl(250 30% 5%));
+  }
+
+  /* Horizon animated background */
+  :root.theme-horizon body,
+  .theme-horizon body {
+    background: linear-gradient(135deg, hsl(350 10% 5%), hsl(25 15% 7%), hsl(350 10% 5%));
+  }
+
+  /* Ocean animated background */
+  :root.theme-ocean body,
+  .theme-ocean body {
+    background: linear-gradient(135deg, hsl(200 40% 5%), hsl(220 35% 7%), hsl(190 30% 5%));
+  }
+
+  /* Embers animated background */
+  :root.theme-embers body,
+  .theme-embers body {
+    background: linear-gradient(135deg, hsl(10 20% 5%), hsl(0 15% 7%), hsl(20 18% 5%));
+  }
+
+  /* Flamenco — polka dot lace pattern overlay */
+  :root.theme-flamenco body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.04;
+    background-image: radial-gradient(circle 2px, hsl(30 100% 60%) 0%, transparent 100%);
+    background-size: 24px 24px;
+  }
+
+  /* Wabi — sumi-e ink wash texture */
+  :root.theme-wabi body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23w)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 300px 300px;
+  }
+
+  /* Midnight — subtle starfield */
+  :root.theme-midnight body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle 1px at 8% 15%, rgba(255,200,80,0.5) 0%, transparent 50%),
+      radial-gradient(circle 1px at 25% 65%, rgba(255,200,80,0.3) 0%, transparent 50%),
+      radial-gradient(circle 1px at 50% 20%, rgba(255,200,80,0.4) 0%, transparent 50%),
+      radial-gradient(circle 1px at 70% 55%, rgba(255,200,80,0.3) 0%, transparent 50%),
+      radial-gradient(circle 1px at 85% 80%, rgba(255,200,80,0.35) 0%, transparent 50%),
+      radial-gradient(circle 1px at 15% 85%, rgba(255,200,80,0.3) 0%, transparent 50%),
+      radial-gradient(circle 1px at 60% 40%, rgba(255,200,80,0.25) 0%, transparent 50%),
+      radial-gradient(circle 1px at 40% 75%, rgba(255,200,80,0.3) 0%, transparent 50%);
+  }
+
+  /* Steel — subtle brushed metal lines */
+  :root.theme-steel body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.025;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 1px,
+      rgba(180,200,220,0.1) 1px,
+      rgba(180,200,220,0.1) 2px
+    );
+  }
+
+  /* Forest — mossy vignette */
+  :root.theme-forest body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background: radial-gradient(ellipse at 50% 80%, transparent 40%, hsla(120 25% 6% / 0.6) 100%);
+  }
+
+  /* Sakura — falling petal overlay */
+  @keyframes sakura-fall {
+    0% { transform: translateY(-10px) rotate(0deg); opacity: 0; }
+    10% { opacity: 0.15; }
+    90% { opacity: 0.08; }
+    100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+  }
+  :root.theme-sakura body::after {
+    content: '🌸';
+    position: fixed;
+    font-size: 16px;
+    pointer-events: none;
+    z-index: 0;
+    animation: sakura-fall 12s linear infinite;
+    left: 15%;
+  }
+  :root.theme-sakura body::before {
+    content: '🌸';
+    position: fixed;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 0;
+    animation: sakura-fall 18s linear infinite;
+    left: 75%;
+    animation-delay: 4s;
+  }
 
   /* Word font override in game */
   .game-word { font-family: var(--word-font); }

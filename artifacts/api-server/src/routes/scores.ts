@@ -1,29 +1,25 @@
-import { Router } from "express";
-import { db, scoresTable, usersTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
-import { SubmitScoreBody, GetUserScoresParams } from "@workspace/api-zod";
+import { Router } from 'express';
+import { db, scoresTable, usersTable } from '@workspace/db';
+import { eq, desc } from 'drizzle-orm';
+import { SubmitScoreBody, GetUserScoresParams } from '@workspace/api-zod';
 
 const router = Router();
 
 // POST /scores - submit a score
-router.post("/scores", async (req, res) => {
+router.post('/scores', async (req, res) => {
   const parsed = SubmitScoreBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid request body", details: parsed.error.issues });
+    res.status(400).json({ error: 'Invalid request body', details: parsed.error.issues });
     return;
   }
 
   const { userId, language, category, count } = parsed.data;
 
   // Verify user exists
-  const [user] = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.id, userId))
-    .limit(1);
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
 
   if (!user) {
-    res.status(404).json({ error: "User not found" });
+    res.status(404).json({ error: 'User not found' });
     return;
   }
 
@@ -43,10 +39,10 @@ router.post("/scores", async (req, res) => {
 });
 
 // GET /scores/user/:userId
-router.get("/scores/user/:userId", async (req, res) => {
+router.get('/scores/user/:userId', async (req, res) => {
   const parsed = GetUserScoresParams.safeParse({ userId: Number(req.params.userId) });
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid user ID" });
+    res.status(400).json({ error: 'Invalid user ID' });
     return;
   }
 
@@ -64,7 +60,7 @@ router.get("/scores/user/:userId", async (req, res) => {
       category: s.category,
       count: s.count,
       createdAt: s.createdAt.toISOString(),
-    }))
+    })),
   );
 });
 

@@ -1,24 +1,38 @@
-import { useEffect, useRef, useState } from "react";
-import { useLocation } from "wouter";
-import { useCreateUser, useGetLanguages } from "@workspace/api-client-react";
-import { useUser } from "../hooks/use-user";
-import { useTheme, type Theme } from "../hooks/use-theme";
+import { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'wouter';
+import { useCreateUser, useGetLanguages } from '@workspace/api-client-react';
+import { useUser } from '../hooks/use-user';
+import { useTheme, type Theme } from '../hooks/use-theme';
 import {
-  ChevronDown, ChevronUp, Coins, Loader2, Play,
-  Settings, Palette, X, Check,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { motion, AnimatePresence } from "framer-motion";
+  ChevronDown,
+  ChevronUp,
+  Coins,
+  Loader2,
+  Play,
+  Settings,
+  Palette,
+  X,
+  Check,
+  Mic,
+  Pencil,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Home() {
   const [, setLocation] = useLocation();
   const { username, userId, saveUser } = useUser();
   const { theme } = useTheme();
 
-  const [localUsername, setLocalUsername] = useState(username || "");
-  const [language, setLanguage] = useState(() => localStorage.getItem("lok-lingu-lang") || "es");
-  const [category, setCategory] = useState(() => localStorage.getItem("lok-lingu-cat") || "numbers");
+  const [localUsername, setLocalUsername] = useState(username || '');
+  const [language, setLanguage] = useState(() => localStorage.getItem('lok-lingu-lang') || 'es');
+  const [category, setCategory] = useState(
+    () => localStorage.getItem('lok-lingu-cat') || 'numbers',
+  );
+  const [mode, setMode] = useState<'voice' | 'draw'>(
+    () => (localStorage.getItem('lok-lingu-mode') as 'voice' | 'draw') || 'voice',
+  );
   const [showOptions, setShowOptions] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const usernameInputRef = useRef<HTMLInputElement>(null);
@@ -27,7 +41,7 @@ export default function Home() {
   const createUser = useCreateUser();
 
   const selectedLang = languagesData?.find((l) => l.code === language);
-  const categories = selectedLang?.categories ?? ["numbers"];
+  const categories = selectedLang?.categories ?? ['numbers'];
 
   useEffect(() => {
     if (categories.length && !categories.includes(category)) {
@@ -35,9 +49,15 @@ export default function Home() {
     }
   }, [categories, category]);
 
-  const displayName = localUsername.trim() || "Guest";
+  const displayName = localUsername.trim() || 'Guest';
   // Themes that have dark backgrounds and use glow effects
-  const LIGHT_THEMES: Theme[] = ["theme-arctic", "theme-sand", "theme-eink", "theme-typewriter", "theme-chalk"];
+  const LIGHT_THEMES: Theme[] = [
+    'theme-arctic',
+    'theme-sand',
+    'theme-eink',
+    'theme-typewriter',
+    'theme-chalk',
+  ];
   const isNeon = !LIGHT_THEMES.includes(theme);
 
   const handleStart = () => {
@@ -45,16 +65,17 @@ export default function Home() {
       setShowProfile(true);
       return;
     }
-    localStorage.setItem("lok-lingu-lang", language);
-    localStorage.setItem("lok-lingu-cat", category);
+    localStorage.setItem('lok-lingu-lang', language);
+    localStorage.setItem('lok-lingu-cat', category);
+    localStorage.setItem('lok-lingu-mode', mode);
     createUser.mutate(
       { data: { username: localUsername.trim() } },
       {
         onSuccess: (user) => {
           saveUser(user.id, user.username);
-          setLocation("/game");
+          setLocation(mode === 'voice' ? '/game' : '/draw');
         },
-      }
+      },
     );
   };
 
@@ -62,7 +83,7 @@ export default function Home() {
     if (localUsername.trim()) {
       createUser.mutate(
         { data: { username: localUsername.trim() } },
-        { onSuccess: (user) => saveUser(user.id, user.username) }
+        { onSuccess: (user) => saveUser(user.id, user.username) },
       );
     }
   };
@@ -74,19 +95,26 @@ export default function Home() {
         {showProfile && (
           <>
             <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
               onClick={() => setShowProfile(false)}
             />
             <motion.div
-              initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }}
-              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 28, stiffness: 300 }}
               className="fixed inset-y-0 left-0 w-72 bg-card border-r border-border z-50 flex flex-col p-6 space-y-6"
             >
               {/* Header */}
               <div className="flex items-center justify-between">
                 <h2 className="text-base font-black uppercase tracking-widest">Settings</h2>
-                <button onClick={() => setShowProfile(false)} className="text-muted-foreground hover:text-foreground transition-colors p-1">
+                <button
+                  onClick={() => setShowProfile(false)}
+                  className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                >
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -94,24 +122,27 @@ export default function Home() {
               {/* Avatar */}
               <div className="flex flex-col items-center py-2 border-b border-border pb-6">
                 <div className="w-16 h-16 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center text-2xl font-black text-primary select-none mb-3">
-                  {displayName[0]?.toUpperCase() ?? "?"}
+                  {displayName[0]?.toUpperCase() ?? '?'}
                 </div>
                 <p className="font-bold">{displayName}</p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-0.5">Player Profile</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-0.5">
+                  Player Profile
+                </p>
               </div>
 
               {/* Settings list */}
               <div className="space-y-5 flex-1 overflow-y-auto">
-
                 {/* Username */}
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Username</label>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Username
+                  </label>
                   <div className="flex space-x-2">
                     <Input
                       ref={usernameInputRef}
                       value={localUsername}
                       onChange={(e) => setLocalUsername(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleSaveProfile()}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSaveProfile()}
                       placeholder="Enter your alias…"
                       maxLength={32}
                       className="font-mono flex-1"
@@ -129,9 +160,14 @@ export default function Home() {
 
                 {/* Appearance */}
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Appearance</label>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Appearance
+                  </label>
                   <button
-                    onClick={() => { setShowProfile(false); setLocation("/themes"); }}
+                    onClick={() => {
+                      setShowProfile(false);
+                      setLocation('/themes');
+                    }}
                     className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg border border-border hover:border-primary/40 hover:bg-accent transition-all text-left"
                   >
                     <div className="flex items-center space-x-2">
@@ -139,46 +175,59 @@ export default function Home() {
                       <span className="text-sm font-medium">Theme Shop</span>
                     </div>
                     <span className="text-xs text-muted-foreground font-mono uppercase tracking-wider">
-                      {theme.replace("theme-", "")}
+                      {theme.replace('theme-', '')}
                     </span>
                   </button>
                 </div>
 
                 {/* Default language */}
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Default Language</label>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Default Language
+                  </label>
                   <div className="grid grid-cols-2 gap-1.5">
-                    {isLoadingLanguages
-                      ? <div className="col-span-2 text-xs text-muted-foreground py-2">Loading…</div>
-                      : languagesData?.map((l) => (
+                    {isLoadingLanguages ? (
+                      <div className="col-span-2 text-xs text-muted-foreground py-2">Loading…</div>
+                    ) : (
+                      languagesData?.map((l) => (
                         <button
                           key={l.code}
-                          onClick={() => { setLanguage(l.code); localStorage.setItem("lok-lingu-lang", l.code); }}
+                          onClick={() => {
+                            setLanguage(l.code);
+                            localStorage.setItem('lok-lingu-lang', l.code);
+                          }}
                           className={`px-2 py-2 rounded-lg border text-xs font-bold transition-all ${
                             language === l.code
-                              ? "border-primary bg-primary/15 text-primary"
-                              : "border-border hover:border-primary/30 text-muted-foreground"
+                              ? 'border-primary bg-primary/15 text-primary'
+                              : 'border-border hover:border-primary/30 text-muted-foreground'
                           }`}
                         >
                           {l.name}
                         </button>
                       ))
-                    }
+                    )}
                   </div>
                 </div>
 
                 {/* Category default */}
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Default Category</label>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Default Category
+                  </label>
                   <div className="grid grid-cols-3 gap-1.5">
-                    {(languagesData?.find(l => l.code === language)?.categories ?? ["numbers"]).map((c) => (
+                    {(
+                      languagesData?.find((l) => l.code === language)?.categories ?? ['numbers']
+                    ).map((c) => (
                       <button
                         key={c}
-                        onClick={() => { setCategory(c); localStorage.setItem("lok-lingu-cat", c); }}
+                        onClick={() => {
+                          setCategory(c);
+                          localStorage.setItem('lok-lingu-cat', c);
+                        }}
                         className={`px-2 py-2 rounded-lg border text-xs font-bold capitalize transition-all ${
                           category === c
-                            ? "border-primary bg-primary/15 text-primary"
-                            : "border-border hover:border-primary/30 text-muted-foreground"
+                            ? 'border-primary bg-primary/15 text-primary'
+                            : 'border-border hover:border-primary/30 text-muted-foreground'
                         }`}
                       >
                         {c}
@@ -190,7 +239,9 @@ export default function Home() {
 
               {/* Footer */}
               <div className="border-t border-border pt-4 mt-auto">
-                <p className="text-[10px] text-muted-foreground">Lok Lingu · Lock Services Ecosystem</p>
+                <p className="text-[10px] text-muted-foreground">
+                  Lok Lingu · Lock Services Ecosystem
+                </p>
               </div>
             </motion.div>
           </>
@@ -205,17 +256,23 @@ export default function Home() {
           className="flex items-center space-x-2.5 group"
         >
           <div className="w-9 h-9 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center font-black text-primary group-hover:border-primary transition-colors text-sm select-none">
-            {displayName[0]?.toUpperCase() ?? "?"}
+            {displayName[0]?.toUpperCase() ?? '?'}
           </div>
           <div className="flex flex-col items-start">
-            <span className="font-bold text-sm tracking-wide truncate max-w-[100px] leading-tight">{displayName}</span>
-            <span className="text-[9px] text-muted-foreground uppercase tracking-widest leading-tight">Settings</span>
+            <span className="font-bold text-sm tracking-wide truncate max-w-[100px] leading-tight">
+              {displayName}
+            </span>
+            <span className="text-[9px] text-muted-foreground uppercase tracking-widest leading-tight">
+              Settings
+            </span>
           </div>
         </button>
 
         {/* LOK Tokens */}
         <div className="flex flex-col items-end">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">LOK Tokens</span>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+            LOK Tokens
+          </span>
           <div className="flex items-center space-x-1.5">
             <Coins className="w-4 h-4 text-primary" />
             <span className="font-mono font-black text-base leading-none">1,500</span>
@@ -225,7 +282,6 @@ export default function Home() {
 
       {/* ── Main Content ─────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 space-y-10">
-
         {/* Logo + Title */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -234,12 +290,16 @@ export default function Home() {
           className="flex flex-col items-center space-y-3"
         >
           {/* Icon */}
-          <div className={`w-20 h-20 rounded-2xl flex items-center justify-center border-2 border-primary/40 bg-primary/10 mb-1 ${isNeon ? "shadow-[0_0_30px_rgba(0,229,255,0.25)]" : ""}`}>
-            <span className="text-4xl select-none" style={{ fontFamily: "var(--word-font)" }}>L</span>
+          <div
+            className={`w-20 h-20 rounded-2xl flex items-center justify-center border-2 border-primary/40 bg-primary/10 mb-1 ${isNeon ? 'shadow-[0_0_30px_rgba(0,229,255,0.25)]' : ''}`}
+          >
+            <span className="text-4xl select-none" style={{ fontFamily: 'var(--word-font)' }}>
+              L
+            </span>
           </div>
           <h1
-            className={`text-5xl font-black tracking-tighter uppercase ${isNeon ? "word-glow" : ""}`}
-            style={{ fontFamily: "var(--word-font)" }}
+            className={`text-5xl font-black tracking-tighter uppercase ${isNeon ? 'word-glow' : ''}`}
+            style={{ fontFamily: 'var(--word-font)' }}
           >
             LOK LINGU
           </h1>
@@ -260,13 +320,16 @@ export default function Home() {
             onClick={handleStart}
             disabled={createUser.isPending}
             className={`w-full h-16 text-2xl font-black tracking-widest uppercase relative overflow-hidden transition-all
-              ${isNeon ? "neon-text-glow border-primary/50 hover:border-primary hover:bg-primary/15" : ""}`}
+              ${isNeon ? 'neon-text-glow border-primary/50 hover:border-primary hover:bg-primary/15' : ''}`}
             size="lg"
           >
-            {createUser.isPending
-              ? <Loader2 className="w-6 h-6 animate-spin" />
-              : <><Play className="w-5 h-5 mr-3 fill-current" /> START</>
-            }
+            {createUser.isPending ? (
+              <Loader2 className="w-6 h-6 animate-spin" />
+            ) : (
+              <>
+                <Play className="w-5 h-5 mr-3 fill-current" /> START
+              </>
+            )}
           </Button>
 
           {/* OPTIONS toggle */}
@@ -284,7 +347,7 @@ export default function Home() {
             {showOptions && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
+                animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.25 }}
                 className="overflow-hidden"
@@ -293,7 +356,9 @@ export default function Home() {
                   {/* Username (if not set) */}
                   {!username && (
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Username</label>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        Username
+                      </label>
                       <Input
                         placeholder="Enter your alias..."
                         value={localUsername}
@@ -305,30 +370,37 @@ export default function Home() {
 
                   {/* Language */}
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Language</label>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Language
+                    </label>
                     <div className="grid grid-cols-2 gap-1.5">
-                      {isLoadingLanguages
-                        ? <div className="col-span-2 text-center text-xs text-muted-foreground py-2">Loading…</div>
-                        : languagesData?.map((l) => (
+                      {isLoadingLanguages ? (
+                        <div className="col-span-2 text-center text-xs text-muted-foreground py-2">
+                          Loading…
+                        </div>
+                      ) : (
+                        languagesData?.map((l) => (
                           <button
                             key={l.code}
                             onClick={() => setLanguage(l.code)}
                             className={`px-3 py-2 rounded-lg border text-sm font-bold transition-all ${
                               language === l.code
-                                ? "border-primary bg-primary/15 text-primary"
-                                : "border-border hover:border-primary/30 text-muted-foreground hover:text-foreground"
+                                ? 'border-primary bg-primary/15 text-primary'
+                                : 'border-border hover:border-primary/30 text-muted-foreground hover:text-foreground'
                             }`}
                           >
                             {l.name}
                           </button>
                         ))
-                      }
+                      )}
                     </div>
                   </div>
 
                   {/* Category */}
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Category</label>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Category
+                    </label>
                     <div className="grid grid-cols-3 gap-1.5">
                       {categories.map((c) => (
                         <button
@@ -336,11 +408,34 @@ export default function Home() {
                           onClick={() => setCategory(c)}
                           className={`px-2 py-2 rounded-lg border text-xs font-bold capitalize transition-all ${
                             category === c
-                              ? "border-primary bg-primary/15 text-primary"
-                              : "border-border hover:border-primary/30 text-muted-foreground hover:text-foreground"
+                              ? 'border-primary bg-primary/15 text-primary'
+                              : 'border-border hover:border-primary/30 text-muted-foreground hover:text-foreground'
                           }`}
                         >
                           {c}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Mode */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Mode
+                    </label>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {(['voice', 'draw'] as const).map((m) => (
+                        <button
+                          key={m}
+                          onClick={() => setMode(m)}
+                          className={`px-3 py-2 rounded-lg border text-sm font-bold capitalize transition-all flex items-center justify-center gap-2 ${
+                            mode === m
+                              ? 'border-primary bg-primary/15 text-primary'
+                              : 'border-border hover:border-primary/30 text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          {m === 'voice' ? <Mic className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
+                          {m}
                         </button>
                       ))}
                     </div>
