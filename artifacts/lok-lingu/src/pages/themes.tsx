@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useTheme, type Theme } from '../hooks/use-theme';
 import { Check, Lock, Star, Zap, Sparkles, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -512,12 +513,18 @@ function ThemePreview({
   isActive: boolean;
   onClick: () => void;
 }) {
+  const [hovered, setHovered] = useState(false);
+
+  const tierName = { A: 'General', B: 'Premium', C: 'Ultimate', D: 'Animated', E: 'Lingu' }[t.tier];
+
   return (
     <motion.div
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.97 }}
       onClick={onClick}
-      className={`cursor-pointer rounded-xl border-2 overflow-hidden transition-all ${
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className={`cursor-pointer rounded-xl border-2 overflow-hidden transition-all relative ${
         isActive
           ? 'border-primary ring-4 ring-primary/20'
           : 'border-border opacity-70 hover:opacity-100'
@@ -528,7 +535,7 @@ function ThemePreview({
         style={{ background: t.bg, borderBottom: `1px solid ${t.border}` }}
       >
         {isActive && (
-          <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-0.5 shadow-md">
+          <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-0.5 shadow-md z-10">
             <Check className="w-3 h-3" />
           </div>
         )}
@@ -548,6 +555,46 @@ function ThemePreview({
         >
           (THREE)
         </div>
+
+        {/* Description overlay on hover */}
+        {hovered && (
+          <div
+            className="absolute inset-0 flex flex-col items-center justify-center px-2 py-1 transition-opacity"
+            style={{
+              backgroundColor: `${t.bg}cc`,
+              backdropFilter: 'blur(4px)',
+            }}
+          >
+            <p
+              className="text-[10px] leading-tight text-center font-medium"
+              style={{ color: t.wordColor }}
+            >
+              {t.desc}
+            </p>
+            <div className="flex items-center gap-1.5 mt-1.5">
+              <span
+                className="text-[8px] uppercase tracking-widest font-bold px-1.5 py-0.5 rounded-sm"
+                style={{
+                  backgroundColor: t.wordColor + '22',
+                  color: t.wordColor,
+                  border: `1px solid ${t.wordColor}44`,
+                }}
+              >
+                {tierName}
+              </span>
+              <span
+                className="text-[8px] uppercase tracking-widest font-bold px-1.5 py-0.5 rounded-sm"
+                style={{
+                  backgroundColor: t.wordColor + '22',
+                  color: t.wordColor,
+                  border: `1px solid ${t.wordColor}44`,
+                }}
+              >
+                {t.font.replace(/'/g, '').split(',')[0]}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
       <div className="bg-card px-3 py-2 flex justify-between items-center">
         <span className="font-bold text-xs uppercase tracking-wider">{t.label}</span>
