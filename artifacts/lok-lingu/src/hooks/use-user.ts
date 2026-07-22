@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect }s from 'react';
 
 export function useUser() {
   const [userId, setUserId] = useState<number | null>(() => {
@@ -15,6 +15,23 @@ export function useUser() {
     localStorage.setItem('lok-lingu-userid', id.toString());
     localStorage.setItem('lok-lingu-username', name);
   };
+
+  useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'lok-lingu-userid') {
+        setUserId(event.newValue ? parseInt(event.newValue) : null);
+      }
+      if (event.key === 'lok-lingu-username') {
+        setUsername(event.newValue || '');
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
 
   return { userId, username, saveUser };
 }

@@ -64,23 +64,13 @@ export default function Draw() {
   const { theme } = useTheme();
 
   const canvasRef = useRef<DrawCanvasHandle>(null);
-  const livesRef = useRef(3);
-  const countRef = useRef(0);
-  const gameOverRef = useRef(false);
-
-  useEffect(() => {
-    livesRef.current = lives;
-    countRef.current = count;
-    gameOverRef.current = gameOver;
-  }, [lives, count, gameOver]);
 
   const handleSuccess = useCallback(() => {
-    if (status === 'success' || status === 'error') return;
+    // Prevent multiple triggers
+    if (status !== 'idle' || gameOver) return;
     setStatus('success');
 
-    const newCount = countRef.current + 1;
-    countRef.current = newCount;
-    setCount(newCount);
+    setCount((prevCount) => prevCount + 1);
 
     celebration.incrementMatch(language);
 
@@ -94,37 +84,33 @@ export default function Draw() {
       setWordIndex(next);
       setStatus('idle');
     }, 1000);
-  }, [status, wordIndex, words, celebration, language]);
+  }, [status, gameOver, wordIndex, words, celebration, language]);
 
   const handleFailure = useCallback(() => {
-    if (status === 'success' || status === 'error') return;
+    if (status !== 'idle' || gameOver) return;
     setStatus('error');
-    const newLives = livesRef.current - 1;
-    livesRef.current = newLives;
+    const newLives = lives - 1;
     setLives(newLives);
 
     setTimeout(() => {
       if (newLives <= 0) {
-        gameOverRef.current = true;
         setGameOver(true);
         const currentUserId = userId || 1;
         saveLocalScore({
           userId: currentUserId,
           language,
           category,
-          count: countRef.current,
+          count,
         });
         if (userId) {
-          submitScore.mutate({
-            data: { userId, language, category, count: countRef.current, tokensEarned: celebration.tokensEarnedRef.current },
-          });
+          submitScore.mutate({ data: { userId, language, category, count, tokensEarned: celebration.tokensEarnedRef.current } });
         }
       } else {
         if (canvasRef.current) canvasRef.current.clear();
         setStatus('idle');
       }
     }, 600);
-  }, [status, userId, language, category, submitScore, celebration.tokensEarnedRef]);
+  }, [status, gameOver, lives, userId, language, category, count, submitScore, celebration.tokensEarnedRef]);
 
   const handleClear = useCallback(() => {
     if (canvasRef.current) canvasRef.current.clear();
@@ -339,7 +325,6 @@ export default function Draw() {
                     setLives(3);
                     setWordIndex(0);
                     setStatus('idle');
-                    gameOverRef.current = false;
                     setGameOver(false);
                     if (canvasRef.current) canvasRef.current.clear();
                   }}

@@ -32,7 +32,7 @@ export default function Game() {
   const { data: apiWords, isLoading: isLoadingWords, isError: isWordsError } = useGetWords(language, category, {
     query: { enabled: true, queryKey: ['words', language, category] },
   });
-  
+
   const words = apiWords || FALLBACK_WORDS[language]?.[category] || FALLBACK_WORDS['es']['numbers'];
 
   const submitScore = useSubmitScore({
@@ -50,11 +50,7 @@ export default function Game() {
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   const wordsRef = useRef(words);
-  const wordIndexRef = useRef(0);
-  const livesRef = useRef(3);
-  const countRef = useRef(0);
   const statusRef = useRef<'idle' | 'success' | 'error'>('idle');
-  const gameOverRef = useRef(false);
   const userIdRef = useRef(userId);
   const submitRef = useRef(submitScore);
 
@@ -74,53 +70,44 @@ export default function Game() {
   const setSpokenTextRef = useRef<(text: string) => void>(() => {});
 
   const handleSuccess = useCallback(() => {
-    if (statusRef.current !== 'idle') return;
+    if (statusRef.current !== 'idle' || gameOver) return;
     setStatusSync('success');
-    const newCount = countRef.current + 1;
-    countRef.current = newCount;
-    setCount(newCount);
+    setCount((prevCount) => prevCount + 1);
 
     celebration.incrementMatch(language);
 
     setTimeout(() => {
-      if (!wordsRef.current) return;
-      const next = (wordIndexRef.current + 1) % wordsRef.current.length;
-      wordIndexRef.current = next;
-      setWordIndex(next);
+      setWordIndex((prevIndex) => (prevIndex + 1) % wordsRef.current.length);
       setSpokenTextRef.current('');
       setStatusSync('idle');
     }, 400);
   }, [setStatusSync, celebration, language]);
 
   const handleFailure = useCallback(() => {
-    if (statusRef.current !== 'idle') return;
+    if (statusRef.current !== 'idle' || gameOver) return;
     setStatusSync('error');
-    const newLives = livesRef.current - 1;
-    livesRef.current = newLives;
+    const newLives = lives - 1;
     setLives(newLives);
 
     setTimeout(() => {
       if (newLives <= 0) {
-        gameOverRef.current = true;
         setGameOver(true);
         const currentUserId = userIdRef.current || 1;
         saveLocalScore({
           userId: currentUserId,
           language,
           category,
-          count: countRef.current,
+          count,
         });
         if (userIdRef.current) {
-          submitRef.current.mutate({
-            data: { userId: userIdRef.current, language, category, count: countRef.current, tokensEarned: celebration.tokensEarnedRef.current },
-          });
+          submitRef.current.mutate({ data: { userId: userIdRef.current, language, category, count, tokensEarned: celebration.tokensEarnedRef.current } });
         }
       } else {
         setSpokenTextRef.current('');
         setStatusSync('idle');
       }
     }, 600);
-  }, [setStatusSync, language, category, celebration.tokensEarnedRef]);
+  }, [setStatusSync, gameOver, lives, language, category, count, celebration.tokensEarnedRef]);
 
   const currentWord = words[wordIndex];
   const targetWord = currentWord?.word ?? '';
@@ -312,8 +299,7 @@ export default function Game() {
                     setCount(0);
                     setLives(3);
                     setWordIndex(0);
-                    setStatusSync('idle');
-                    gameOverRef.current = false;
+                    setStatus('idle');
                     setGameOver(false);
                   }}
                 >
