@@ -1,12 +1,13 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "corepack": true,
   "installCommand": "pnpm install",
   "builds": [
     {
       "src": "artifacts/lok-lingu/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "outputDirectory": "artifacts/lok-lingu/dist/public"
+        "outputDirectory": "artifacts/lok-lingu/dist"
       }
     }
   ]
