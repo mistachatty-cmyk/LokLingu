@@ -3,14 +3,18 @@ import { useGetUserStats } from '@workspace/api-client-react';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Activity, Flame, Hash, Target, AlertCircle } from 'lucide-react';
+import { Activity, Flame, Hash, Target } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { getLocalUserStats } from '@/lib/offline-data';
 
 export default function Stats() {
   const { userId, username } = useUser();
-  const { data: stats, isLoading, isError } = useGetUserStats(userId!, {
+  const { data: apiStats, isLoading, isError } = useGetUserStats(userId!, {
     query: { enabled: !!userId, queryKey: ['userStats', userId] },
   });
+
+  const localStats = userId ? getLocalUserStats(userId) : null;
+  const stats = apiStats || localStats;
 
   if (!userId) {
     return (
@@ -27,17 +31,7 @@ export default function Stats() {
     );
   }
 
-  if (isError) {
-    return (
-      <div className="p-6 text-center pt-24 text-muted-foreground space-y-4">
-        <AlertCircle className="w-10 h-10 mx-auto text-destructive" />
-        <p>Failed to load stats.</p>
-        <Button variant="outline" onClick={() => window.location.reload()}>Retry</Button>
-      </div>
-    );
-  }
-
-  if (isLoading) {
+  if (isLoading && !localStats) {
     return <div className="p-6 text-center pt-24 text-muted-foreground">Loading stats...</div>;
   }
 

@@ -16,7 +16,7 @@ interface ThemeDef {
   wordGlow?: string;
   subColor: string;
   border: string;
-  tier: 'A' | 'B' | 'C' | 'D' | 'E';
+  tier: 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
 }
 
 const THEMES: ThemeDef[] = [
@@ -459,6 +459,21 @@ const THEMES: ThemeDef[] = [
     wordGlow: undefined,
     subColor: '#8a7e6b',
   },
+  // ── Category F ─────────────────────────────────────
+  {
+    num: 32,
+    id: 'theme-ultimate',
+    tier: 'F',
+    name: 'ULTIMATE',
+    label: 'Liquid Glass',
+    desc: 'Liquid glass · glitch FX · Apple precision · Ultimate tier.',
+    font: "'Major Mono Display', monospace",
+    bg: '#0a0a0f',
+    border: '#00eecc',
+    wordColor: '#00ffdd',
+    wordGlow: '0 0 25px #00ffdd, 0 0 60px #00eecc, 0 0 100px #005555',
+    subColor: 'rgba(0,255,221,0.5)',
+  },
 ];
 
 const TIERS = [
@@ -502,6 +517,14 @@ const TIERS = [
     color: 'text-rose-400',
     locked: false,
   },
+  {
+    tier: 'F' as const,
+    label: 'Category F — Ultimate',
+    sublabel: 'Liquid Glass · Apple Precision',
+    icon: Sparkles,
+    color: 'text-cyan-400',
+    locked: false,
+  },
 ];
 
 function ThemePreview({
@@ -515,7 +538,7 @@ function ThemePreview({
 }) {
   const [hovered, setHovered] = useState(false);
 
-  const tierName = { A: 'General', B: 'Premium', C: 'Ultimate', D: 'Animated', E: 'Lingu' }[t.tier];
+  const tierName = { A: 'General', B: 'Premium', C: 'Ultimate', D: 'Animated', E: 'Lingu', F: 'Ultimate' }[t.tier];
 
   return (
     <motion.div
@@ -617,7 +640,7 @@ export default function Themes() {
       <div className="space-y-1">
         <h1 className="text-3xl font-black tracking-tighter uppercase">Theme Shop</h1>
         <p className="text-muted-foreground text-sm">
-          31 aesthetics · 14 font styles · Your arcade, your look
+          32 aesthetics · 15 font styles · Your arcade, your look
         </p>
       </div>
 
@@ -749,6 +772,7 @@ export default function Themes() {
             { name: 'Unbounded', themes: 'Midnight, Cyberwave', sample: 'Unbounded' },
             { name: 'Noto Sans JP', themes: 'Wabi (ja)', sample: 'Noto Sans JP' },
             { name: 'Barlow Condensed', themes: 'Steel', sample: 'Barlow Condensed' },
+            { name: 'Major Mono Display', themes: 'Ultimate', sample: 'Major Mono Display' },
           ].map((f) => (
             <div key={f.name} className="bg-card border border-border rounded-lg p-2.5">
               <div

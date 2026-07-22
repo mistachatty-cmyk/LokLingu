@@ -54,6 +54,7 @@ export const SubmitScoreBody = zod.object({
   language: zod.string(),
   category: zod.string(),
   count: zod.number().min(submitScoreBodyCountMin),
+  tokensEarned: zod.number().optional(),
 });
 
 export const SubmitScoreResponse = zod.object({

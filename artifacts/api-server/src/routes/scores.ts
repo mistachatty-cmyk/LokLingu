@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { db, scoresTable, usersTable } from '@workspace/db';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, sql } from 'drizzle-orm';
 import { SubmitScoreBody, GetUserScoresParams } from '@workspace/api-zod';
 
 const router = Router();
@@ -13,7 +13,7 @@ router.post('/scores', async (req, res) => {
     return;
   }
 
-  const { userId, language, category, count } = parsed.data;
+  const { userId, language, category, count, tokensEarned } = parsed.data;
 
   // Verify user exists
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
@@ -21,6 +21,14 @@ router.post('/scores', async (req, res) => {
   if (!user) {
     res.status(404).json({ error: 'User not found' });
     return;
+  }
+
+  // Add tokens if provided
+  if (tokensEarned && tokensEarned > 0) {
+    await db
+      .update(usersTable)
+      .set({ tokenBalance: sql`${usersTable.tokenBalance} + ${tokensEarned}` })
+      .where(eq(usersTable.id, userId));
   }
 
   const [score] = await db

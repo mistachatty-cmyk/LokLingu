@@ -2,6 +2,7 @@ import express, { type Express, type Request, type Response, type NextFunction }
 import cors from 'cors';
 import helmet from 'helmet';
 import pinoHttp from 'pino-http';
+import type { IncomingMessage } from 'node:http';
 import router from './routes';
 import { logger } from './lib/logger';
 
@@ -12,14 +13,14 @@ app.use(
   pinoHttp({
     logger,
     serializers: {
-      req(req) {
+      req(req: IncomingMessage & { id: unknown; url?: string }) {
         return {
           id: req.id,
           method: req.method,
           url: req.url?.split('?')[0],
         };
       },
-      res(res) {
+      res(res: { statusCode: number }) {
         return {
           statusCode: res.statusCode,
         };

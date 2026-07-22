@@ -12,7 +12,6 @@ function resample(points: Point[], n: number): Point[] {
   const step = totalLength / (n - 1);
   const resampled: Point[] = [points[0]];
   let accumulated = 0;
-  let j = 1;
 
   for (let i = 1; i < points.length && resampled.length < n; i++) {
     const d = distance(points[i - 1], points[i]);

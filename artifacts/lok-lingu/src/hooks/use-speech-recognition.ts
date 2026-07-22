@@ -67,6 +67,10 @@ export function useSpeechRecognition(
   const [status, setStatus] = useState<SpeechStatus>('idle');
   const [spokenText, setSpokenText] = useState('');
   const [isListening, setIsListening] = useState(false);
+  const [isUnsupported] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return !window.SpeechRecognition && !window.webkitSpeechRecognition;
+  });
 
   const statusRef = useRef<SpeechStatus>('idle');
   const setStatusSync = useCallback((s: SpeechStatus) => {
@@ -85,7 +89,7 @@ export function useSpeechRecognition(
   const healthCheckRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastActivityRef = useRef(Date.now());
 
-  const createRecognition = useCallback(() => {
+  const createRecognition = useCallback((userInitiated: boolean) => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) return null;
 
@@ -104,7 +108,7 @@ export function useSpeechRecognition(
         setTimeout(() => {
           if (activeRef.current) {
             try {
-              const newRec = createRecognition();
+              const newRec = createRecognition(false);
               if (newRec) {
                 recognitionRef.current = newRec;
                 newRec.start();
@@ -124,12 +128,14 @@ export function useSpeechRecognition(
     recognition.onerror = (e: SpeechRecognitionErrorEvent) => {
       lastActivityRef.current = Date.now();
       if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-        activeRef.current = false;
-        setIsListening(false);
-        if (healthCheckRef.current) {
-          clearInterval(healthCheckRef.current);
-          healthCheckRef.current = null;
+        if (userInitiated) {
+          activeRef.current = false;
+          if (healthCheckRef.current) {
+            clearInterval(healthCheckRef.current);
+            healthCheckRef.current = null;
+          }
         }
+        setIsListening(false);
       }
     };
 
@@ -167,7 +173,7 @@ export function useSpeechRecognition(
       if (recognitionRef.current) {
         try { recognitionRef.current.stop(); } catch { /* ignore */ }
       }
-      const newRec = createRecognition();
+      const newRec = createRecognition(true);
       if (newRec) {
         recognitionRef.current = newRec;
         newRec.start();
@@ -201,7 +207,7 @@ export function useSpeechRecognition(
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) return;
 
-    const rec = createRecognition();
+    const rec = createRecognition(false);
     if (rec) {
       recognitionRef.current = rec;
       try {
@@ -217,7 +223,7 @@ export function useSpeechRecognition(
           if (recognitionRef.current) {
             try { recognitionRef.current.stop(); } catch { /* ignore */ }
           }
-          const newRec = createRecognition();
+          const newRec = createRecognition(false);
           if (newRec) {
             recognitionRef.current = newRec;
             newRec.start();
@@ -246,6 +252,7 @@ export function useSpeechRecognition(
   return {
     status,
     isListening,
+    isUnsupported,
     spokenText,
     setSpokenText,
     setStatusSync,

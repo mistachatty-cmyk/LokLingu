@@ -12,6 +12,10 @@ import Draw from './pages/draw';
 import Leaderboard from './pages/leaderboard';
 import Stats from './pages/stats';
 import Themes from './pages/themes';
+import Celebrations from './pages/celebrations';
+import Explore from './pages/explore';
+import { LiquidGlassCursor } from '@/components/liquid-glass-cursor';
+import { useCursorCosmetics } from '@/hooks/use-cursor-cosmetics';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,6 +28,7 @@ const queryClient = new QueryClient({
 });
 
 function Router() {
+  const { glassId, trailId, isActive } = useCursorCosmetics();
   return (
     <Layout>
       <Switch>
@@ -33,8 +38,11 @@ function Router() {
         <Route path="/leaderboard" component={Leaderboard} />
         <Route path="/stats" component={Stats} />
         <Route path="/themes" component={Themes} />
+        <Route path="/celebrations" component={Celebrations} />
+        <Route path="/explore" component={Explore} />
         <Route component={NotFound} />
       </Switch>
+      <LiquidGlassCursor glassId={glassId} trailId={trailId} isActive={isActive} />
     </Layout>
   );
 }

@@ -4,9 +4,19 @@ import { useGetWords, useSubmitScore } from '@workspace/api-client-react';
 import { useUser } from '../hooks/use-user';
 import { useToast } from '../hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, RotateCcw, Home, Check, Eraser, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Heart, RotateCcw, Home, Check, Eraser, Eye, EyeOff, AlertCircle, Timer, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { DrawCanvas, type DrawCanvasHandle } from '@/components/draw-canvas';
+import { useCelebration } from '@/hooks/use-celebration';
+import { useCelebrationSound } from '@/hooks/use-celebration-sound';
+import { CelebrationEffect } from '@/components/celebration-effect';
+import { GlitchText } from '@/components/glitch-text';
+import { useTheme } from '@/hooks/use-theme';
 
 const INK_COLORS = [
   { label: 'Primary', value: 'hsl(var(--primary))' },
@@ -17,6 +27,8 @@ const INK_COLORS = [
   { label: 'Charcoal', value: 'hsl(220 10% 30%)' },
 ];
 
+import { FALLBACK_WORDS, saveLocalScore } from '@/lib/offline-data';
+
 export default function Draw() {
   const [, setLocation] = useLocation();
   const { userId } = useUser();
@@ -25,12 +37,17 @@ export default function Draw() {
   const language = localStorage.getItem('lok-lingu-lang') || 'es';
   const category = localStorage.getItem('lok-lingu-cat') || 'numbers';
 
-  const { data: words, isLoading: isLoadingWords, isError: isWordsError } = useGetWords(language, category, {
+  const { data: apiWords, isLoading: isLoadingWords, isError: isWordsError } = useGetWords(language, category, {
     query: { enabled: true, queryKey: ['words', language, category] },
   });
+
+  const words = apiWords || FALLBACK_WORDS[language]?.[category] || FALLBACK_WORDS['es']['numbers'];
+
   const submitScore = useSubmitScore({
     mutation: {
-      onError: () => toast({ title: 'Failed to submit score', variant: 'destructive' }),
+      onError: () => {
+        // Silently handled by local score saving
+      },
     },
   });
 
@@ -41,6 +58,10 @@ export default function Draw() {
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [inkColor, setInkColor] = useState(INK_COLORS[0].value);
   const [showGuide, setShowGuide] = useState(true);
+
+  const celebration = useCelebration();
+  const sound = useCelebrationSound();
+  const { theme } = useTheme();
 
   const canvasRef = useRef<DrawCanvasHandle>(null);
   const livesRef = useRef(3);
@@ -61,6 +82,8 @@ export default function Draw() {
     countRef.current = newCount;
     setCount(newCount);
 
+    celebration.incrementMatch(language);
+
     if (canvasRef.current) {
       canvasRef.current.fadeOut(900);
     }
@@ -71,7 +94,7 @@ export default function Draw() {
       setWordIndex(next);
       setStatus('idle');
     }, 1000);
-  }, [status, wordIndex, words]);
+  }, [status, wordIndex, words, celebration, language]);
 
   const handleFailure = useCallback(() => {
     if (status === 'success' || status === 'error') return;
@@ -84,9 +107,16 @@ export default function Draw() {
       if (newLives <= 0) {
         gameOverRef.current = true;
         setGameOver(true);
+        const currentUserId = userId || 1;
+        saveLocalScore({
+          userId: currentUserId,
+          language,
+          category,
+          count: countRef.current,
+        });
         if (userId) {
           submitScore.mutate({
-            data: { userId, language, category, count: countRef.current },
+            data: { userId, language, category, count: countRef.current, tokensEarned: celebration.tokensEarnedRef.current },
           });
         }
       } else {
@@ -94,7 +124,7 @@ export default function Draw() {
         setStatus('idle');
       }
     }, 600);
-  }, [status, userId, language, category, submitScore]);
+  }, [status, userId, language, category, submitScore, celebration.tokensEarnedRef]);
 
   const handleClear = useCallback(() => {
     if (canvasRef.current) canvasRef.current.clear();
@@ -141,24 +171,53 @@ export default function Draw() {
 
   return (
     <div className="relative min-h-screen w-full bg-background overflow-hidden flex flex-col select-none">
+      {celebration.milestone && (
+        <CelebrationEffect
+          celebration={celebration.milestone.celebration}
+          intensity={celebration.milestone.intensity}
+          onComplete={() => celebration.clearMilestone()}
+        />
+      )}
+
       <div className="absolute top-0 left-0 w-full px-6 pt-6 flex justify-between items-start z-10">
-        <div className="flex space-x-2">
-          {[0, 1, 2].map((i) => (
-            <Heart
-              key={i}
-              className={`w-8 h-8 transition-all duration-300 ${
-                i < lives ? 'text-destructive fill-destructive' : 'opacity-20 text-muted-foreground'
-              }`}
-            />
-          ))}
+        <div className="flex flex-col gap-1">
+          <div className="flex space-x-2">
+            {[0, 1, 2].map((i) => (
+              <Heart
+                key={i}
+                className={`w-8 h-8 transition-all duration-300 ${
+                  i < lives ? 'text-destructive fill-destructive' : 'opacity-20 text-muted-foreground'
+                }`}
+              />
+            ))}
+          </div>
+          <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/60">
+            {language.toUpperCase()} · {celebration.lifetimeWords(language).toLocaleString()}
+          </span>
         </div>
-        <div className="text-right">
-          <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">Streak</div>
-          <div
-            className="game-word text-5xl font-black leading-none word-glow"
-            style={{ color: 'var(--word-color)' }}
-          >
-            {count}
+        <div className="flex items-start gap-3">
+          <div className="text-right">
+            <div className="flex items-center justify-end gap-2">
+              <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Streak</span>
+              {celebration.boostActive && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="flex items-center gap-1 text-[10px] font-black text-orange-400 bg-orange-400/10 px-1.5 py-0.5 rounded-full animate-pulse">
+                      <Sparkles className="w-3 h-3" /> 2x
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="left">
+                    <p className="text-xs">2x Tokens Active! Congratulations on 100 streak!</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
+            <div
+              className="game-word text-5xl font-black leading-none word-glow"
+              style={{ color: 'var(--word-color)' }}
+            >
+              {count}
+            </div>
           </div>
         </div>
       </div>
@@ -178,14 +237,25 @@ export default function Draw() {
                   status === 'error' ? 'animate-[shake_0.3s_ease-in-out]' : ''
                 }`}
               >
-                <h1
-                  className={`game-word text-3xl font-black capitalize ${
-                    status === 'error' ? 'neon-text-glow-destructive text-destructive' : 'word-glow'
-                  }`}
-                  style={{ color: status === 'error' ? undefined : 'var(--word-color)' }}
-                >
-                  {currentWord.word}
-                </h1>
+                {theme === 'theme-ultimate' && status === 'idle' ? (
+                  <GlitchText
+                    text={currentWord.word}
+                    as="h1"
+                    className="game-word text-3xl font-black capitalize word-glow"
+                    delay={0}
+                    interval={50}
+                    glitchDuration={80}
+                  />
+                ) : (
+                  <h1
+                    className={`game-word text-3xl font-black capitalize ${
+                      status === 'error' ? 'neon-text-glow-destructive text-destructive' : 'word-glow'
+                    }`}
+                    style={{ color: status === 'error' ? undefined : 'var(--word-color)' }}
+                  >
+                    {currentWord.word}
+                  </h1>
+                )}
                 <p className="text-sm text-muted-foreground font-serif italic">{currentWord.translation}</p>
               </div>
 
@@ -264,6 +334,7 @@ export default function Draw() {
                   size="lg"
                   className="w-full h-14 text-lg font-bold uppercase tracking-widest"
                   onClick={() => {
+                    celebration.resetMatch();
                     setCount(0);
                     setLives(3);
                     setWordIndex(0);
@@ -288,6 +359,23 @@ export default function Draw() {
           )}
         </AnimatePresence>
       </div>
+
+      {celebration.boostActive && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="absolute bottom-4 right-4 z-20 flex items-center gap-2 bg-orange-400/15 border border-orange-400/30 rounded-full px-3 py-1.5 backdrop-blur-sm cursor-help">
+              <Timer className="w-3.5 h-3.5 text-orange-400" />
+              <span className="text-xs font-mono font-bold text-orange-400 tabular-nums">
+                {Math.floor(celebration.boostTimeLeft / 60)}:{(celebration.boostTimeLeft % 60).toString().padStart(2, '0')}
+              </span>
+              <span className="text-[9px] font-black text-orange-400 uppercase tracking-widest">2x</span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="left">
+            <p className="text-xs">2x Token Boost! 4 tokens per word. Keep going!</p>
+          </TooltipContent>
+        </Tooltip>
+      )}
     </div>
   );
 }

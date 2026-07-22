@@ -16,15 +16,19 @@ import { Card, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { useTheme } from '../hooks/use-theme';
 
+import { FALLBACK_LANGUAGES, getLocalScores } from '@/lib/offline-data';
+
 export default function Leaderboard() {
   const [language, setLanguage] = useState<string>('all');
   const [category, setCategory] = useState<string>('all');
   const { theme } = useTheme();
 
-  const { data: summary, isError: isSummaryError } = useGetLeaderboardSummary();
-  const { data: languagesData, isError: isLangError } = useGetLanguages();
+  const { data: apiSummary, isError: isSummaryError } = useGetLeaderboardSummary();
+  const { data: apiLanguagesData, isError: isLangError } = useGetLanguages();
 
-  const { data: leaderboard, isLoading, isError: isLeaderboardError } = useGetLeaderboard(
+  const languagesData = apiLanguagesData || FALLBACK_LANGUAGES;
+
+  const { data: apiLeaderboard, isLoading, isError: isLeaderboardError } = useGetLeaderboard(
     {
       language: language !== 'all' ? language : undefined,
       category: category !== 'all' ? category : undefined,
@@ -36,6 +40,38 @@ export default function Leaderboard() {
       },
     },
   );
+
+  // Compute local fallback leaderboard if API leaderboard is unavailable
+  const localScores = getLocalScores();
+  const filteredLocalScores = localScores.filter((s) => {
+    if (language !== 'all' && s.language !== language) return false;
+    if (category !== 'all' && s.category !== category) return false;
+    return true;
+  });
+
+  const localLeaderboard = filteredLocalScores
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 50)
+    .map((s, idx) => ({
+      rank: idx + 1,
+      userId: s.userId,
+      username: localStorage.getItem('lok-lingu-username') || 'Local Player',
+      count: s.count,
+      language: s.language,
+      category: s.category,
+      createdAt: s.createdAt,
+    }));
+
+  const leaderboard = apiLeaderboard || (localLeaderboard.length > 0 ? localLeaderboard : undefined);
+
+  const localSummary = {
+    totalPlayers: 1,
+    totalGames: localScores.length,
+    allTimeHighCount: localScores.length > 0 ? Math.max(...localScores.map((s) => s.count)) : 0,
+    topPlayer: localStorage.getItem('lok-lingu-username') || 'Local Player',
+  };
+
+  const summary = apiSummary || localSummary;
 
   const categories =
     language !== 'all'

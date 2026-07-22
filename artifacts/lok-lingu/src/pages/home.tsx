@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { useLocation } from 'wouter';
 import { useCreateUser, useGetLanguages } from '@workspace/api-client-react';
 import { useUser } from '../hooks/use-user';
@@ -16,10 +16,17 @@ import {
   Check,
   Mic,
   Pencil,
+  AlertTriangle,
+  Sparkles,
+  Globe,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { motion, AnimatePresence } from 'framer-motion';
+import { GlitchText } from '@/components/glitch-text';
+
+import { FALLBACK_LANGUAGES } from '@/lib/offline-data';
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -35,20 +42,18 @@ export default function Home() {
   const [mode, setMode] = useState<'voice' | 'draw'>(
     () => (localStorage.getItem('lok-lingu-mode') as 'voice' | 'draw') || 'voice',
   );
+  const [experimentalMap, setExperimentalMap] = useState(
+    () => localStorage.getItem('lok-lingu-experimental-map') === 'true',
+  );
   const [showOptions, setShowOptions] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const usernameInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: languagesData, isLoading: isLoadingLanguages, isError: isLangError } = useGetLanguages();
-  const createUser = useCreateUser({
-    mutation: {
-      onError: () => {
-        toast({ title: 'Failed to save profile', description: 'Check your connection and try again.', variant: 'destructive' });
-      },
-    },
-  });
+  const { data: apiLanguagesData, isLoading: isLoadingLanguages, isError: isLangError } = useGetLanguages();
+  const languagesData = apiLanguagesData || FALLBACK_LANGUAGES;
+  const createUser = useCreateUser();
 
-  const selectedLang = languagesData?.find((l) => l.code === language);
+  const selectedLang = languagesData.find((l) => l.code === language);
   const categories = selectedLang?.categories ?? ['numbers'];
 
   useEffect(() => {
@@ -56,6 +61,11 @@ export default function Home() {
       setCategory(categories[0]);
     }
   }, [categories, category]);
+
+  const speechUnsupported = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    return !window.SpeechRecognition && !window.webkitSpeechRecognition;
+  }, []);
 
   const displayName = localUsername.trim() || 'Guest';
   // Themes that have dark backgrounds and use glow effects
@@ -76,11 +86,23 @@ export default function Home() {
     localStorage.setItem('lok-lingu-lang', language);
     localStorage.setItem('lok-lingu-cat', category);
     localStorage.setItem('lok-lingu-mode', mode);
+
+    const nameToSave = localUsername.trim();
     createUser.mutate(
-      { data: { username: localUsername.trim() } },
+      { data: { username: nameToSave } },
       {
         onSuccess: (user) => {
           saveUser(user.id, user.username);
+          setLocation(mode === 'voice' ? '/game' : '/draw');
+        },
+        onError: () => {
+          // Fallback for Vercel/offline mode when backend API is unavailable
+          const localId = userId || Math.floor(Math.random() * 899999) + 100000;
+          saveUser(localId, nameToSave);
+          toast({
+            title: 'Profile Saved (Local)',
+            description: `Playing as ${nameToSave} in offline mode.`,
+          });
           setLocation(mode === 'voice' ? '/game' : '/draw');
         },
       },
@@ -185,6 +207,19 @@ export default function Home() {
                     <span className="text-xs text-muted-foreground font-mono uppercase tracking-wider">
                       {theme.replace('theme-', '')}
                     </span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowProfile(false);
+                      setLocation('/celebrations');
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg border border-border hover:border-primary/40 hover:bg-accent transition-all text-left"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <Sparkles className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">Celebrations</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground font-mono">🎉</span>
                   </button>
                 </div>
 
@@ -305,12 +340,23 @@ export default function Home() {
               L
             </span>
           </div>
-          <h1
-            className={`text-5xl font-black tracking-tighter uppercase ${isNeon ? 'word-glow' : ''}`}
-            style={{ fontFamily: 'var(--word-font)' }}
-          >
-            LOK LINGU
-          </h1>
+          {theme === 'theme-ultimate' ? (
+            <GlitchText
+              text="LOK LINGU"
+              as="h1"
+              className="text-5xl font-black tracking-tighter uppercase word-glow"
+              delay={300}
+              interval={60}
+              glitchDuration={100}
+            />
+          ) : (
+            <h1
+              className={`text-5xl font-black tracking-tighter uppercase ${isNeon ? 'word-glow' : ''}`}
+              style={{ fontFamily: 'var(--word-font)' }}
+            >
+              LOK LINGU
+            </h1>
+          )}
           {isLangError && (
             <p className="text-[10px] text-destructive font-mono uppercase tracking-widest">
               Could not load languages. Check connection.
@@ -449,10 +495,50 @@ export default function Home() {
                         >
                           {m === 'voice' ? <Mic className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
                           {m}
+                          {m === 'voice' && speechUnsupported && (
+                            <AlertTriangle className="w-3 h-3 text-destructive" />
+                          )}
                         </button>
                       ))}
                     </div>
+                    {mode === 'voice' && speechUnsupported && (
+                      <p className="text-[10px] text-destructive font-mono">
+                        Not supported in this browser. Try Chrome, Edge, or Safari.
+                      </p>
+                    )}
                   </div>
+
+                  {/* Experimental World Map */}
+                  <div className="flex items-center justify-between px-1">
+                    <div className="flex items-center space-x-2">
+                      <Globe className="w-4 h-4 text-muted-foreground" />
+                      <div>
+                        <span className="text-sm font-medium">World Map</span>
+                        <span className="text-[9px] text-muted-foreground font-mono ml-1.5 uppercase tracking-wider">
+                          Experimental
+                        </span>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={experimentalMap}
+                      onCheckedChange={(v) => {
+                        setExperimentalMap(v);
+                        localStorage.setItem('lok-lingu-experimental-map', String(v));
+                      }}
+                    />
+                  </div>
+
+                  {/* Celebrations link */}
+                  <button
+                    onClick={() => setLocation('/celebrations')}
+                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg border border-border hover:border-primary/40 hover:bg-accent transition-all text-left"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <Sparkles className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">Celebrations</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground font-mono uppercase tracking-wider">🎉</span>
+                  </button>
                 </div>
               </motion.div>
             )}

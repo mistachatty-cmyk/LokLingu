@@ -30,6 +30,7 @@ export interface ScoreInput {
   category: string;
   /** @minimum 0 */
   count: number;
+  tokensEarned?: number;
 }
 
 export interface Score {

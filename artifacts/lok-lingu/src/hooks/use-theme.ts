@@ -36,7 +36,9 @@ export type Theme =
   | 'theme-embers'
   // Category E – Lingu Tier
   | 'theme-flamenco'
-  | 'theme-wabi';
+  | 'theme-wabi'
+  // Category F – Ultimate
+  | 'theme-ultimate';
 
 export const ALL_THEMES = [
   'theme-neon',
@@ -70,6 +72,7 @@ export const ALL_THEMES = [
   'theme-embers',
   'theme-flamenco',
   'theme-wabi',
+  'theme-ultimate',
 ] as const;
 
 export function useTheme() {
