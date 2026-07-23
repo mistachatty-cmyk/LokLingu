@@ -65,8 +65,8 @@ export function ChoroplethMap({
 
   const getCountryColor = useCallback((countryCode: string): string => {
     const lang = getLanguageForCountry(countryCode);
-    if (!lang) return 'hsl(var(--muted))';
-    if (supportedLanguages && !supportedLanguages.includes(lang)) return 'hsl(var(--muted))';
+    if (!lang) return 'var(--map-land, hsl(var(--muted)))';
+    if (supportedLanguages && !supportedLanguages.includes(lang)) return 'var(--map-land, hsl(var(--muted)))';
     const lc = getLanguageCountry(lang);
     if (lc && lc.code === selectedLanguage) return 'hsl(var(--primary))';
     if (lc) return lc.color;
@@ -100,8 +100,8 @@ export function ChoroplethMap({
       >
         <defs>
           <radialGradient id="ocean-grad" cx="50%" cy="40%" r="60%">
-            <stop offset="0%" stopColor="hsl(var(--primary) / 0.08)" />
-            <stop offset="100%" stopColor="hsl(var(--muted) / 0.15)" />
+            <stop offset="0%" stopColor="var(--map-ocean, hsl(var(--primary) / 0.08))" />
+            <stop offset="100%" stopColor="var(--map-ocean, hsl(var(--muted) / 0.15))" />
           </radialGradient>
         </defs>
         <rect width={width} height={height} fill="url(#ocean-grad)" rx={12} />
@@ -120,7 +120,7 @@ export function ChoroplethMap({
                 ? 'hsl(var(--primary))'
                 : lang === selectedLanguage
                   ? 'hsl(var(--primary) / 0.6)'
-                  : 'hsl(var(--background))'
+                  : 'var(--map-country-border, hsl(var(--background)))'
               }
               strokeWidth={isHovered ? 1.5 : 0.5}
               opacity={isSupported ? (isHovered ? 1 : 0.85) : (isHovered ? 0.6 : 0.3)}

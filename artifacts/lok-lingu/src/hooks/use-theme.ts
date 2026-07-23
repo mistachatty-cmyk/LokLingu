@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 export type Theme =
   // Category A – General
+  | 'theme-baskin'
   | 'theme-neon'
   | 'theme-void'
   | 'theme-matrix'
@@ -41,6 +42,7 @@ export type Theme =
   | 'theme-ultimate';
 
 export const ALL_THEMES = [
+  'theme-baskin',
   'theme-neon',
   'theme-void',
   'theme-matrix',
@@ -77,7 +79,7 @@ export const ALL_THEMES = [
 
 export function useTheme() {
   const [theme, setThemeState] = useState<Theme>(() => {
-    return (localStorage.getItem('lok-lingu-theme') as Theme) || 'theme-neon';
+    return (localStorage.getItem('lok-lingu-theme') as Theme) || 'theme-baskin';
   });
 
   const setTheme = (t: Theme) => {

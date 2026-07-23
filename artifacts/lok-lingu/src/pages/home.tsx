@@ -19,12 +19,14 @@ import {
   AlertTriangle,
   Sparkles,
   Globe,
+  Backpack,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlitchText } from '@/components/glitch-text';
+import { FontPicker } from '@/components/font-picker';
 
 import { normalizeLanguagesData } from '@/lib/offline-data';
 
@@ -45,8 +47,12 @@ export default function Home() {
   const [experimentalMap, setExperimentalMap] = useState(
     () => localStorage.getItem('lok-lingu-experimental-map') === 'true',
   );
+  const [navStyle, setNavStyle] = useState<'classic' | 'morphic'>(
+    () => (localStorage.getItem('lok-lingu-nav-style') as 'classic' | 'morphic') || 'classic',
+  );
   const [showOptions, setShowOptions] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [showFonts, setShowFonts] = useState(false);
   const usernameInputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -192,11 +198,26 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Appearance */}
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    Appearance
-                  </label>
+                  {/* Inventory */}
+                  <button
+                    onClick={() => {
+                      setShowProfile(false);
+                      setLocation('/inventory');
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg border border-border hover:border-primary/40 hover:bg-accent transition-all text-left"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <Backpack className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">Inventory</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground font-mono">Items</span>
+                  </button>
+
+                  {/* Appearance */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Appearance
+                    </label>
                   <button
                     onClick={() => {
                       setShowProfile(false);
@@ -534,6 +555,45 @@ export default function Home() {
                         localStorage.setItem('lok-lingu-experimental-map', String(v));
                       }}
                     />
+                  </div>
+
+                  {/* Nav Style */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Navigation
+                    </label>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {(['classic', 'morphic'] as const).map((n) => (
+                        <button
+                          key={n}
+                          onClick={() => {
+                            setNavStyle(n);
+                            localStorage.setItem('lok-lingu-nav-style', n);
+                          }}
+                          className={`px-3 py-2 rounded-lg border text-sm font-bold capitalize transition-all ${
+                            navStyle === n
+                              ? 'border-primary bg-primary/15 text-primary'
+                              : 'border-border hover:border-primary/30 text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          {n === 'classic' ? 'Bottom Tabs' : 'Morphic Pill'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Font Picker toggle */}
+                  <div className="space-y-1.5">
+                    <button
+                      onClick={() => setShowFonts(!showFonts)}
+                      className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg border border-border hover:border-primary/40 hover:bg-accent transition-all text-left"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm font-medium">Font Overrides</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">{showFonts ? '▲' : '▼'}</span>
+                    </button>
+                    {showFonts && <FontPicker />}
                   </div>
 
                   {/* Celebrations link */}

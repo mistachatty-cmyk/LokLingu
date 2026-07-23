@@ -56,6 +56,18 @@ const LANG_MAP: Record<string, string> = {
   it: 'it-IT',
   de: 'de-DE',
   ja: 'ja-JP',
+  pt: 'pt-BR',
+  zh: 'zh-CN',
+  ko: 'ko-KR',
+  ru: 'ru-RU',
+  ar: 'ar-SA',
+  hi: 'hi-IN',
+  nl: 'nl-NL',
+  pl: 'pl-PL',
+  sv: 'sv-SE',
+  tr: 'tr-TR',
+  th: 'th-TH',
+  vi: 'vi-VN',
 };
 
 export function useSpeechRecognition(
@@ -71,6 +83,9 @@ export function useSpeechRecognition(
     if (typeof window === 'undefined') return false;
     return !window.SpeechRecognition && !window.webkitSpeechRecognition;
   });
+  const [voiceMode, setVoiceMode] = useState<'continuous' | 'push-to-talk'>(
+    () => (localStorage.getItem('lok-lingu-voice-mode') as 'continuous' | 'push-to-talk') || 'continuous',
+  );
 
   const statusRef = useRef<SpeechStatus>('idle');
   const setStatusSync = useCallback((s: SpeechStatus) => {
@@ -215,10 +230,12 @@ export function useSpeechRecognition(
       } catch { /* will be handled by health check */ }
     }
 
+    if (voiceMode === 'push-to-talk') return;
+
     healthCheckRef.current = setInterval(() => {
       if (!activeRef.current) return;
       const elapsed = Date.now() - lastActivityRef.current;
-      if (elapsed > 4000) {
+      if (elapsed > 6000) {
         try {
           if (recognitionRef.current) {
             try { recognitionRef.current.stop(); } catch { /* ignore */ }
@@ -247,7 +264,7 @@ export function useSpeechRecognition(
       recognitionRef.current = null;
       setIsListening(false);
     };
-  }, [language, enabled, createRecognition, stopListening, setStatusSync]);
+  }, [language, enabled, voiceMode, createRecognition, stopListening, setStatusSync]);
 
   return {
     status,
@@ -258,5 +275,7 @@ export function useSpeechRecognition(
     setStatusSync,
     startListening,
     stopListening,
+    voiceMode,
+    setVoiceMode,
   };
 }

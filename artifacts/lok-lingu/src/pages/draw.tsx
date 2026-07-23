@@ -4,7 +4,7 @@ import { useGetWords, useSubmitScore } from '@workspace/api-client-react';
 import { useUser } from '../hooks/use-user';
 import { useToast } from '../hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, RotateCcw, Home, Check, Eraser, Eye, EyeOff, AlertCircle, Timer, Sparkles } from 'lucide-react';
+import { Heart, RotateCcw, Home, Check, Eraser, Eye, EyeOff, AlertCircle, Timer, Sparkles, Volume2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
@@ -15,6 +15,7 @@ import { DrawCanvas, type DrawCanvasHandle } from '@/components/draw-canvas';
 import { useCelebration } from '@/hooks/use-celebration';
 import { useCelebrationSound } from '@/hooks/use-celebration-sound';
 import { CelebrationEffect } from '@/components/celebration-effect';
+import { WordPop } from '@/components/word-pop';
 import { GlitchText } from '@/components/glitch-text';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -28,6 +29,7 @@ const INK_COLORS = [
 ];
 
 import { FALLBACK_WORDS, saveLocalScore } from '@/lib/offline-data';
+import { speakWord } from '@/lib/speech-utils';
 
 export default function Draw() {
   const [, setLocation] = useLocation();
@@ -58,6 +60,7 @@ export default function Draw() {
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [inkColor, setInkColor] = useState(INK_COLORS[0].value);
   const [showGuide, setShowGuide] = useState(true);
+  const [wordPopActive, setWordPopActive] = useState(false);
 
   const celebration = useCelebration();
   const sound = useCelebrationSound();
@@ -66,9 +69,9 @@ export default function Draw() {
   const canvasRef = useRef<DrawCanvasHandle>(null);
 
   const handleSuccess = useCallback(() => {
-    // Prevent multiple triggers
     if (status !== 'idle' || gameOver) return;
     setStatus('success');
+    setWordPopActive(true);
 
     setCount((prevCount) => prevCount + 1);
 
@@ -157,6 +160,10 @@ export default function Draw() {
 
   return (
     <div className="relative min-h-screen w-full bg-background overflow-hidden flex flex-col select-none">
+      {wordPopActive && (
+        <WordPop onComplete={() => setWordPopActive(false)} />
+      )}
+
       {celebration.milestone && (
         <CelebrationEffect
           celebration={celebration.milestone.celebration}
@@ -273,6 +280,14 @@ export default function Draw() {
               </div>
 
               <div className="flex items-center justify-center gap-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => currentWord && speakWord(currentWord.word, language)}
+                  className="gap-2"
+                >
+                  <Volume2 className="w-4 h-4" />
+                </Button>
                 <Button variant="outline" size="sm" onClick={() => setShowGuide(!showGuide)} className="gap-2">
                   {showGuide ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   Guide

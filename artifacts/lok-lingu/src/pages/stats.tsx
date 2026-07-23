@@ -3,9 +3,11 @@ import { useGetUserStats } from '@workspace/api-client-react';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Activity, Flame, Hash, Target } from 'lucide-react';
+import { Activity, Flame, Hash, Target, Globe, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getLocalUserStats } from '@/lib/offline-data';
+import { ProgressPie } from '@/components/progress-pie';
+import { LANGUAGE_COUNTRIES } from '@/data/language-countries';
 
 export default function Stats() {
   const { userId, username } = useUser();
@@ -72,6 +74,38 @@ export default function Stats() {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Lifetime words pie chart */}
+      <div className="pt-4 space-y-3">
+        <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+          <Globe className="w-4 h-4" />
+          Words by Language
+        </h3>
+        <div className="bg-card border border-border rounded-xl p-6">
+          <ProgressPie
+            data={(() => {
+              const lifetimeData: Record<string, number> = {};
+              for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key?.startsWith('lok-lingu-lifetime-')) {
+                  const lang = key.replace('lok-lingu-lifetime-', '');
+                  const val = parseInt(localStorage.getItem(key) || '0');
+                  if (val > 0) lifetimeData[lang] = val;
+                }
+              }
+              return Object.entries(lifetimeData).map(([code, value]) => {
+                const lc = LANGUAGE_COUNTRIES.find(l => l.code === code);
+                return {
+                  label: lc?.name || code.toUpperCase(),
+                  value,
+                  color: lc?.color || 'hsl(var(--primary))',
+                };
+              });
+            })()}
+            size={240}
+          />
+        </div>
       </div>
 
       {stats?.personalBests && stats.personalBests.length > 0 && (

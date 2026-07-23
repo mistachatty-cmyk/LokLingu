@@ -1,3 +1,34 @@
+const TTS_LANG_MAP: Record<string, string> = {
+  es: 'es-ES',
+  fr: 'fr-FR',
+  it: 'it-IT',
+  de: 'de-DE',
+  ja: 'ja-JP',
+  pt: 'pt-BR',
+  zh: 'zh-CN',
+  ko: 'ko-KR',
+  ru: 'ru-RU',
+  ar: 'ar-SA',
+  hi: 'hi-IN',
+  nl: 'nl-NL',
+  pl: 'pl-PL',
+  sv: 'sv-SE',
+  tr: 'tr-TR',
+  th: 'th-TH',
+  vi: 'vi-VN',
+};
+
+export function speakWord(word: string, language: string): void {
+  if (typeof window === 'undefined' || !window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(word);
+  utterance.lang = TTS_LANG_MAP[language] || language;
+  utterance.rate = 0.85;
+  utterance.pitch = 1;
+  utterance.volume = 1;
+  window.speechSynthesis.speak(utterance);
+}
+
 export function stripAccents(str: string): string {
   return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }

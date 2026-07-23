@@ -1,5 +1,6 @@
 import { useLocation } from 'wouter';
 import { MorphicNavbar } from './morphic-navbar';
+import { ClassicNavbar } from './classic-navbar';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -8,10 +9,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
+  const navStyle = localStorage.getItem('lok-lingu-nav-style') || 'classic';
+
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background text-foreground font-sans">
       <main className="flex-1 w-full max-w-screen-md mx-auto overflow-y-auto">{children}</main>
-      <MorphicNavbar />
+      {navStyle === 'classic' ? <ClassicNavbar /> : <MorphicNavbar />}
     </div>
   );
 }

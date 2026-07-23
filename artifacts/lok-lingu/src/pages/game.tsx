@@ -5,7 +5,7 @@ import { useUser } from '../hooks/use-user';
 import { useSpeechRecognition } from '../hooks/use-speech-recognition';
 import { useToast } from '../hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, Heart, X, RotateCcw, Home, AlertCircle, Timer, Sparkles, Volume2 } from 'lucide-react';
+import { Mic, Heart, X, RotateCcw, Home, AlertCircle, Timer, Sparkles, Volume2, Speaker } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
@@ -16,10 +16,12 @@ import {
 import { useCelebration } from '@/hooks/use-celebration';
 import { useCelebrationSound } from '@/hooks/use-celebration-sound';
 import { CelebrationEffect } from '@/components/celebration-effect';
+import { WordPop } from '@/components/word-pop';
 import { GlitchText } from '@/components/glitch-text';
 import { useTheme } from '@/hooks/use-theme';
 
 import { FALLBACK_WORDS, saveLocalScore } from '@/lib/offline-data';
+import { speakWord } from '@/lib/speech-utils';
 
 export default function Game() {
   const [, setLocation] = useLocation();
@@ -48,6 +50,7 @@ export default function Game() {
   const [lives, setLives] = useState(3);
   const [gameOver, setGameOver] = useState(false);
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [wordPopActive, setWordPopActive] = useState(false);
 
   const wordsRef = useRef(words);
   const statusRef = useRef<'idle' | 'success' | 'error'>('idle');
@@ -73,6 +76,7 @@ export default function Game() {
     if (statusRef.current !== 'idle' || gameOver) return;
     setStatusSync('success');
     setCount((prevCount) => prevCount + 1);
+    setWordPopActive(true);
 
     celebration.incrementMatch(language);
 
@@ -112,7 +116,15 @@ export default function Game() {
   const currentWord = words[wordIndex];
   const targetWord = currentWord?.word ?? '';
 
-  const { isListening, isUnsupported, spokenText, setSpokenText, startListening } = useSpeechRecognition(
+  const {
+    isListening,
+    isUnsupported,
+    spokenText,
+    setSpokenText,
+    startListening,
+    voiceMode,
+    setVoiceMode,
+  } = useSpeechRecognition(
     language,
     targetWord,
     { onMatch: handleSuccess, onMismatch: handleFailure },
@@ -208,6 +220,10 @@ export default function Game() {
           </div>
         </div>
       </div>
+
+      {wordPopActive && (
+        <WordPop onComplete={() => setWordPopActive(false)} />
+      )}
 
       {celebration.milestone && (
         <CelebrationEffect
@@ -353,38 +369,62 @@ export default function Game() {
             </AnimatePresence>
           </div>
 
-          <motion.button
-            onClick={startListening}
-            aria-label={isListening ? 'Microphone active' : 'Tap to activate microphone'}
-            animate={
-              status === 'success'
-                ? { scale: [1, 1.25, 1] }
-                : status === 'error'
-                  ? { scale: [1, 0.75, 1] }
-                  : isListening
-                    ? { scale: [1, 1.08, 1] }
-                    : { scale: 1 }
-            }
-            transition={{
-              repeat: status === 'idle' && isListening ? Infinity : 0,
-              duration: 1.4,
-            }}
-            className={`p-6 rounded-full shadow-xl backdrop-blur cursor-pointer active:scale-95 transition-transform ${
-              status === 'success'
-                ? 'bg-primary/20 text-primary'
-                : status === 'error'
-                  ? 'bg-destructive/20 text-destructive'
-                  : isListening
-                    ? 'bg-card border-2 border-primary/50 text-primary'
-                    : 'bg-card border-2 border-border text-muted-foreground hover:border-primary hover:text-primary'
-            }`}
-          >
-            {status === 'error' ? <X className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
-          </motion.button>
+          <div className="flex items-center gap-4">
+            <motion.button
+              onClick={() => currentWord && speakWord(currentWord.word, language)}
+              aria-label="Play pronunciation"
+              whileTap={{ scale: 0.9 }}
+              className="p-4 rounded-full bg-card border-2 border-border text-muted-foreground hover:border-primary hover:text-primary shadow-xl backdrop-blur transition-all cursor-pointer"
+            >
+              <Volume2 className="w-6 h-6" />
+            </motion.button>
 
-          <p className="mt-3 text-[10px] font-mono uppercase tracking-widest text-muted-foreground/50 pointer-events-none">
-            {isListening ? 'Listening…' : 'Tap mic to start'}
-          </p>
+            <motion.button
+              onClick={startListening}
+              aria-label={isListening ? 'Microphone active' : 'Tap to activate microphone'}
+              animate={
+                status === 'success'
+                  ? { scale: [1, 1.25, 1] }
+                  : status === 'error'
+                    ? { scale: [1, 0.75, 1] }
+                    : isListening
+                      ? { scale: [1, 1.08, 1] }
+                      : { scale: 1 }
+              }
+              transition={{
+                repeat: status === 'idle' && isListening ? Infinity : 0,
+                duration: 1.4,
+              }}
+              className={`p-6 rounded-full shadow-xl backdrop-blur cursor-pointer active:scale-95 transition-transform ${
+                status === 'success'
+                  ? 'bg-primary/20 text-primary'
+                  : status === 'error'
+                    ? 'bg-destructive/20 text-destructive'
+                    : isListening
+                      ? 'bg-card border-2 border-primary/50 text-primary'
+                      : 'bg-card border-2 border-border text-muted-foreground hover:border-primary hover:text-primary'
+              }`}
+            >
+              {status === 'error' ? <X className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
+            </motion.button>
+          </div>
+
+          <div className="mt-3 flex items-center gap-3 pointer-events-none">
+            <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/50">
+              {isListening ? 'Listening…' : 'Tap speaker to hear, mic to speak'}
+            </p>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const next = voiceMode === 'continuous' ? 'push-to-talk' : 'continuous';
+                setVoiceMode(next);
+                localStorage.setItem('lok-lingu-voice-mode', next);
+              }}
+              className="pointer-events-auto text-[8px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded border border-border text-muted-foreground hover:border-primary hover:text-primary transition-all"
+            >
+              {voiceMode === 'continuous' ? 'Continuous' : 'Tap to Talk'}
+            </button>
+          </div>
         </div>
       )}
     </div>
