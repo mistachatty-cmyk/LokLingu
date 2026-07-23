@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   useGetLeaderboard,
   useGetLeaderboardSummary,
@@ -16,7 +16,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { useTheme } from '../hooks/use-theme';
 
-import { FALLBACK_LANGUAGES, getLocalScores } from '@/lib/offline-data';
+import { getLocalScores, normalizeLanguagesData } from '@/lib/offline-data';
 
 export default function Leaderboard() {
   const [language, setLanguage] = useState<string>('all');
@@ -26,9 +26,13 @@ export default function Leaderboard() {
   const { data: apiSummary, isError: isSummaryError } = useGetLeaderboardSummary();
   const { data: apiLanguagesData, isError: isLangError } = useGetLanguages();
 
-  const languagesData = apiLanguagesData || FALLBACK_LANGUAGES;
+  const languagesData = useMemo(() => normalizeLanguagesData(apiLanguagesData), [apiLanguagesData]);
 
-  const { data: apiLeaderboard, isLoading, isError: isLeaderboardError } = useGetLeaderboard(
+  const {
+    data: apiLeaderboard,
+    isLoading,
+    isError: isLeaderboardError,
+  } = useGetLeaderboard(
     {
       language: language !== 'all' ? language : undefined,
       category: category !== 'all' ? category : undefined,
@@ -62,7 +66,8 @@ export default function Leaderboard() {
       createdAt: s.createdAt,
     }));
 
-  const leaderboard = apiLeaderboard || (localLeaderboard.length > 0 ? localLeaderboard : undefined);
+  const leaderboard =
+    apiLeaderboard || (localLeaderboard.length > 0 ? localLeaderboard : undefined);
 
   const localSummary = {
     totalPlayers: 1,

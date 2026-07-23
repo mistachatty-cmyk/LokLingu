@@ -26,7 +26,7 @@ import { Switch } from '@/components/ui/switch';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlitchText } from '@/components/glitch-text';
 
-import { FALLBACK_LANGUAGES } from '@/lib/offline-data';
+import { normalizeLanguagesData } from '@/lib/offline-data';
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -49,8 +49,12 @@ export default function Home() {
   const [showProfile, setShowProfile] = useState(false);
   const usernameInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: apiLanguagesData, isLoading: isLoadingLanguages, isError: isLangError } = useGetLanguages();
-  const languagesData = apiLanguagesData || FALLBACK_LANGUAGES;
+  const {
+    data: apiLanguagesData,
+    isLoading: isLoadingLanguages,
+    isError: isLangError,
+  } = useGetLanguages();
+  const languagesData = useMemo(() => normalizeLanguagesData(apiLanguagesData), [apiLanguagesData]);
   const createUser = useCreateUser();
 
   const selectedLang = languagesData.find((l) => l.code === language);
@@ -493,7 +497,11 @@ export default function Home() {
                               : 'border-border hover:border-primary/30 text-muted-foreground hover:text-foreground'
                           }`}
                         >
-                          {m === 'voice' ? <Mic className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
+                          {m === 'voice' ? (
+                            <Mic className="w-4 h-4" />
+                          ) : (
+                            <Pencil className="w-4 h-4" />
+                          )}
                           {m}
                           {m === 'voice' && speechUnsupported && (
                             <AlertTriangle className="w-3 h-3 text-destructive" />
@@ -537,7 +545,9 @@ export default function Home() {
                       <Sparkles className="w-4 h-4 text-muted-foreground" />
                       <span className="text-sm font-medium">Celebrations</span>
                     </div>
-                    <span className="text-xs text-muted-foreground font-mono uppercase tracking-wider">🎉</span>
+                    <span className="text-xs text-muted-foreground font-mono uppercase tracking-wider">
+                      🎉
+                    </span>
                   </button>
                 </div>
               </motion.div>

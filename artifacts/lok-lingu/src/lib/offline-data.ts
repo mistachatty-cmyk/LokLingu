@@ -19,6 +19,27 @@ export const FALLBACK_LANGUAGES: LanguageData[] = [
   { code: 'ja', name: 'Japanese', categories: ['numbers', 'greetings'] },
 ];
 
+export function normalizeLanguagesData(value: unknown): LanguageData[] {
+  if (Array.isArray(value)) {
+    return value.filter(
+      (item): item is LanguageData =>
+        typeof item === 'object' && item !== null && 'code' in item && 'name' in item,
+    );
+  }
+
+  if (value && typeof value === 'object') {
+    const maybeLanguages = (value as { languages?: unknown }).languages;
+    if (Array.isArray(maybeLanguages)) {
+      return maybeLanguages.filter(
+        (item): item is LanguageData =>
+          typeof item === 'object' && item !== null && 'code' in item && 'name' in item,
+      );
+    }
+  }
+
+  return FALLBACK_LANGUAGES;
+}
+
 export const FALLBACK_WORDS: Record<string, Record<string, WordEntry[]>> = {
   es: {
     numbers: [
@@ -38,9 +59,19 @@ export const FALLBACK_WORDS: Record<string, Record<string, WordEntry[]>> = {
       { word: 'catorce', translation: 'fourteen', index: 13, pronunciation: 'kah-TOR-seh' },
       { word: 'quince', translation: 'fifteen', index: 14, pronunciation: 'KEEN-seh' },
       { word: 'dieciséis', translation: 'sixteen', index: 15, pronunciation: 'dyeh-see-SAYS' },
-      { word: 'diecisiete', translation: 'seventeen', index: 16, pronunciation: 'dyeh-see-SYEH-teh' },
+      {
+        word: 'diecisiete',
+        translation: 'seventeen',
+        index: 16,
+        pronunciation: 'dyeh-see-SYEH-teh',
+      },
       { word: 'dieciocho', translation: 'eighteen', index: 17, pronunciation: 'dyeh-see-OH-choh' },
-      { word: 'diecinueve', translation: 'nineteen', index: 18, pronunciation: 'dyeh-see-NWEH-beh' },
+      {
+        word: 'diecinueve',
+        translation: 'nineteen',
+        index: 18,
+        pronunciation: 'dyeh-see-NWEH-beh',
+      },
       { word: 'veinte', translation: 'twenty', index: 19, pronunciation: 'BAYN-teh' },
     ],
     colors: [
@@ -64,9 +95,24 @@ export const FALLBACK_WORDS: Record<string, Record<string, WordEntry[]>> = {
       { word: 'por favor', translation: 'please', index: 3, pronunciation: 'por fah-VOR' },
       { word: 'sí', translation: 'yes', index: 4, pronunciation: 'see' },
       { word: 'no', translation: 'no', index: 5, pronunciation: 'noh' },
-      { word: 'buenos días', translation: 'good morning', index: 6, pronunciation: 'BWEH-nohs DEE-ahs' },
-      { word: 'buenas noches', translation: 'good night', index: 7, pronunciation: 'BWEH-nahs NOH-chehs' },
-      { word: 'cómo estás', translation: 'how are you', index: 8, pronunciation: 'KOH-moh ehs-TAHS' },
+      {
+        word: 'buenos días',
+        translation: 'good morning',
+        index: 6,
+        pronunciation: 'BWEH-nohs DEE-ahs',
+      },
+      {
+        word: 'buenas noches',
+        translation: 'good night',
+        index: 7,
+        pronunciation: 'BWEH-nahs NOH-chehs',
+      },
+      {
+        word: 'cómo estás',
+        translation: 'how are you',
+        index: 8,
+        pronunciation: 'KOH-moh ehs-TAHS',
+      },
       { word: 'me llamo', translation: 'my name is', index: 9, pronunciation: 'meh YAH-moh' },
     ],
   },

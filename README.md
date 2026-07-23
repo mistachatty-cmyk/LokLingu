@@ -16,14 +16,15 @@ A modern, high-energy language learning app supporting speech recognition, chara
 
 ## 🚀 Deploying on Vercel
 
-The app is pre-configured with `vercel.json` for seamless deployment on Vercel:
+The app is pre-configured with `vercel.json` for deployment on Vercel.
 
 1. Import this repository into [Vercel](https://vercel.com).
-2. Set Build Command: `pnpm run build`
-3. Set Output Directory: `artifacts/lok-lingu/dist`
-4. Deploy!
+2. Set the project root to the repository root.
+3. Use the build command: `pnpm --filter @workspace/lok-lingu run build`
+4. Use the output directory: `artifacts/lok-lingu/dist/public`
+5. Deploy.
 
-> **Note**: Users can start using the application immediately upon deployment. Profiles, streaks, and game progress will automatically save to their browser's `localStorage` if an external backend API server is not attached.
+> **Note**: The app works without a live backend. Profiles, streaks, and game progress save to the browser via `localStorage` unless a backend API is connected.
 
 ---
 
@@ -35,21 +36,35 @@ The app is pre-configured with `vercel.json` for seamless deployment on Vercel:
 pnpm install
 ```
 
-### 2. Type Check & Build
+### 2. Run the frontend locally
 
-```bash
-pnpm run typecheck
-pnpm run build
+Open the app in the browser at:
+
+```text
+http://localhost:5173/
 ```
 
-### 3. Run Development Server
+From the repo root:
 
 ```bash
-# Run frontend
-cd artifacts/lok-lingu
-pnpm run dev
+pnpm --filter @workspace/lok-lingu run dev
+```
 
-# (Optional) Run backend API server
+### 3. Build for production
+
+```bash
+pnpm --filter @workspace/lok-lingu run build
+```
+
+### 4. Preview the production build locally
+
+```bash
+pnpm --filter @workspace/lok-lingu run serve
+```
+
+### 5. Optional: run the API server
+
+```bash
 cd artifacts/api-server
 pnpm run dev
 ```

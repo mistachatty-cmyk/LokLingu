@@ -4,6 +4,7 @@ import { useGetLanguages } from '@workspace/api-client-react';
 import { useCelebration } from '@/hooks/use-celebration';
 import { ChoroplethMap } from '@/components/choropleth-map';
 import { LANGUAGE_COUNTRIES, getLanguageCountry } from '@/data/language-countries';
+import { normalizeLanguagesData } from '@/lib/offline-data';
 import { Globe, Play, ArrowLeft, Sparkles, Map, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -12,17 +13,15 @@ type View = 'map' | 'list';
 
 export default function Explore() {
   const [, setLocation] = useLocation();
-  const { data: languagesData } = useGetLanguages();
+  const { data: apiLanguagesData } = useGetLanguages();
   const celebration = useCelebration();
+  const languagesData = useMemo(() => normalizeLanguagesData(apiLanguagesData), [apiLanguagesData]);
 
   const [selectedLang, setSelectedLang] = useState<string | null>(null);
   const [view, setView] = useState<View>('map');
   const [showAll, setShowAll] = useState(false);
 
-  const supportedCodes = useMemo(
-    () => languagesData?.map((l) => l.code) ?? [],
-    [languagesData],
-  );
+  const supportedCodes = useMemo(() => languagesData?.map((l) => l.code) ?? [], [languagesData]);
 
   const availableLanguages = useMemo(
     () => LANGUAGE_COUNTRIES.filter((lc) => supportedCodes.includes(lc.code)),
@@ -67,7 +66,9 @@ export default function Explore() {
           <button
             onClick={() => setView('map')}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${
-              view === 'map' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+              view === 'map'
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <Map className="w-3.5 h-3.5 inline mr-1" />
@@ -76,7 +77,9 @@ export default function Explore() {
           <button
             onClick={() => setView('list')}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${
-              view === 'list' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+              view === 'list'
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             List
@@ -140,10 +143,7 @@ export default function Explore() {
                         {lc.countryCodes.length} country{lc.countryCodes.length !== 1 ? 'ies' : 'y'}
                       </div>
                     </div>
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: lc.color }}
-                    />
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: lc.color }} />
                   </button>
                 ))}
                 {availableLanguages.length > 6 && (
@@ -152,9 +152,14 @@ export default function Explore() {
                     className="w-full flex items-center justify-center gap-1 py-2 text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {showAll ? (
-                      <>Show Less <ChevronUp className="w-3 h-3" /></>
+                      <>
+                        Show Less <ChevronUp className="w-3 h-3" />
+                      </>
                     ) : (
-                      <>Show {availableLanguages.length - 6} More <ChevronDown className="w-3 h-3" /></>
+                      <>
+                        Show {availableLanguages.length - 6} More{' '}
+                        <ChevronDown className="w-3 h-3" />
+                      </>
                     )}
                   </button>
                 )}
@@ -180,7 +185,9 @@ export default function Explore() {
                 <div>
                   <h3 className="font-black text-lg uppercase tracking-tight">{selected.name}</h3>
                   <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-                    {selected.countryCodes.length} country{selected.countryCodes.length !== 1 ? 'ies' : ''} · {selected.code.toUpperCase()}
+                    {selected.countryCodes.length} country
+                    {selected.countryCodes.length !== 1 ? 'ies' : ''} ·{' '}
+                    {selected.code.toUpperCase()}
                   </p>
                 </div>
               </div>
