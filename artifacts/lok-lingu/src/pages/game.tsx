@@ -1,11 +1,11 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useLocation } from 'wouter';
 import { useGetWords, useSubmitScore } from '@workspace/api-client-react';
 import { useUser } from '../hooks/use-user';
 import { useSpeechRecognition } from '../hooks/use-speech-recognition';
 import { useToast } from '../hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, Heart, X, RotateCcw, Home, AlertCircle, Timer, Sparkles, Volume2, Speaker } from 'lucide-react';
+import { Mic, Heart, X, RotateCcw, Home, AlertCircle, Timer, Sparkles, Volume2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
@@ -31,17 +31,18 @@ export default function Game() {
   const language = localStorage.getItem('lok-lingu-lang') || 'es';
   const category = localStorage.getItem('lok-lingu-cat') || 'numbers';
 
-  const { data: apiWords, isLoading: isLoadingWords, isError: isWordsError } = useGetWords(language, category, {
+  const { data: apiWords } = useGetWords(language, category, {
     query: { enabled: true, queryKey: ['words', language, category] },
   });
 
-  const words = apiWords || FALLBACK_WORDS[language]?.[category] || FALLBACK_WORDS['es']['numbers'];
+  const words = useMemo(
+    () => apiWords || FALLBACK_WORDS[language]?.[category] || FALLBACK_WORDS['es']['numbers'],
+    [apiWords, language, category],
+  );
 
   const submitScore = useSubmitScore({
     mutation: {
-      onError: () => {
-        // Silently handled by local score saving
-      },
+      onError: () => {},
     },
   });
 
@@ -137,20 +138,17 @@ export default function Game() {
     if (!userId) setLocation('/');
   }, [userId, setLocation]);
 
+  // Auto-speak the word when it changes
+  useEffect(() => {
+    if (currentWord) {
+      const timer = setTimeout(() => speakWord(currentWord.word, language), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [wordIndex, currentWord, language]);
+
   if (!userId) return null;
 
-  if (isWordsError) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6 space-y-4">
-        <AlertCircle className="w-12 h-12 text-destructive" />
-        <p className="text-muted-foreground text-sm font-mono uppercase tracking-widest">Failed to load words.</p>
-        <Button variant="outline" onClick={() => window.location.reload()}>Retry</Button>
-        <Button variant="ghost" onClick={() => setLocation('/')}>Back to Menu</Button>
-      </div>
-    );
-  }
-
-  if (isUnsupported) {
+  if (isUnsupported && words) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6 space-y-4">
         <AlertCircle className="w-12 h-12 text-destructive" />
@@ -162,17 +160,6 @@ export default function Game() {
         </p>
         <Button variant="outline" onClick={() => setLocation('/draw')}>Switch to Draw Mode</Button>
         <Button variant="ghost" onClick={() => setLocation('/')}>Back to Menu</Button>
-      </div>
-    );
-  }
-
-  if (isLoadingWords || !words) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background space-y-4">
-        <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}>
-          <Mic className="w-12 h-12 text-primary" />
-        </motion.div>
-        <p className="text-muted-foreground text-sm font-mono uppercase tracking-widest">Loading words…</p>
       </div>
     );
   }
@@ -285,6 +272,11 @@ export default function Game() {
                   <p className="text-xl md:text-2xl text-muted-foreground font-serif italic">
                     {currentWord.translation}
                   </p>
+                  {currentWord.pronunciation && (
+                    <p className="text-sm text-muted-foreground/50 font-mono mt-2">
+                      ({currentWord.pronunciation})
+                    </p>
+                  )}
                 </>
               ) : null}
             </motion.div>
@@ -369,61 +361,68 @@ export default function Game() {
             </AnimatePresence>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
+            {/* Speaker — hero button, auto-plays on new word */}
             <motion.button
               onClick={() => currentWord && speakWord(currentWord.word, language)}
               aria-label="Play pronunciation"
               whileTap={{ scale: 0.9 }}
-              className="p-4 rounded-full bg-card border-2 border-border text-muted-foreground hover:border-primary hover:text-primary shadow-xl backdrop-blur transition-all cursor-pointer"
+              whileHover={{ scale: 1.05 }}
+              className="p-6 rounded-full bg-primary text-primary-foreground shadow-xl hover:brightness-110 transition-all cursor-pointer"
             >
-              <Volume2 className="w-6 h-6" />
+              <Volume2 className="w-8 h-8" />
             </motion.button>
 
-            <motion.button
-              onClick={startListening}
-              aria-label={isListening ? 'Microphone active' : 'Tap to activate microphone'}
-              animate={
-                status === 'success'
-                  ? { scale: [1, 1.25, 1] }
-                  : status === 'error'
-                    ? { scale: [1, 0.75, 1] }
-                    : isListening
-                      ? { scale: [1, 1.08, 1] }
-                      : { scale: 1 }
-              }
-              transition={{
-                repeat: status === 'idle' && isListening ? Infinity : 0,
-                duration: 1.4,
-              }}
-              className={`p-6 rounded-full shadow-xl backdrop-blur cursor-pointer active:scale-95 transition-transform ${
-                status === 'success'
-                  ? 'bg-primary/20 text-primary'
-                  : status === 'error'
-                    ? 'bg-destructive/20 text-destructive'
-                    : isListening
-                      ? 'bg-card border-2 border-primary/50 text-primary'
-                      : 'bg-card border-2 border-border text-muted-foreground hover:border-primary hover:text-primary'
-              }`}
-            >
-              {status === 'error' ? <X className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
-            </motion.button>
+            {/* Mic — secondary, tap to talk */}
+            {!isUnsupported && (
+              <motion.button
+                onClick={startListening}
+                aria-label={isListening ? 'Microphone active' : 'Tap to speak'}
+                animate={
+                  status === 'success'
+                    ? { scale: [1, 1.25, 1] }
+                    : status === 'error'
+                      ? { scale: [1, 0.75, 1] }
+                      : isListening
+                        ? { scale: [1, 1.08, 1] }
+                        : { scale: 1 }
+                }
+                transition={{
+                  repeat: status === 'idle' && isListening ? Infinity : 0,
+                  duration: 1.4,
+                }}
+                className={`p-4 rounded-full shadow-xl backdrop-blur cursor-pointer active:scale-95 transition-all ${
+                  status === 'success'
+                    ? 'bg-primary/20 text-primary'
+                    : status === 'error'
+                      ? 'bg-destructive/20 text-destructive'
+                      : isListening
+                        ? 'bg-card border-2 border-primary/50 text-primary'
+                        : 'bg-card border-2 border-border text-muted-foreground hover:border-primary hover:text-primary'
+                }`}
+              >
+                {status === 'error' ? <X className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
+              </motion.button>
+            )}
           </div>
 
-          <div className="mt-3 flex items-center gap-3 pointer-events-none">
-            <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/50">
+          <div className="mt-4 flex items-center gap-3">
+            <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/50 pointer-events-none">
               {isListening ? 'Listening…' : 'Tap speaker to hear, mic to speak'}
             </p>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                const next = voiceMode === 'continuous' ? 'push-to-talk' : 'continuous';
-                setVoiceMode(next);
-                localStorage.setItem('lok-lingu-voice-mode', next);
-              }}
-              className="pointer-events-auto text-[8px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded border border-border text-muted-foreground hover:border-primary hover:text-primary transition-all"
-            >
-              {voiceMode === 'continuous' ? 'Continuous' : 'Tap to Talk'}
-            </button>
+            {!isUnsupported && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const next = voiceMode === 'continuous' ? 'push-to-talk' : 'continuous';
+                  setVoiceMode(next);
+                  localStorage.setItem('lok-lingu-voice-mode', next);
+                }}
+                className="pointer-events-auto text-[8px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded border border-border text-muted-foreground hover:border-primary hover:text-primary transition-all"
+              >
+                {voiceMode === 'continuous' ? 'Continuous' : 'Tap to Talk'}
+              </button>
+            )}
           </div>
         </div>
       )}

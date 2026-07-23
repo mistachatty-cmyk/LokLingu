@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useLocation } from 'wouter';
 import { useGetWords, useSubmitScore } from '@workspace/api-client-react';
 import { useUser } from '../hooks/use-user';
@@ -39,11 +39,14 @@ export default function Draw() {
   const language = localStorage.getItem('lok-lingu-lang') || 'es';
   const category = localStorage.getItem('lok-lingu-cat') || 'numbers';
 
-  const { data: apiWords, isLoading: isLoadingWords, isError: isWordsError } = useGetWords(language, category, {
+  const { data: apiWords } = useGetWords(language, category, {
     query: { enabled: true, queryKey: ['words', language, category] },
   });
 
-  const words = apiWords || FALLBACK_WORDS[language]?.[category] || FALLBACK_WORDS['es']['numbers'];
+  const words = useMemo(
+    () => apiWords || FALLBACK_WORDS[language]?.[category] || FALLBACK_WORDS['es']['numbers'],
+    [apiWords, language, category],
+  );
 
   const submitScore = useSubmitScore({
     mutation: {
@@ -135,28 +138,16 @@ export default function Draw() {
     if (!userId) setLocation('/');
   }, [userId, setLocation]);
 
+  useEffect(() => {
+    if (currentWord) {
+      const timer = setTimeout(() => speakWord(currentWord.word, language), 400);
+      return () => clearTimeout(timer);
+    }
+  }, [wordIndex, currentWord, language]);
+
   if (!userId) return null;
 
-  if (isWordsError) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6 space-y-4">
-        <AlertCircle className="w-12 h-12 text-destructive" />
-        <p className="text-muted-foreground text-sm font-mono uppercase tracking-widest">Failed to load words.</p>
-        <Button variant="outline" onClick={() => window.location.reload()}>Retry</Button>
-        <Button variant="ghost" onClick={() => setLocation('/')}>Back to Menu</Button>
-      </div>
-    );
-  }
-
-  if (isLoadingWords || !words) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background space-y-4">
-        <p className="text-muted-foreground text-sm font-mono uppercase tracking-widest">Loading words…</p>
-      </div>
-    );
-  }
-
-  const currentWord = words[wordIndex];
+  const currentWord = words?.[wordIndex];
 
   return (
     <div className="relative min-h-screen w-full bg-background overflow-hidden flex flex-col select-none">
@@ -281,12 +272,12 @@ export default function Draw() {
 
               <div className="flex items-center justify-center gap-3">
                 <Button
-                  variant="outline"
+                  variant="default"
                   size="sm"
                   onClick={() => currentWord && speakWord(currentWord.word, language)}
                   className="gap-2"
                 >
-                  <Volume2 className="w-4 h-4" />
+                  <Volume2 className="w-4 h-4" /> Listen
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => setShowGuide(!showGuide)} className="gap-2">
                   {showGuide ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}

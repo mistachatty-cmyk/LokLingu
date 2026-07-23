@@ -84,7 +84,7 @@ export function useSpeechRecognition(
     return !window.SpeechRecognition && !window.webkitSpeechRecognition;
   });
   const [voiceMode, setVoiceMode] = useState<'continuous' | 'push-to-talk'>(
-    () => (localStorage.getItem('lok-lingu-voice-mode') as 'continuous' | 'push-to-talk') || 'continuous',
+    () => (localStorage.getItem('lok-lingu-voice-mode') as 'continuous' | 'push-to-talk') || 'push-to-talk',
   );
 
   const statusRef = useRef<SpeechStatus>('idle');
@@ -230,7 +230,16 @@ export function useSpeechRecognition(
       } catch { /* will be handled by health check */ }
     }
 
-    if (voiceMode === 'push-to-talk') return;
+    if (voiceMode === 'push-to-talk') {
+      try {
+        if (recognitionRef.current) {
+          recognitionRef.current.stop();
+        }
+      } catch {}
+      recognitionRef.current = null;
+      setIsListening(false);
+      return;
+    }
 
     healthCheckRef.current = setInterval(() => {
       if (!activeRef.current) return;
