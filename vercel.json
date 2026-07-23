@@ -1,11 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm build",
-  "outputDirectory": "artifacts/lok-lingu/dist",
-  "routes": [
+  "framework": "vite",
+  "buildCommand": "pnpm --filter @workspace/lok-lingu run build",
+  "outputDirectory": "artifacts/lok-lingu/dist/public",
+  "rewrites": [
     {
-      "src": "/[^.]+",
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }

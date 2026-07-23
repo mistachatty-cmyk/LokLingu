@@ -1,4 +1,4 @@
-import { useState, useEffect }s from 'react';
+import { useState, useEffect } from 'react';
 
 export function useUser() {
   const [userId, setUserId] = useState<number | null>(() => {

@@ -20,7 +20,7 @@ The app is pre-configured with `vercel.json` for seamless deployment on Vercel:
 
 1. Import this repository into [Vercel](https://vercel.com).
 2. Set Build Command: `pnpm run build`
-3. Set Output Directory: `artifacts/lok-lingu/dist/public`
+3. Set Output Directory: `artifacts/lok-lingu/dist`
 4. Deploy!
 
 > **Note**: Users can start using the application immediately upon deployment. Profiles, streaks, and game progress will automatically save to their browser's `localStorage` if an external backend API server is not attached.
