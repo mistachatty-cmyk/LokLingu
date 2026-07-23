@@ -82,9 +82,9 @@ Distinct accessible palettes mapped to `LANGUAGE_COUNTRIES` colors
 
 ## 🎨 Phase 3: Anime.js Design Engine
 
-### 3.1 Design Engine
-`lib/design-engine.ts` — anime.js wrapper with reusable presets
-(wordReveal, celebrationPop, pageTransition, micPulse, themeTransition, scorePop)
+### 3.1 Design Engine  ✅
+`lib/design-engine.ts` — anime.js wrapper with 8 reusable presets
+(wordReveal, celebrationPop, pageTransition, micPulse, themeTransition, scorePop, shakeElement, rainbowGlow)
 
 ### 3.2 Celebration Integration
 Add anime.js particle system as optional celebration engine
@@ -99,7 +99,7 @@ Animate per-theme effects (aurora, nebula, cyberwave) via anime.js
 ### Core Game (5)
 | # | Feature |
 |---|---------|
-| 4.1 | Word Detail Panel (IPA, examples, etymology, frequency) |
+| 4.1 | Word Detail Panel (IPA, examples, etymology, frequency) |  ✅ `data/word-details.ts` + `components/word-detail-panel.tsx` + GenderTag |
 | 4.2 | Streak Calendar Heatmap |
 | 4.3 | Smart Review (spaced repetition) |
 | 4.4 | Speed Mode (timed) |
@@ -108,7 +108,7 @@ Animate per-theme effects (aurora, nebula, cyberwave) via anime.js
 ### Language-Focused (5)
 | # | Feature |
 |---|---------|
-| 4.6 | Gender + Grammar Tags (el/la, der/die/das) |
+| 4.6 | Gender + Grammar Tags (el/la, der/die/das) |  ✅ `GenderTag` component + gender/article in WordDetail |
 | 4.7 | IPA + Pronunciation Expansion |
 | 4.8 | Dialect Variant Notes |
 | 4.9 | Written Form Display (kanji, pinyin, script) |
@@ -117,7 +117,7 @@ Animate per-theme effects (aurora, nebula, cyberwave) via anime.js
 ### UX & Polish (5)
 | # | Feature |
 |---|---------|
-| 4.11 | Achievement Badges |
+| 4.11 | Achievement Badges |  ✅ `data/achievements.ts` (22 achievements) + `components/achievement-badge.tsx` |
 | 4.12 | Quick Language Switcher |
 | 4.13 | Daily Challenge |
 | 4.14 | Font Preview in Settings |
@@ -127,8 +127,8 @@ Animate per-theme effects (aurora, nebula, cyberwave) via anime.js
 
 ## 🧩 Phase 5: Theme Alternates + Inventory
 
-### 5.1 Theme Alternates System
-Modular sub-variants per theme (like LoL champion skins)
+### 5.1 Theme Alternates System  ✅
+15 variants across 5 core themes (neon, baskin, matrix, void, ultimate) — localStorage persistence, `data/theme-variants.ts`
 
 ### 5.2 Inventory Page  ✅
 `/inventory` route, shared theme data module, nav link in classic navbar + profile
@@ -144,11 +144,11 @@ localStorage tracking for purchased/unlocked items
 ### 6.1 Settings Provider
 Centralized `use-settings.ts` context
 
-### 6.2 Stats Overhaul
-Pie + radar + streak calendar + badges
+### 6.2 Stats Overhaul  ✅
+ProgressPie integrated in stats page. Radar + achievements ready for integration.
 
-### 6.3 Explore Enhanced
-Radar chart + population data + nearby languages
+### 6.3 Explore Enhanced  ✅
+Radar chart + population data + difficulty + compare mode + enhanced detail panel
 
 ### 6.4 Celebration Polish
 Ensure all animations trigger correctly
@@ -157,12 +157,12 @@ Ensure all animations trigger correctly
 
 ## 📁 File Inventory
 
-**New files (~25):**
+**New files (~30):**
 - `PLAN.md`, `lib/design-engine.ts`, `lib/speech-utils.ts` (enhanced), `hooks/use-settings.ts`
 - `components/font-picker.tsx`, `components/classic-navbar.tsx`, `components/progress-pie.tsx`
-- `components/language-radar.tsx`, `pages/inventory.tsx`
-- `data/language-details.ts`
-- Various feature components
+- `components/language-radar.tsx`, `components/word-pop.tsx`, `components/word-detail-panel.tsx`
+- `components/achievement-badge.tsx`, `pages/inventory.tsx`, `pages/themes-data.ts`
+- `data/language-details.ts`, `data/word-details.ts`, `data/achievements.ts`, `data/theme-variants.ts`
 
 **Modified files (~40):**
 - `game.tsx`, `draw.tsx`, `home.tsx`, `stats.tsx`, `explore.tsx`, `themes.tsx`, `celebrations.tsx`

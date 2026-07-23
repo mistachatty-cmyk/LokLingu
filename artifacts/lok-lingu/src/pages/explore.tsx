@@ -3,13 +3,42 @@ import { useLocation } from 'wouter';
 import { useGetLanguages } from '@workspace/api-client-react';
 import { useCelebration } from '@/hooks/use-celebration';
 import { ChoroplethMap } from '@/components/choropleth-map';
+import { LanguageRadar } from '@/components/language-radar';
 import { LANGUAGE_COUNTRIES, getLanguageCountry } from '@/data/language-countries';
 import { normalizeLanguagesData } from '@/lib/offline-data';
-import { Globe, Play, ArrowLeft, Sparkles, Map, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  Globe, Play, ArrowLeft, Sparkles, Map, List, ChevronDown, ChevronUp, X, BarChart3,
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 
 type View = 'map' | 'list';
+
+function formatCompact(n: number): string {
+  if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(1).replace(/\.0$/, '') + 'B';
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
+  return n.toString();
+}
+
+function formatSpeakersCompact(n: number): string {
+  return formatCompact(n * 1_000_000);
+}
+
+const RADAR_METRICS = [
+  { key: 'speakers', label: 'Speakers' },
+  { key: 'countries', label: 'Countries' },
+  { key: 'ease', label: 'Ease' },
+  { key: 'writing', label: 'Writing' },
+];
+
+const DIFFICULTY_LABELS: Record<number, string> = {
+  1: 'Very Easy',
+  2: 'Easy',
+  3: 'Moderate',
+  4: 'Hard',
+  5: 'Very Hard',
+};
 
 export default function Explore() {
   const [, setLocation] = useLocation();
@@ -20,6 +49,8 @@ export default function Explore() {
   const [selectedLang, setSelectedLang] = useState<string | null>(null);
   const [view, setView] = useState<View>('map');
   const [showAll, setShowAll] = useState(false);
+  const [compareMode, setCompareMode] = useState(false);
+  const [compareLangs, setCompareLangs] = useState<string[]>([]);
 
   const supportedCodes = useMemo(() => languagesData?.map((l) => l.code) ?? [], [languagesData]);
 
@@ -28,8 +59,76 @@ export default function Explore() {
     [supportedCodes],
   );
 
+  const radarMeta = useMemo(() => {
+    const maxSpeakers = Math.max(...availableLanguages.map((l) => l.totalSpeakers), 1);
+    const maxCountries = Math.max(...availableLanguages.map((l) => l.countryCodes.length), 1);
+    const wsCounts: Record<string, number> = {};
+    for (const l of availableLanguages) {
+      wsCounts[l.writingSystem] = (wsCounts[l.writingSystem] || 0) + 1;
+    }
+    const maxWS = Math.max(...Object.values(wsCounts), 1);
+    return { maxSpeakers, maxCountries, wsCounts, maxWS };
+  }, [availableLanguages]);
+
+  const radarMetrics = useMemo(
+    () =>
+      availableLanguages.map((l) => ({
+        label: l.name,
+        color: l.color,
+        values: {
+          speakers: (l.totalSpeakers / radarMeta.maxSpeakers) * 100,
+          countries: (l.countryCodes.length / radarMeta.maxCountries) * 100,
+          ease: ((6 - l.difficulty) / 5) * 100,
+          writing: ((radarMeta.wsCounts[l.writingSystem] || 1) / radarMeta.maxWS) * 100,
+        },
+      })),
+    [availableLanguages, radarMeta],
+  );
+
+  const avgValues = useMemo(() => {
+    if (radarMetrics.length === 0) {
+      return { speakers: 0, countries: 0, ease: 0, writing: 0 };
+    }
+    const sum = { speakers: 0, countries: 0, ease: 0, writing: 0 };
+    for (const m of radarMetrics) {
+      sum.speakers += m.values.speakers;
+      sum.countries += m.values.countries;
+      sum.ease += m.values.ease;
+      sum.writing += m.values.writing;
+    }
+    const n = radarMetrics.length;
+    return {
+      speakers: sum.speakers / n,
+      countries: sum.countries / n,
+      ease: sum.ease / n,
+      writing: sum.writing / n,
+    };
+  }, [radarMetrics]);
+
+  function buildRadarItem(lc: (typeof LANGUAGE_COUNTRIES)[number]) {
+    return {
+      label: lc.name,
+      color: lc.color,
+      values: {
+        speakers: (lc.totalSpeakers / radarMeta.maxSpeakers) * 100,
+        countries: (lc.countryCodes.length / radarMeta.maxCountries) * 100,
+        ease: ((6 - lc.difficulty) / 5) * 100,
+        writing: ((radarMeta.wsCounts[lc.writingSystem] || 1) / radarMeta.maxWS) * 100,
+      },
+    };
+  }
+
+  const selected = selectedLang ? getLanguageCountry(selectedLang) : null;
+  const displayLanguages = showAll ? availableLanguages : availableLanguages.slice(0, 6);
+
   const handleSelectLanguage = (code: string) => {
-    setSelectedLang(code === selectedLang ? null : code);
+    if (compareMode) {
+      setCompareLangs((prev) =>
+        prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code],
+      );
+    } else {
+      setSelectedLang(code === selectedLang ? null : code);
+    }
   };
 
   const handlePlay = () => {
@@ -38,9 +137,27 @@ export default function Explore() {
     setLocation('/game');
   };
 
-  const selected = selectedLang ? getLanguageCountry(selectedLang) : null;
+  const compareRadarData = useMemo(() => {
+    if (!compareMode) return radarMetrics;
+    return compareLangs
+      .map((code) => {
+        const lc = getLanguageCountry(code);
+        return lc ? buildRadarItem(lc) : null;
+      })
+      .filter(Boolean) as typeof radarMetrics;
+  }, [compareMode, compareLangs, radarMetrics, radarMeta]);
 
-  const displayLanguages = showAll ? availableLanguages : availableLanguages.slice(0, 6);
+  const selectedRadarData = useMemo(() => {
+    if (!selected) return [];
+    return [
+      buildRadarItem(selected),
+      {
+        label: 'Average',
+        color: 'hsl(var(--muted-foreground))',
+        values: { ...avgValues },
+      },
+    ];
+  }, [selected, avgValues, radarMeta]);
 
   return (
     <div className="min-h-[100dvh] bg-background pb-32">
@@ -56,37 +173,59 @@ export default function Explore() {
           </Button>
         </div>
         <p className="text-xs text-muted-foreground font-mono uppercase tracking-widest">
-          Click any country to select its language
+          {compareMode
+            ? `${compareLangs.length} selected — tap more to compare`
+            : 'Click any country to select its language'}
         </p>
       </div>
 
-      {/* Map / List toggle */}
+      {/* Controls */}
       <div className="px-5 pb-3">
-        <div className="flex items-center gap-1 bg-card border border-border rounded-xl p-1 w-fit">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 bg-card border border-border rounded-xl p-1">
+            <button
+              onClick={() => setView('map')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${
+                view === 'map'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Map className="w-3.5 h-3.5 inline mr-1" />
+              Map
+            </button>
+            <button
+              onClick={() => setView('list')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${
+                view === 'list'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <List className="w-3.5 h-3.5 inline mr-1" />
+              List
+            </button>
+          </div>
           <button
-            onClick={() => setView('map')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${
-              view === 'map'
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
+            onClick={() => {
+              setCompareMode((p) => {
+                if (!p) setCompareLangs([]);
+                return !p;
+              });
+            }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all border ${
+              compareMode
+                ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                : 'bg-card border-border text-muted-foreground hover:text-foreground hover:border-primary/30'
             }`}
           >
-            <Map className="w-3.5 h-3.5 inline mr-1" />
-            Map
-          </button>
-          <button
-            onClick={() => setView('list')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${
-              view === 'list'
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            List
+            <BarChart3 className="w-3.5 h-3.5 inline mr-1" />
+            Compare
           </button>
         </div>
       </div>
 
+      {/* Map / List */}
       <AnimatePresence mode="wait">
         {view === 'map' ? (
           <motion.div
@@ -123,29 +262,48 @@ export default function Explore() {
               </p>
             ) : (
               <>
-                {displayLanguages.map((lc) => (
-                  <button
-                    key={lc.code}
-                    onClick={() => handleSelectLanguage(lc.code)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all ${
-                      selectedLang === lc.code
-                        ? 'border-primary bg-primary/15'
-                        : 'border-border hover:border-primary/30 hover:bg-accent/50'
-                    }`}
-                  >
-                    <span className="text-xl">{lc.flag}</span>
-                    <div className="flex-1 text-left">
-                      <span className="font-bold text-sm">{lc.name}</span>
-                      <span className="text-[10px] text-muted-foreground font-mono ml-2 uppercase">
-                        {lc.code}
-                      </span>
-                      <div className="text-[10px] text-muted-foreground">
-                        {lc.countryCodes.length} country{lc.countryCodes.length !== 1 ? 'ies' : 'y'}
+                {displayLanguages.map((lc) => {
+                  const active = compareMode
+                    ? compareLangs.includes(lc.code)
+                    : selectedLang === lc.code;
+                  return (
+                    <button
+                      key={lc.code}
+                      onClick={() => handleSelectLanguage(lc.code)}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all ${
+                        active
+                          ? 'border-primary bg-primary/15'
+                          : 'border-border hover:border-primary/30 hover:bg-accent/50'
+                      }`}
+                    >
+                      <span className="text-xl">{lc.flag}</span>
+                      <div className="flex-1 text-left">
+                        <span className="font-bold text-sm">{lc.name}</span>
+                        <span className="text-[10px] text-muted-foreground font-mono ml-2 uppercase">
+                          {lc.code}
+                        </span>
+                        <div className="text-[10px] text-muted-foreground">
+                          {lc.countryCodes.length} country
+                          {lc.countryCodes.length !== 1 ? 'ies' : ''} ·{' '}
+                          {lc.languageFamily}
+                        </div>
                       </div>
-                    </div>
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: lc.color }} />
-                  </button>
-                ))}
+                      {compareMode && active && (
+                        <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                          <span className="text-[10px] font-bold text-primary-foreground">
+                            {compareLangs.indexOf(lc.code) + 1}
+                          </span>
+                        </div>
+                      )}
+                      {!compareMode && (
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: lc.color }}
+                        />
+                      )}
+                    </button>
+                  );
+                })}
                 {availableLanguages.length > 6 && (
                   <button
                     onClick={() => setShowAll(!showAll)}
@@ -169,45 +327,173 @@ export default function Explore() {
         )}
       </AnimatePresence>
 
-      {/* Language details + play CTA */}
+      {/* Radar chart */}
+      <div className="px-5 mt-6 mb-8">
+        <div className="bg-card border border-border rounded-xl p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              {compareMode ? 'Compare Languages' : 'Language Overview'}
+            </h2>
+            {compareMode && compareLangs.length > 0 && (
+              <button
+                onClick={() => setCompareLangs([])}
+                className="text-[10px] font-mono text-muted-foreground hover:text-foreground underline"
+              >
+                Clear all
+              </button>
+            )}
+          </div>
+          {compareMode && compareLangs.length === 0 ? (
+            <p className="text-xs text-muted-foreground font-mono text-center py-8">
+              Select languages from the map or list above to compare
+            </p>
+          ) : (
+            <LanguageRadar data={compareRadarData} metrics={RADAR_METRICS} size={350} />
+          )}
+          {compareMode && compareLangs.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-4">
+              {compareLangs.map((code) => {
+                const lc = getLanguageCountry(code);
+                if (!lc) return null;
+                return (
+                  <span
+                    key={code}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-muted text-[10px] font-mono"
+                  >
+                    <span>{lc.flag}</span>
+                    {lc.name}
+                    <button
+                      onClick={() =>
+                        setCompareLangs((prev) => prev.filter((c) => c !== code))
+                      }
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Language detail + play CTA */}
       <AnimatePresence>
-        {selected && (
+        {selected && !compareMode && (
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 30 }}
+            exit={{ opacity: 0, y: 40 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className="fixed bottom-24 left-4 right-4 z-30 max-w-md mx-auto"
           >
-            <div className="bg-card/95 backdrop-blur-xl border-2 border-primary/30 rounded-2xl p-5 shadow-2xl space-y-3">
+            <div className="bg-card/95 backdrop-blur-xl border-2 border-primary/30 rounded-2xl p-5 shadow-2xl space-y-3 max-h-[70vh] overflow-y-auto">
+              {/* Header */}
               <div className="flex items-center gap-3">
                 <span className="text-3xl">{selected.flag}</span>
-                <div>
-                  <h3 className="font-black text-lg uppercase tracking-tight">{selected.name}</h3>
-                  <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-                    {selected.countryCodes.length} country
-                    {selected.countryCodes.length !== 1 ? 'ies' : ''} ·{' '}
-                    {selected.code.toUpperCase()}
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-black text-lg uppercase tracking-tight truncate">
+                    {selected.name}
+                  </h3>
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground truncate">
+                    {selected.code.toUpperCase()} · {selected.languageFamily}
                   </p>
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-1.5">
-                {selected.countryCodes.slice(0, 8).map((cc) => (
-                  <span
-                    key={cc}
-                    className="text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-md bg-muted text-muted-foreground"
-                  >
-                    {cc}
+              {/* Stats grid */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-muted/50 rounded-xl p-2.5 space-y-0.5">
+                  <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground">
+                    Population
                   </span>
-                ))}
-                {selected.countryCodes.length > 8 && (
-                  <span className="text-[9px] font-mono text-muted-foreground px-1">
-                    +{selected.countryCodes.length - 8}
+                  <span className="text-sm font-bold block">
+                    {formatCompact(selected.population)}
                   </span>
-                )}
+                </div>
+                <div className="bg-muted/50 rounded-xl p-2.5 space-y-0.5">
+                  <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground">
+                    Native
+                  </span>
+                  <span className="text-sm font-bold block">
+                    {formatSpeakersCompact(selected.nativeSpeakers)}
+                  </span>
+                </div>
+                <div className="bg-muted/50 rounded-xl p-2.5 space-y-0.5">
+                  <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground">
+                    Total Speakers
+                  </span>
+                  <span className="text-sm font-bold block">
+                    {formatSpeakersCompact(selected.totalSpeakers)}
+                  </span>
+                </div>
+                <div className="bg-muted/50 rounded-xl p-2.5 space-y-0.5">
+                  <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground">
+                    Writing System
+                  </span>
+                  <span className="text-sm font-bold block truncate">
+                    {selected.writingSystem}
+                  </span>
+                </div>
               </div>
 
+              {/* Difficulty */}
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground shrink-0">
+                  Difficulty
+                </span>
+                <div className="flex items-center gap-1">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <span
+                      key={i}
+                      className={`w-2.5 h-2.5 rounded-full ${
+                        i <= selected.difficulty
+                          ? 'bg-primary'
+                          : 'bg-muted-foreground/20'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <span className="text-[10px] font-mono text-muted-foreground">
+                  {DIFFICULTY_LABELS[selected.difficulty]}
+                </span>
+              </div>
+
+              {/* Official countries */}
+              <div className="space-y-1">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+                  Official in ({selected.officialIn.length})
+                </span>
+                <div className="flex gap-1.5 overflow-x-auto pb-0.5">
+                  {selected.officialIn.map((country) => (
+                    <span
+                      key={country}
+                      className="shrink-0 text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-md bg-muted text-muted-foreground"
+                    >
+                      {country}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Small radar vs average */}
+              {selectedRadarData.length > 0 && (
+                <div>
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground block mb-1">
+                    vs Average
+                  </span>
+                  <div className="flex justify-center">
+                    <LanguageRadar
+                      data={selectedRadarData}
+                      metrics={RADAR_METRICS}
+                      size={200}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
               <div className="flex gap-2 pt-1">
                 <Button
                   onClick={handlePlay}
