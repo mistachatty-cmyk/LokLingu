@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Volume2, Mic } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FALLBACK_WORDS } from '@/lib/offline-data';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
+import { speakWord, matchWord, primeVoices, toLocale } from '@/lib/speech-utils';
 
 type NormalWord = { word: string; translation: string };
 
@@ -14,17 +15,18 @@ function normalizeWord(raw: any): NormalWord | null {
     return a ? { word: String(a), translation: b ? String(b) : '' } : null;
   }
   if (typeof raw === 'object') {
-    const word = raw.word ?? raw.text ?? raw.term ?? raw.foreign ?? raw.target ?? raw.native ?? raw.value;
-    const translation = raw.translation ?? raw.meaning ?? raw.english ?? raw.en ?? raw.definition ?? raw.gloss ?? '';
+    const word =
+      raw.word ?? raw.text ?? raw.term ?? raw.foreign ?? raw.target ?? raw.native ?? raw.value;
+    const translation =
+      raw.translation ?? raw.meaning ?? raw.english ?? raw.en ?? raw.definition ?? raw.gloss ?? '';
     if (word == null || String(word).trim() === '') return null;
     return { word: String(word), translation: String(translation ?? '') };
   }
   return null;
 }
 
-function resolveWords(apiWords: any, language: string, category: string): NormalWord[] {
+function resolveWords(language: string, category: string): NormalWord[] {
   const candidates = [
-    apiWords,
     (FALLBACK_WORDS as any)?.[language]?.[category],
     (FALLBACK_WORDS as any)?.[language]?.numbers,
     (FALLBACK_WORDS as any)?.es?.numbers,
@@ -42,105 +44,89 @@ function resolveWords(apiWords: any, language: string, category: string): Normal
   return [];
 }
 
-const LOCALES: Record<string, string> = {
-  es: 'es-ES', ja: 'ja-JP', fr: 'fr-FR', de: 'de-DE', it: 'it-IT',
-  pt: 'pt-BR', ko: 'ko-KR', zh: 'zh-CN', ru: 'ru-RU', ar: 'ar-SA',
-  hi: 'hi-IN', nl: 'nl-NL', sv: 'sv-SE', pl: 'pl-PL', tr: 'tr-TR',
-  vi: 'vi-VN', en: 'en-US',
-};
-
-const LISTEN_TIMEOUT_MS = 6000;
+const LISTEN_TIMEOUT_MS = 7000;
 
 export default function Game() {
   const language = localStorage.getItem('lok-lingu-lang') || 'es';
   const category = localStorage.getItem('lok-lingu-cat') || 'numbers';
-  const showTranslation = localStorage.getItem('lok-lingu-show-translation') !== 'false';
 
   const [wordIndex, setWordIndex] = useState(0);
   const [streak, setStreak] = useState(0);
   const [feedback, setFeedback] = useState<'idle' | 'hit' | 'miss'>('idle');
 
-  const words = useMemo(
-    () => resolveWords(undefined, language, category),
-    [language, category],
-  );
-
+  const words = useMemo(() => resolveWords(language, category), [language, category]);
   const currentWord = words[wordIndex % Math.max(words.length, 1)];
-  const locale = LOCALES[language] ?? language;
+
   const currentWordRef = useRef(currentWord);
   currentWordRef.current = currentWord;
+  const lockedRef = useRef(false);
 
-  const playAudio = useCallback((text: string) => {
-    if (!text || typeof window === 'undefined' || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = locale;
-    u.rate = 0.85;
-    window.speechSynthesis.speak(u);
-  }, [locale]);
+  useEffect(() => primeVoices(), []);
 
-  const handleResult = useCallback((spoken: string) => {
+  const handleResult = useCallback((spoken: string, isFinal: boolean) => {
+    if (lockedRef.current) return;
     const target = currentWordRef.current?.word;
     if (!target || !spoken) return;
-    const clean = (s: string) =>
-      s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\p{L}\p{N}]/gu, '');
-    const hit = clean(spoken).includes(clean(target));
 
-    if (hit) {
+    if (matchWord(spoken, target)) {
+      lockedRef.current = true;
       setFeedback('hit');
-      setStreak(s => s + 1);
-      setWordIndex(i => i + 1);
-    } else {
-      setFeedback('miss');
+      setStreak((s) => s + 1);
+      setTimeout(() => {
+        setWordIndex((i) => i + 1);
+        setFeedback('idle');
+        lockedRef.current = false;
+      }, 400);
+      return;
     }
-    setTimeout(() => setFeedback('idle'), 500);
+
+    if (isFinal) {
+      setFeedback('miss');
+      setTimeout(() => setFeedback('idle'), 500);
+    }
   }, []);
 
-  const { isListening, startListening, stopListening } = useSpeechRecognition({
-    onResult: handleResult,
-    lang: locale,
-  });
+  const { isListening, isUnsupported, spokenText, startListening, stopListening } =
+    useSpeechRecognition({
+      onResult: handleResult,
+      lang: toLocale(language),
+    });
 
   useEffect(() => {
     if (!isListening) return;
-    const t = setTimeout(() => stopListening?.(), LISTEN_TIMEOUT_MS);
+    const t = setTimeout(() => stopListening(), LISTEN_TIMEOUT_MS);
     return () => clearTimeout(t);
   }, [isListening, stopListening]);
 
   useEffect(() => {
-    if (currentWord?.word) {
-      const t = setTimeout(() => playAudio(currentWord.word), 200);
-      return () => clearTimeout(t);
+    stopListening();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wordIndex]);
+
+  const handleMic = () => {
+    if (isListening) {
+      stopListening();
+      return;
     }
-  }, [wordIndex, currentWord?.word, playAudio]);
-
-  const handleWordClick = () => {
-    if (currentWord?.word) playAudio(currentWord.word);
+    startListening();
   };
 
-  const handleInteraction = () => {
-    if (isListening) { stopListening?.(); return; }
-    playAudio(currentWord?.word ?? '');
-    startListening?.();
-  };
+  const handleSlowSpeak = () => speakWord(currentWord?.word ?? '', language, { slow: true });
 
   if (words.length === 0) {
     return (
       <div className="h-screen flex items-center justify-center bg-background text-muted-foreground text-sm font-mono">
-        No words loaded
+        No words loaded for {language} / {category}
       </div>
     );
   }
 
   return (
     <div className="relative flex flex-col h-screen bg-background text-foreground overflow-hidden">
-      {/* Top bar — minimal */}
       <div className="flex justify-between items-start p-6 w-full absolute top-0 z-10">
-        <div className="flex flex-col gap-1">
-          <span className="text-[10px] tracking-widest uppercase opacity-40">
-            {language} · {wordIndex + 1}/{words.length}
-          </span>
-        </div>
+        <span className="text-[10px] tracking-widest uppercase opacity-40">
+          {language} · {(wordIndex % words.length) + 1}/{words.length}
+        </span>
         <div className="flex flex-col items-end">
           <span className="text-sm tracking-widest uppercase opacity-70">Streak</span>
           <span className="text-4xl font-bold tabular-nums" style={{ color: 'var(--word-color)' }}>
@@ -149,45 +135,77 @@ export default function Game() {
         </div>
       </div>
 
-      {/* Word — clickable to hear pronunciation */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
         <AnimatePresence mode="wait">
           <motion.div
             key={wordIndex}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            onClick={handleWordClick}
-            className="cursor-pointer"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.22 }}
+            className="flex flex-col items-center"
           >
             <h1
               className={`text-7xl md:text-9xl font-black tracking-tighter capitalize leading-none transition-colors duration-200 ${
-                feedback === 'hit' ? 'text-primary' : feedback === 'miss' ? 'text-destructive' : 'word-glow'
+                feedback === 'hit'
+                  ? 'text-primary'
+                  : feedback === 'miss'
+                    ? 'text-destructive'
+                    : 'word-glow'
               }`}
               style={{ color: feedback === 'idle' ? 'var(--word-color)' : undefined }}
             >
               {currentWord.word}
             </h1>
-            {showTranslation && currentWord.translation && (
-              <p className="text-xl md:text-3xl italic opacity-50 mt-5">{currentWord.translation}</p>
-            )}
+
+            <p className="text-xl md:text-3xl italic opacity-50 mt-5">
+              {currentWord.translation || '—'}
+            </p>
+
+            <div className="group relative mt-10 flex flex-col items-center">
+              <button
+                type="button"
+                onClick={handleSlowSpeak}
+                aria-label="Pronounce slowly"
+                className="flex h-14 w-14 items-center justify-center rounded-full border border-foreground/15 text-foreground/70 transition-all duration-300 hover:border-primary hover:text-primary hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary active:scale-95"
+              >
+                <Volume2 size={24} />
+              </button>
+              <span className="pointer-events-none mt-3 text-[11px] uppercase tracking-[0.2em] opacity-0 translate-y-1 transition-all duration-500 ease-out group-hover:opacity-60 group-hover:translate-y-0 group-focus-within:opacity-60 group-focus-within:translate-y-0 motion-reduce:transition-none">
+                Tap to pronounce slowly
+              </span>
+            </div>
           </motion.div>
         </AnimatePresence>
       </div>
 
-      {/* One button */}
-      <div className="pb-14 px-6 flex justify-center w-full">
+      <div className="h-6 text-center text-xs font-mono opacity-40">
+        {isListening && spokenText ? spokenText : ''}
+      </div>
+
+      <div className="pb-14 px-6 flex flex-col items-center gap-3 w-full">
         <button
-          onClick={handleInteraction}
+          onClick={handleMic}
+          disabled={isUnsupported}
           className={`flex items-center justify-center gap-3 w-full max-w-sm py-4 rounded-full text-lg font-bold uppercase tracking-widest transition-all duration-300 ${
             isListening
               ? 'bg-transparent border-2 border-primary text-primary animate-pulse'
               : 'bg-primary text-primary-foreground hover:brightness-110 hover:scale-[1.02] active:scale-95 shadow-xl'
-          }`}
+          } disabled:opacity-40 disabled:cursor-not-allowed`}
         >
-          {isListening ? <><Mic size={22} className="animate-pulse" /> Listening...</> : <><Volume2 size={22} /> Tap to Pronounce</>}
+          {isListening ? (
+            <>
+              <Mic size={22} /> Listening...
+            </>
+          ) : (
+            <>
+              <Mic size={22} /> Say the word
+            </>
+          )}
         </button>
+        {isUnsupported && (
+          <span className="text-xs opacity-50">Speech recognition needs Chrome or Edge</span>
+        )}
       </div>
     </div>
   );
