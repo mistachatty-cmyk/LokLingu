@@ -52,7 +52,11 @@ export default function Home() {
   );
   const [showOptions, setShowOptions] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [showTranslation, setShowTranslation] = useState(
+    () => localStorage.getItem('lok-lingu-show-translation') !== 'false',
+  );
   const [showFonts, setShowFonts] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const usernameInputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -582,33 +586,72 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Font Picker toggle */}
-                  <div className="space-y-1.5">
-                    <button
-                      onClick={() => setShowFonts(!showFonts)}
-                      className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg border border-border hover:border-primary/40 hover:bg-accent transition-all text-left"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm font-medium">Font Overrides</span>
+                  {/* Show Translation toggle */}
+                  <div className="flex items-center justify-between px-1">
+                    <div className="flex items-center space-x-2">
+                      <div>
+                        <span className="text-sm font-medium">Show Translation</span>
+                        <span className="text-[9px] text-muted-foreground font-mono ml-1.5 uppercase tracking-wider">
+                          In-game
+                        </span>
                       </div>
-                      <span className="text-xs text-muted-foreground">{showFonts ? '▲' : '▼'}</span>
-                    </button>
-                    {showFonts && <FontPicker />}
+                    </div>
+                    <Switch
+                      checked={showTranslation}
+                      onCheckedChange={(v) => {
+                        setShowTranslation(v);
+                        localStorage.setItem('lok-lingu-show-translation', String(v));
+                      }}
+                    />
                   </div>
 
-                  {/* Celebrations link */}
-                  <button
-                    onClick={() => setLocation('/celebrations')}
-                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg border border-border hover:border-primary/40 hover:bg-accent transition-all text-left"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <Sparkles className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm font-medium">Celebrations</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground font-mono uppercase tracking-wider">
-                      🎉
-                    </span>
-                  </button>
+                  {/* Advanced settings (collapsible) */}
+                  <div className="border-t border-border pt-3 mt-2">
+                    <button
+                      onClick={() => setShowAdvanced(!showAdvanced)}
+                      className="w-full flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <span>Advanced</span>
+                      <span>{showAdvanced ? '▲' : '▼'}</span>
+                    </button>
+                    <AnimatePresence>
+                      {showAdvanced && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden space-y-3 pt-3"
+                        >
+                          {/* Font Picker toggle */}
+                          <div className="space-y-1.5">
+                            <button
+                              onClick={() => setShowFonts(!showFonts)}
+                              className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg border border-border hover:border-primary/40 hover:bg-accent transition-all text-left"
+                            >
+                              <div className="flex items-center space-x-2">
+                                <span className="text-sm font-medium">Font Overrides</span>
+                              </div>
+                              <span className="text-xs text-muted-foreground">{showFonts ? '▲' : '▼'}</span>
+                            </button>
+                            {showFonts && <FontPicker />}
+                          </div>
+
+                          {/* Celebrations link */}
+                          <button
+                            onClick={() => setLocation('/celebrations')}
+                            className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg border border-border hover:border-primary/40 hover:bg-accent transition-all text-left"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <Sparkles className="w-4 h-4 text-muted-foreground" />
+                              <span className="text-sm font-medium">Celebrations</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground font-mono uppercase tracking-wider">🎉</span>
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </div>
               </motion.div>
             )}

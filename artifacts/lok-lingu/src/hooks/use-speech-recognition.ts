@@ -51,23 +51,29 @@ export interface SpeechCallbacks {
 }
 
 const LANG_MAP: Record<string, string> = {
-  es: 'es-ES',
-  fr: 'fr-FR',
-  it: 'it-IT',
-  de: 'de-DE',
-  ja: 'ja-JP',
-  pt: 'pt-BR',
-  zh: 'zh-CN',
-  ko: 'ko-KR',
-  ru: 'ru-RU',
-  ar: 'ar-SA',
-  hi: 'hi-IN',
-  nl: 'nl-NL',
-  pl: 'pl-PL',
-  sv: 'sv-SE',
-  tr: 'tr-TR',
-  th: 'th-TH',
-  vi: 'vi-VN',
+  es: 'es-ES', fr: 'fr-FR', it: 'it-IT', de: 'de-DE', ja: 'ja-JP',
+  pt: 'pt-BR', zh: 'zh-CN', ko: 'ko-KR', ru: 'ru-RU', ar: 'ar-SA',
+  hi: 'hi-IN', nl: 'nl-NL', pl: 'pl-PL', sv: 'sv-SE', tr: 'tr-TR',
+  th: 'th-TH', vi: 'vi-VN',
+};
+
+interface SpeechRecognitionOptions {
+  onResult?: (text: string) => void;
+  lang?: string;
+}
+
+export function useSpeechRecognition(
+  options: SpeechRecognitionOptions,
+): {
+  status: SpeechStatus;
+  isListening: boolean;
+  isUnsupported: boolean;
+  spokenText: string;
+  setSpokenText: (text: string) => void;
+  startListening: () => void;
+  stopListening: () => void;
+  voiceMode: 'continuous' | 'push-to-talk';
+  setVoiceMode: (mode: 'continuous' | 'push-to-talk') => void;
 };
 
 export function useSpeechRecognition(
@@ -75,7 +81,108 @@ export function useSpeechRecognition(
   targetWord: string,
   callbacks: SpeechCallbacks,
   enabled: boolean,
+): {
+  status: SpeechStatus;
+  isListening: boolean;
+  isUnsupported: boolean;
+  spokenText: string;
+  setSpokenText: (text: string) => void;
+  startListening: () => void;
+  stopListening: () => void;
+  voiceMode: 'continuous' | 'push-to-talk';
+  setVoiceMode: (mode: 'continuous' | 'push-to-talk') => void;
+};
+
+export function useSpeechRecognition(
+  ...args: [SpeechRecognitionOptions] | [string, string, SpeechCallbacks, boolean]
 ) {
+  return typeof args[0] === 'object'
+    ? useSpeechRecognitionObject(args[0])
+    : useSpeechRecognitionPos(...args);
+}
+
+function useSpeechRecognitionObject({ onResult, lang }: SpeechRecognitionOptions) {
+  const hook = useSpeechRecognitionInternal({ lang });
+
+  const onResultRef = useRef(onResult);
+  onResultRef.current = onResult;
+
+  useEffect(() => {
+    if (!hook.isListening || !onResultRef.current) return;
+    const origOnresult = hook.recognitionRef.current?.onresult;
+    if (!origOnresult) return;
+    const wrapped = (e: SpeechRecognitionResultEvent) => {
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const transcript = e.results[i][0].transcript.toLowerCase().trim();
+        if (!transcript) continue;
+        onResultRef.current?.(transcript);
+      }
+    };
+    hook.recognitionRef.current!.onresult = wrapped;
+  }, [hook.isListening]);
+
+  return hook;
+}
+
+function useSpeechRecognitionPos(
+  language: string,
+  targetWord: string,
+  callbacks: SpeechCallbacks,
+  enabled: boolean,
+) {
+  const hook = useSpeechRecognitionInternal({ lang: language });
+
+  const callbacksRef = useRef(callbacks);
+  callbacksRef.current = callbacks;
+
+  const targetRef = useRef(targetWord);
+  targetRef.current = targetWord;
+
+  useEffect(() => {
+    if (!enabled) {
+      hook.stopListening();
+      return;
+    }
+    hook.setSpokenText('');
+    const rec = hook.createRecognition(false);
+    if (rec) {
+      hook.recognitionRef.current = rec;
+      rec.onresult = (event: SpeechRecognitionResultEvent) => {
+        if (hook.statusRef.current !== 'idle') return;
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript.toLowerCase().trim();
+          if (!transcript) continue;
+          hook.setSpokenText(transcript);
+          const target = targetRef.current;
+          if (!target) continue;
+          if (matchWord(transcript, target)) {
+            callbacksRef.current.onMatch();
+            return;
+          }
+          if (event.results[i].isFinal) {
+            callbacksRef.current.onMismatch();
+            return;
+          }
+        }
+      };
+      try { rec.start(); } catch { /* handled by health check */ }
+    }
+
+    if (hook.voiceMode === 'push-to-talk') {
+      try { if (hook.recognitionRef.current) hook.recognitionRef.current.stop(); } catch {}
+      hook.recognitionRef.current = null;
+      hook.setIsListening(false);
+      return;
+    }
+
+    hook.startHealthCheck();
+    return () => { hook.activeRef.current = false; hook.clearHealthCheck(); };
+  }, [language, enabled]);
+
+  return hook;
+}
+
+function useSpeechRecognitionInternal({ lang }: { lang?: string }) {
   const [status, setStatus] = useState<SpeechStatus>('idle');
   const [spokenText, setSpokenText] = useState('');
   const [isListening, setIsListening] = useState(false);
@@ -88,203 +195,79 @@ export function useSpeechRecognition(
   );
 
   const statusRef = useRef<SpeechStatus>('idle');
-  const setStatusSync = useCallback((s: SpeechStatus) => {
-    statusRef.current = s;
-    setStatus(s);
-  }, []);
-
-  const callbacksRef = useRef(callbacks);
-  callbacksRef.current = callbacks;
-
-  const targetRef = useRef(targetWord);
-  targetRef.current = targetWord;
-
+  const setStatusSync = useCallback((s: SpeechStatus) => { statusRef.current = s; setStatus(s); }, []);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const activeRef = useRef(true);
   const healthCheckRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastActivityRef = useRef(Date.now());
 
+  const effectiveLang = LANG_MAP[lang ?? ''] ?? lang ?? 'es-ES';
+
   const createRecognition = useCallback((userInitiated: boolean) => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) return null;
-
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = LANG_MAP[language] || 'es-ES';
+    recognition.lang = effectiveLang;
 
-    recognition.onstart = () => {
-      lastActivityRef.current = Date.now();
-      setIsListening(true);
-    };
-
+    recognition.onstart = () => { lastActivityRef.current = Date.now(); setIsListening(true); };
     recognition.onend = () => {
       if (activeRef.current) {
         setTimeout(() => {
           if (activeRef.current) {
-            try {
-              const newRec = createRecognition(false);
-              if (newRec) {
-                recognitionRef.current = newRec;
-                newRec.start();
-              }
-            } catch {
-              /* recovery will happen via health check */
-            }
-          } else {
-            setIsListening(false);
-          }
+            try { const n = createRecognition(false); if (n) { recognitionRef.current = n; n.start(); } } catch {}
+          } else { setIsListening(false); }
         }, 100);
-      } else {
-        setIsListening(false);
-      }
+      } else { setIsListening(false); }
     };
-
     recognition.onerror = (e: SpeechRecognitionErrorEvent) => {
       lastActivityRef.current = Date.now();
-      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-        if (userInitiated) {
-          activeRef.current = false;
-          if (healthCheckRef.current) {
-            clearInterval(healthCheckRef.current);
-            healthCheckRef.current = null;
-          }
-        }
+      if ((e.error === 'not-allowed' || e.error === 'service-not-allowed') && userInitiated) {
+        activeRef.current = false;
+        if (healthCheckRef.current) { clearInterval(healthCheckRef.current); healthCheckRef.current = null; }
         setIsListening(false);
       }
     };
-
-    recognition.onresult = (event: SpeechRecognitionResultEvent) => {
-      lastActivityRef.current = Date.now();
-      if (statusRef.current !== 'idle') return;
-
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript.toLowerCase().trim();
-        if (!transcript) continue;
-
-        setSpokenText(transcript);
-
-        const target = targetRef.current;
-        if (!target) continue;
-
-        if (matchWord(transcript, target)) {
-          callbacksRef.current.onMatch();
-          return;
-        }
-
-        if (event.results[i].isFinal) {
-          callbacksRef.current.onMismatch();
-          return;
-        }
-      }
-    };
-
     return recognition;
-  }, [language]);
+  }, [effectiveLang]);
 
   const startListening = useCallback(() => {
     if (!activeRef.current) return;
     try {
-      if (recognitionRef.current) {
-        try { recognitionRef.current.stop(); } catch { /* ignore */ }
-      }
-      const newRec = createRecognition(true);
-      if (newRec) {
-        recognitionRef.current = newRec;
-        newRec.start();
-      }
-    } catch {
-      /* health check will recover */
-    }
+      if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch {} }
+      const n = createRecognition(true);
+      if (n) { recognitionRef.current = n; n.start(); }
+    } catch {}
   }, [createRecognition]);
 
   const stopListening = useCallback(() => {
     activeRef.current = false;
-    try {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-    } catch { /* ignore */ }
+    try { if (recognitionRef.current) recognitionRef.current.stop(); } catch {}
     recognitionRef.current = null;
     setIsListening(false);
   }, []);
 
-  useEffect(() => {
-    if (!enabled) {
-      stopListening();
-      return;
-    }
-
-    activeRef.current = true;
-    setSpokenText('');
-    setStatusSync('idle');
-
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
-
-    const rec = createRecognition(false);
-    if (rec) {
-      recognitionRef.current = rec;
-      try {
-        rec.start();
-      } catch { /* will be handled by health check */ }
-    }
-
-    if (voiceMode === 'push-to-talk') {
-      try {
-        if (recognitionRef.current) {
-          recognitionRef.current.stop();
-        }
-      } catch {}
-      recognitionRef.current = null;
-      setIsListening(false);
-      return;
-    }
-
+  const startHealthCheck = useCallback(() => {
     healthCheckRef.current = setInterval(() => {
       if (!activeRef.current) return;
-      const elapsed = Date.now() - lastActivityRef.current;
-      if (elapsed > 6000) {
-        try {
-          if (recognitionRef.current) {
-            try { recognitionRef.current.stop(); } catch { /* ignore */ }
-          }
-          const newRec = createRecognition(false);
-          if (newRec) {
-            recognitionRef.current = newRec;
-            newRec.start();
-          }
-          lastActivityRef.current = Date.now();
-        } catch { /* ignore */ }
+      if (Date.now() - lastActivityRef.current > 6000) {
+        try { if (recognitionRef.current) try { recognitionRef.current.stop(); } catch {} } catch {}
+        const n = createRecognition(false);
+        if (n) { recognitionRef.current = n; n.start(); }
+        lastActivityRef.current = Date.now();
       }
     }, 2000);
+  }, [createRecognition]);
 
-    return () => {
-      activeRef.current = false;
-      if (healthCheckRef.current) {
-        clearInterval(healthCheckRef.current);
-        healthCheckRef.current = null;
-      }
-      try {
-        if (recognitionRef.current) {
-          recognitionRef.current.stop();
-        }
-      } catch { /* ignore */ }
-      recognitionRef.current = null;
-      setIsListening(false);
-    };
-  }, [language, enabled, voiceMode, createRecognition, stopListening, setStatusSync]);
+  const clearHealthCheck = useCallback(() => {
+    if (healthCheckRef.current) { clearInterval(healthCheckRef.current); healthCheckRef.current = null; }
+  }, []);
 
   return {
-    status,
-    isListening,
-    isUnsupported,
-    spokenText,
-    setSpokenText,
-    setStatusSync,
-    startListening,
-    stopListening,
-    voiceMode,
-    setVoiceMode,
+    status, isListening, isUnsupported, spokenText,
+    setSpokenText, setStatusSync, startListening, stopListening, voiceMode, setVoiceMode,
+    recognitionRef, statusRef, activeRef, createRecognition, startHealthCheck, clearHealthCheck,
+    setIsListening,
   };
 }
