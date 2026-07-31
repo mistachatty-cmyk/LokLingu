@@ -16,7 +16,8 @@ export default function Stats() {
   });
 
   const localStats = userId ? getLocalUserStats(userId) : null;
-  const stats = apiStats || localStats;
+  const stats =
+    apiStats && typeof apiStats === 'object' && !Array.isArray(apiStats) ? apiStats : localStats;
 
   if (!userId) {
     return (
@@ -90,6 +91,9 @@ export default function Stats() {
                 const key = localStorage.key(i);
                 if (key?.startsWith('lok-lingu-lifetime-')) {
                   const lang = key.replace('lok-lingu-lifetime-', '');
+                  // 'tokens' shares this prefix but is a currency, not a
+                  // language — it used to appear as a bogus pie slice.
+                  if (lang === 'tokens') continue;
                   const val = parseInt(localStorage.getItem(key) || '0');
                   if (val > 0) lifetimeData[lang] = val;
                 }

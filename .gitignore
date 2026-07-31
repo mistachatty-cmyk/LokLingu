@@ -49,3 +49,7 @@ Thumbs.db
 .local/
 .vercel
 .env*
+
+# Vosk speech models — large binaries, fetched via
+# artifacts/lok-lingu/scripts/fetch-vosk-models.mjs (see docs/SPEECH.md)
+artifacts/lok-lingu/public/models/

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Volume2, Mic } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSubmitScore } from '@workspace/api-client-react';
-import { FALLBACK_WORDS, saveLocalScore } from '@/lib/offline-data';
+import { FALLBACK_WORDS, saveLocalScore, incrementLifetimeWords } from '@/lib/offline-data';
 import { generateNumber, supportsInfiniteCounting } from '@/lib/number-words';
 import { useUser } from '@/hooks/use-user';
 import { useSpeechEngine } from '@/hooks/use-speech-engine';
@@ -86,6 +86,8 @@ export default function Game() {
 
   const currentWordRef = useRef(currentWord);
   currentWordRef.current = currentWord;
+  const languageRef = useRef(language);
+  languageRef.current = language;
   const lockedRef = useRef(false);
 
   const { userId } = useUser();
@@ -135,6 +137,8 @@ export default function Game() {
       lockedRef.current = true;
       setFeedback('hit');
       setStreak((s) => s + 1);
+      // Feeds the lifetime pie on the stats page.
+      incrementLifetimeWords(languageRef.current);
       setTimeout(() => {
         setWordIndex((i) => i + 1);
         setFeedback('idle');

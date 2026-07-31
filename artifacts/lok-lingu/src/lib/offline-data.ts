@@ -1278,3 +1278,38 @@ export function getLocalUserStats(userId: number) {
     personalBests: scores.slice(0, 10),
   };
 }
+
+const LIFETIME_PREFIX = 'lok-lingu-lifetime-';
+
+/**
+ * Lifetime words for one language, the series behind the stats pie.
+ * Only the drawing game used to write these, so a voice player's chart
+ * stayed empty no matter how long they played.
+ */
+export function incrementLifetimeWords(language: string, by = 1): void {
+  if (!language || language === 'tokens') return;
+  try {
+    const key = `${LIFETIME_PREFIX}${language}`;
+    const current = parseInt(localStorage.getItem(key) || '0', 10) || 0;
+    localStorage.setItem(key, String(current + by));
+  } catch {
+    /* storage unavailable (private mode) — scores still save per run */
+  }
+}
+
+export function getLifetimeWords(): Record<string, number> {
+  const out: Record<string, number> = {};
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key?.startsWith(LIFETIME_PREFIX)) continue;
+      const lang = key.slice(LIFETIME_PREFIX.length);
+      if (lang === 'tokens') continue;
+      const val = parseInt(localStorage.getItem(key) || '0', 10) || 0;
+      if (val > 0) out[lang] = val;
+    }
+  } catch {
+    /* ignore */
+  }
+  return out;
+}

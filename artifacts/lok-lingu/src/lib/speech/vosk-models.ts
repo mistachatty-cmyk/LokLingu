@@ -33,12 +33,21 @@ export const VOSK_MODELS: Record<string, string> = {
   sv: 'vosk-model-small-sv-rhasspy-0.15.tar.gz',
 };
 
-const BASE = (import.meta.env?.VITE_VOSK_MODEL_BASE as string | undefined)?.replace(/\/$/, '');
+/**
+ * Where the model archives live.
+ *
+ * Defaults to `/models` — the app's own `public/models/` folder — so the
+ * common case needs no configuration at all and has no CORS problems.
+ * Point VITE_VOSK_MODEL_BASE at a CDN instead if you would rather not
+ * ship the archives with the site.
+ */
+const BASE = (
+  (import.meta.env?.VITE_VOSK_MODEL_BASE as string | undefined) || '/models'
+).replace(/\/$/, '');
 
 export function voskModelUrl(baseLanguage: string): string | null {
   const file = VOSK_MODELS[baseLanguage];
   if (!file) return null;
-  if (!BASE) return null;
   return `${BASE}/${file}`;
 }
 
@@ -47,4 +56,4 @@ export function voskModelConfigured(baseLanguage: string): boolean {
   return voskModelUrl(baseLanguage) !== null;
 }
 
-export const VOSK_MODEL_BASE_CONFIGURED = !!BASE;
+export const VOSK_MODEL_BASE = BASE;
