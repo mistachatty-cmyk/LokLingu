@@ -3,6 +3,7 @@ import { Volume2, Mic } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSubmitScore } from '@workspace/api-client-react';
 import { FALLBACK_WORDS, saveLocalScore } from '@/lib/offline-data';
+import { generateNumber, supportsInfiniteCounting } from '@/lib/number-words';
 import { useUser } from '@/hooks/use-user';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { speakWord, matchWord, primeVoices, toLocale } from '@/lib/speech-utils';
@@ -32,23 +33,28 @@ function normalizeWord(raw: any): NormalWord | null {
   return null;
 }
 
-function resolveWords(language: string, category: string): NormalWord[] {
-  const candidates = [
-    (FALLBACK_WORDS as any)?.[language]?.[category],
-    (FALLBACK_WORDS as any)?.[language]?.numbers,
-    (FALLBACK_WORDS as any)?.es?.numbers,
-    [
-      { word: 'uno', translation: 'one' },
-      { word: 'dos', translation: 'two' },
-      { word: 'tres', translation: 'three' },
-    ],
-  ];
-  for (const c of candidates) {
-    if (!Array.isArray(c) || c.length === 0) continue;
-    const cleaned = c.map(normalizeWord).filter(Boolean) as NormalWord[];
-    if (cleaned.length > 0) return cleaned;
-  }
-  return [];
+interface Resolved {
+  words: NormalWord[];
+  /** True when we had to substitute another language's list. */
+  substituted: boolean;
+}
+
+/**
+ * Only ever falls back within the requested language. Substituting Spanish
+ * for a missing Japanese list used to leave the player speaking Japanese at
+ * Spanish targets with no way to score, so a substitution is now surfaced.
+ */
+function resolveWords(language: string, category: string): Resolved {
+  const clean = (c: unknown): NormalWord[] =>
+    Array.isArray(c) ? (c.map(normalizeWord).filter(Boolean) as NormalWord[]) : [];
+
+  const exact = clean(FALLBACK_WORDS?.[language]?.[category]);
+  if (exact.length) return { words: exact, substituted: false };
+
+  const sameLanguage = clean(FALLBACK_WORDS?.[language]?.numbers);
+  if (sameLanguage.length) return { words: sameLanguage, substituted: true };
+
+  return { words: [], substituted: false };
 }
 
 export default function Game() {
@@ -61,8 +67,22 @@ export default function Game() {
   const [isActive, setIsActive] = useState(false);
   const [micError, setMicError] = useState<string | null>(null);
 
-  const words = useMemo(() => resolveWords(language, category), [language, category]);
-  const currentWord = words[wordIndex % Math.max(words.length, 1)];
+  // Numbers are a sequence, not a list: when the language has a generator the
+  // player can keep counting past the end of any table, forever.
+  const infinite = category === 'numbers' && supportsInfiniteCounting(language);
+
+  const { words, substituted } = useMemo(
+    () => resolveWords(language, category),
+    [language, category],
+  );
+
+  const currentWord: NormalWord | undefined = useMemo(() => {
+    if (infinite) {
+      const generated = generateNumber(wordIndex + 1, language);
+      if (generated) return generated;
+    }
+    return words[wordIndex % Math.max(words.length, 1)];
+  }, [infinite, wordIndex, language, words]);
 
   const currentWordRef = useRef(currentWord);
   currentWordRef.current = currentWord;
@@ -163,7 +183,7 @@ export default function Game() {
 
   const handleSlowSpeak = () => speakWord(currentWord?.word ?? '', language, { slow: true });
 
-  if (words.length === 0) {
+  if (!currentWord) {
     return (
       <div className="h-screen flex items-center justify-center bg-background text-muted-foreground text-sm font-mono">
         No words loaded for {language} / {category}
@@ -174,9 +194,17 @@ export default function Game() {
   return (
     <div className="relative flex flex-col h-screen bg-background text-foreground overflow-hidden">
       <div className="flex justify-between items-start p-6 w-full absolute top-0 z-10">
-        <span className="text-[10px] tracking-widest uppercase opacity-40">
-          {language} · {(wordIndex % words.length) + 1}/{words.length}
-        </span>
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] tracking-widest uppercase opacity-40">
+            {language} ·{' '}
+            {infinite ? `#${wordIndex + 1} · ∞` : `${(wordIndex % words.length) + 1}/${words.length}`}
+          </span>
+          {substituted && (
+            <span className="text-[10px] tracking-widest uppercase text-destructive opacity-80">
+              No {category} list — using numbers
+            </span>
+          )}
+        </div>
         <div className="flex flex-col items-end">
           <span className="text-sm tracking-widest uppercase opacity-70">Streak</span>
           <span className="text-4xl font-bold tabular-nums" style={{ color: 'var(--word-color)' }}>
@@ -209,8 +237,14 @@ export default function Game() {
             </h1>
 
             <p className="text-xl md:text-3xl italic opacity-50 mt-5">
-              {currentWord.translation || '—'}
+              {infinite ? `${wordIndex + 1} · ${currentWord.translation}` : currentWord.translation || '—'}
             </p>
+
+            {currentWord.pronunciation && (
+              <p className="text-sm md:text-base font-mono opacity-40 mt-2 tracking-wide">
+                {currentWord.pronunciation}
+              </p>
+            )}
 
             <div className="group relative mt-10 flex flex-col items-center">
               <button

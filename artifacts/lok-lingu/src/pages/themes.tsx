@@ -54,6 +54,14 @@ const TIERS = [
     color: 'text-cyan-400',
     locked: false,
   },
+  {
+    tier: 'G' as const,
+    label: 'Category G — Feral',
+    sublabel: 'Maximum Intensity · Not For Everyone',
+    icon: Zap,
+    color: 'text-lime-400',
+    locked: false,
+  },
 ];
 
 function ThemePreview({
@@ -67,7 +75,7 @@ function ThemePreview({
 }) {
   const [hovered, setHovered] = useState(false);
 
-  const tierName = { A: 'General', B: 'Premium', C: 'Ultimate', D: 'Animated', E: 'Lingu', F: 'Ultimate' }[t.tier];
+  const tierName = { A: 'General', B: 'Premium', C: 'Ultimate', D: 'Animated', E: 'Lingu', F: 'Ultimate', G: 'Feral' }[t.tier];
 
   return (
     <motion.div
@@ -169,7 +177,7 @@ export default function Themes() {
       <div className="space-y-1">
         <h1 className="text-3xl font-black tracking-tighter uppercase">Theme Shop</h1>
         <p className="text-muted-foreground text-sm">
-          32 aesthetics · 15 font styles · Your arcade, your look
+          {THEMES.length} aesthetics · 15 font styles · Your arcade, your look
         </p>
       </div>
 

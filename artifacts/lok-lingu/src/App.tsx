@@ -17,6 +17,7 @@ import Explore from './pages/explore';
 import Inventory from './pages/inventory';
 import { LiquidGlassCursor } from '@/components/liquid-glass-cursor';
 import { useCursorCosmetics } from '@/hooks/use-cursor-cosmetics';
+import { useTheme } from '@/hooks/use-theme';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -29,6 +30,10 @@ const queryClient = new QueryClient({
 });
 
 function Router() {
+  // Applies the saved theme class to <html> for every route. Previously only
+  // pages that happened to call useTheme did this, so /game and /draw — the
+  // two screens you actually play on — always rendered in the default theme.
+  useTheme();
   const { glassId, trailId, isActive } = useCursorCosmetics();
   return (
     <Layout>

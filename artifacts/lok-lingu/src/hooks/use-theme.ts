@@ -39,7 +39,28 @@ export type Theme =
   | 'theme-flamenco'
   | 'theme-wabi'
   // Category F – Ultimate
-  | 'theme-ultimate';
+  | 'theme-ultimate'
+  // Category G – Feral
+  | 'theme-acid-rain'
+  | 'theme-vaporwave'
+  | 'theme-blacklight'
+  | 'theme-magma'
+  | 'theme-radioactive'
+  | 'theme-bubblegum'
+  | 'theme-oil-slick'
+  | 'theme-infrared'
+  | 'theme-plasma'
+  | 'theme-solar-flare'
+  | 'theme-glitch'
+  | 'theme-toxic-slime'
+  | 'theme-deep-sea'
+  | 'theme-supernova'
+  | 'theme-venom'
+  | 'theme-hologram'
+  | 'theme-inferno'
+  | 'theme-cotton-candy'
+  | 'theme-circuit'
+  | 'theme-eclipse';
 
 export const ALL_THEMES = [
   'theme-baskin',
@@ -75,6 +96,26 @@ export const ALL_THEMES = [
   'theme-flamenco',
   'theme-wabi',
   'theme-ultimate',
+  'theme-acid-rain',
+  'theme-vaporwave',
+  'theme-blacklight',
+  'theme-magma',
+  'theme-radioactive',
+  'theme-bubblegum',
+  'theme-oil-slick',
+  'theme-infrared',
+  'theme-plasma',
+  'theme-solar-flare',
+  'theme-glitch',
+  'theme-toxic-slime',
+  'theme-deep-sea',
+  'theme-supernova',
+  'theme-venom',
+  'theme-hologram',
+  'theme-inferno',
+  'theme-cotton-candy',
+  'theme-circuit',
+  'theme-eclipse',
 ] as const;
 
 export function useTheme() {
