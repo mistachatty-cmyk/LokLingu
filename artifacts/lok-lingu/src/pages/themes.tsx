@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { THEMES, type ThemeDef } from './themes-data';
 import { flagEmojiFromLanguageOrCountry } from './theme-emoji';
+import { readableOn } from '@/lib/contrast';
 
 const TIERS = [
   {
@@ -143,7 +144,7 @@ function ThemePreview({
         </div>
         <div
           className="text-[10px] mt-0.5 uppercase tracking-widest"
-          style={{ color: t.subColor, fontFamily: t.font }}
+          style={{ color: readableOn(t.subColor.slice(0, 7), t.bg, 4.5), fontFamily: t.font }}
         >
           (THREE)
         </div>

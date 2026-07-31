@@ -12,26 +12,16 @@
    Sources: https://alphacephei.com/vosk/models (Apache-2.0).
 ------------------------------------------------------------------ */
 
-/** Archive file name per base language code. */
-export const VOSK_MODELS: Record<string, string> = {
-  en: 'vosk-model-small-en-us-0.15.tar.gz',
-  es: 'vosk-model-small-es-0.42.tar.gz',
-  fr: 'vosk-model-small-fr-0.22.tar.gz',
-  de: 'vosk-model-small-de-0.15.tar.gz',
-  it: 'vosk-model-small-it-0.22.tar.gz',
-  pt: 'vosk-model-small-pt-0.3.tar.gz',
-  nl: 'vosk-model-small-nl-0.22.tar.gz',
-  ru: 'vosk-model-small-ru-0.22.tar.gz',
-  tr: 'vosk-model-small-tr-0.3.tar.gz',
-  vi: 'vosk-model-small-vn-0.4.tar.gz',
-  hi: 'vosk-model-small-hi-0.22.tar.gz',
-  ja: 'vosk-model-small-ja-0.22.tar.gz',
-  ko: 'vosk-model-small-ko-0.22.tar.gz',
-  zh: 'vosk-model-small-cn-0.22.tar.gz',
-  ar: 'vosk-model-ar-mgb2-0.4.tar.gz',
-  pl: 'vosk-model-small-pl-0.22.tar.gz',
-  sv: 'vosk-model-small-sv-rhasspy-0.15.tar.gz',
-};
+/**
+ * Languages with a repack recipe in scripts/fetch-vosk-models.mjs. The
+ * built archive is always `<lang>.tar.gz`, because the published .zip
+ * names are version-stamped and change between releases.
+ */
+export const VOSK_MODELS: Record<string, string> = Object.fromEntries(
+  ['en', 'es', 'fr', 'de', 'it', 'pt', 'nl', 'ru', 'tr', 'vi', 'hi', 'ja', 'ko', 'zh', 'pl', 'sv', 'ar'].map(
+    (l) => [l, `${l}.tar.gz`],
+  ),
+);
 
 /**
  * Where the model archives live.
@@ -44,6 +34,23 @@ export const VOSK_MODELS: Record<string, string> = {
 const BASE = (
   (import.meta.env?.VITE_VOSK_MODEL_BASE as string | undefined) || '/models'
 ).replace(/\/$/, '');
+
+/**
+ * Which languages are actually present, read once from the manifest the
+ * fetch script writes. Without this we would happily start a 40 MB request
+ * for a file that was never downloaded.
+ */
+let availablePromise: Promise<Set<string>> | null = null;
+
+export function loadAvailableModels(): Promise<Set<string>> {
+  if (!availablePromise) {
+    availablePromise = fetch(`${BASE}/manifest.json`, { cache: 'no-cache' })
+      .then((r) => (r.ok ? r.json() : { languages: [] }))
+      .then((j: { languages?: string[] }) => new Set(j.languages ?? []))
+      .catch(() => new Set<string>());
+  }
+  return availablePromise;
+}
 
 export function voskModelUrl(baseLanguage: string): string | null {
   const file = VOSK_MODELS[baseLanguage];

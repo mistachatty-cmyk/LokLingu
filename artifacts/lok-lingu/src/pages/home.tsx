@@ -20,6 +20,7 @@ import {
   Sparkles,
   Globe,
   Backpack,
+  Bug,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +31,7 @@ import { FontPicker } from '@/components/font-picker';
 
 import { normalizeLanguagesData } from '@/lib/offline-data';
 import { detectCapabilities } from '@/lib/speech/capabilities';
+import { isDevMode, setDevMode } from '@/lib/dev-mode';
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -58,6 +60,7 @@ export default function Home() {
   );
   const [showFonts, setShowFonts] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [devMode, setDevModeState] = useState(isDevMode);
   const usernameInputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -570,6 +573,26 @@ export default function Home() {
                         Not supported in this browser. Try Chrome, Edge, or Safari.
                       </p>
                     )}
+                  </div>
+
+                  {/* Dev mode */}
+                  <div className="flex items-center justify-between px-1">
+                    <div className="flex items-center space-x-2">
+                      <Bug className="w-4 h-4 text-muted-foreground" />
+                      <div>
+                        <span className="text-sm font-medium">Dev Mode</span>
+                        <span className="text-[9px] text-muted-foreground font-mono ml-1.5 uppercase tracking-wider">
+                          FPS · Errors · Engine
+                        </span>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={devMode}
+                      onCheckedChange={(v) => {
+                        setDevModeState(v);
+                        setDevMode(v);
+                      }}
+                    />
                   </div>
 
                   {/* Experimental World Map */}

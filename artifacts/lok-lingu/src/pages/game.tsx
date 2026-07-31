@@ -6,6 +6,7 @@ import { FALLBACK_WORDS, saveLocalScore, incrementLifetimeWords } from '@/lib/of
 import { generateNumber, supportsInfiniteCounting } from '@/lib/number-words';
 import { useUser } from '@/hooks/use-user';
 import { useSpeechEngine } from '@/hooks/use-speech-engine';
+import { useDevMode } from '@/hooks/use-dev-mode';
 import { speakWord, matchWord, primeVoices, toLocale } from '@/lib/speech-utils';
 
 type NormalWord = { word: string; translation: string; pronunciation?: string };
@@ -66,6 +67,7 @@ export default function Game() {
   const [feedback, setFeedback] = useState<'idle' | 'hit' | 'miss'>('idle');
   const [isActive, setIsActive] = useState(false);
   const [micError, setMicError] = useState<string | null>(null);
+  const devMode = useDevMode();
 
   // Numbers are a sequence, not a list: when the language has a generator the
   // player can keep counting past the end of any table, forever.
@@ -230,7 +232,7 @@ export default function Game() {
     <div className="relative flex flex-col h-screen bg-background text-foreground overflow-hidden">
       <div className="flex justify-between items-start p-6 w-full absolute top-0 z-10">
         <div className="flex flex-col gap-1">
-          <span className="text-[10px] tracking-widest uppercase opacity-40">
+          <span className="text-[10px] tracking-widest uppercase opacity-70">
             {language} ·{' '}
             {infinite ? `#${wordIndex + 1} · ∞` : `${(wordIndex % words.length) + 1}/${words.length}`}
           </span>
@@ -328,7 +330,7 @@ export default function Game() {
             </>
           )}
         </button>
-        {isActive && engine && (
+        {devMode && isActive && engine && (
           <span className="text-[10px] font-mono uppercase tracking-widest opacity-40">
             {engine === 'vosk' ? 'offline engine' : 'browser engine'} · {engineNote}
           </span>
@@ -336,7 +338,7 @@ export default function Game() {
 
         {/* A listening engine that returns nothing used to look identical to
             one that was working. Say so out loud. */}
-        {isActive && lastError && lastError !== 'no-speech' && (
+        {devMode && isActive && lastError && lastError !== 'no-speech' && (
           <span className="text-[11px] font-mono text-destructive opacity-90">
             {lastError === 'network'
               ? 'Browser speech service unreachable — switching engines'

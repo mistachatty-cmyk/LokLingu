@@ -18,6 +18,12 @@ import Inventory from './pages/inventory';
 import { LiquidGlassCursor } from '@/components/liquid-glass-cursor';
 import { useCursorCosmetics } from '@/hooks/use-cursor-cosmetics';
 import { useTheme } from '@/hooks/use-theme';
+import { DevOverlay } from '@/components/dev-overlay';
+import { installDevCapture } from '@/lib/dev-mode';
+
+// Mirrors console errors and uncaught failures into the in-app dev log.
+// Installed at module scope so nothing is missed during first render.
+installDevCapture();
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -50,6 +56,7 @@ function Router() {
         <Route component={NotFound} />
       </Switch>
       <LiquidGlassCursor glassId={glassId} trailId={trailId} isActive={isActive} />
+      <DevOverlay />
     </Layout>
   );
 }

@@ -31,12 +31,29 @@ are deliberately **not** committed to git.
 ```bash
 cd artifacts/lok-lingu
 
-# download only the languages you ship
-node scripts/fetch-vosk-models.mjs es fr ja
-
-# or everything (~700 MB — almost certainly too big to deploy)
-node scripts/fetch-vosk-models.mjs --all
+pnpm install                                   # needs adm-zip + tar
+node scripts/fetch-vosk-models.mjs --list      # see what is available
+node scripts/fetch-vosk-models.mjs es fr ja    # only the languages you ship
 ```
+
+Expect ~40 MB downloaded and ~40 MB written per language. Verified for
+Spanish:
+
+```
+↓ es: downloading vosk-model-small-es-0.42.zip … 39.8 MB
+  repacking as es.tar.gz … 40.2 MB
+Ready: es
+```
+
+### Why the script repacks instead of just downloading
+
+alphacephei publishes `.zip` archives whose top folder is version-stamped
+(`vosk-model-small-es-0.42/`). vosk-browser loads a **gzipped tar** whose top
+folder is literally `model`. Pointing the app at the published `.zip` does not
+work — and an earlier version of this script requested a `.tar.gz` URL that
+never existed, so it 404'd on every language. The script now downloads the
+zip, extracts it, and rewrites it as `<lang>.tar.gz` rooted at `model/`, using
+`adm-zip` and `tar` rather than shelling out so it works on Windows too.
 
 This writes to `public/models/`, which is served at `/models` on the same
 origin as the app. **No environment variable is needed** — `/models` is the

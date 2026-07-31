@@ -6,6 +6,20 @@ import { ChoroplethMap } from '@/components/choropleth-map';
 import { LanguageRadar } from '@/components/language-radar';
 import { LANGUAGE_COUNTRIES, getLanguageCountry } from '@/data/language-countries';
 import { normalizeLanguagesData } from '@/lib/offline-data';
+import { readableOn } from '@/lib/contrast';
+
+/**
+ * Approximate card background. Themes vary, but every one of them is a dark
+ * ground, so a single dark reference is enough to lift brand colours out of
+ * the unreadable range without recomputing per theme.
+ */
+const CARD_BG = '#12121a';
+
+/**
+ * Target above the 4.5 minimum. Cards sit on slightly different grounds per
+ * theme, so aiming exactly at the threshold leaves some themes just under it.
+ */
+const MIN_CONTRAST = 6;
 import {
   Globe, Play, ArrowLeft, Sparkles, Map, List, ChevronDown, ChevronUp, X, BarChart3,
 } from 'lucide-react';
@@ -71,7 +85,10 @@ function HoverReadout({ hover }: { hover: { lang: string | null; country: string
       <span className="text-sm font-bold">{shown.country}</span>
       {lc ? (
         <>
-          <span className="text-xs font-mono uppercase tracking-widest" style={{ color: lc.color }}>
+          <span
+            className="text-xs font-mono uppercase tracking-widest"
+            style={{ color: readableOn(lc.color, CARD_BG, MIN_CONTRAST) }}
+          >
             {lc.flag} {lc.name}
           </span>
           <span className="text-[11px] font-mono text-muted-foreground">
@@ -128,7 +145,7 @@ export default function Explore() {
     () =>
       availableLanguages.map((l) => ({
         label: l.name,
-        color: l.color,
+        color: readableOn(l.color, CARD_BG, MIN_CONTRAST),
         values: {
           speakers: (l.totalSpeakers / radarMeta.maxSpeakers) * 100,
           countries: (l.countryCodes.length / radarMeta.maxCountries) * 100,
@@ -162,7 +179,7 @@ export default function Explore() {
   function buildRadarItem(lc: (typeof LANGUAGE_COUNTRIES)[number]) {
     return {
       label: lc.name,
-      color: lc.color,
+      color: readableOn(lc.color, CARD_BG, MIN_CONTRAST),
       values: {
         speakers: (lc.totalSpeakers / radarMeta.maxSpeakers) * 100,
         countries: (lc.countryCodes.length / radarMeta.maxCountries) * 100,
