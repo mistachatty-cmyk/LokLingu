@@ -26,6 +26,13 @@ import type { EngineId, SpeechErrorCode, SpeechProvider } from '@/lib/speech/typ
 
 const RESTART_DELAY_MS = 300;
 const MAX_RESTART_DELAY_MS = 2000;
+/**
+ * How many start/end cycles with zero transcripts before we conclude the
+ * engine is not really working and try the other one. Chrome ends sessions
+ * silently when it cannot reach its speech backend, which looks exactly
+ * like "Listening..." forever.
+ */
+const EMPTY_SESSIONS_BEFORE_FALLBACK = 3;
 
 const LANG_MAP: Record<string, string> = {
   es: 'es-ES', fr: 'fr-FR', it: 'it-IT', de: 'de-DE', ja: 'ja-JP', pt: 'pt-BR',
@@ -52,6 +59,10 @@ export function useSpeechEngine({
   const [spokenText, setSpokenText] = useState('');
   const [engine, setEngine] = useState<EngineId | null>(null);
   const [engineNote, setEngineNote] = useState<string>('');
+  /** Last non-fatal problem, surfaced so a silent engine is never invisible. */
+  const [lastError, setLastError] = useState<SpeechErrorCode | null>(null);
+  /** Sessions that started and ended without producing a single transcript. */
+  const [emptySessions, setEmptySessions] = useState(0);
 
   const capsRef = useRef(detectCapabilities());
   const prefRef = useRef<EnginePreference>(readEnginePreference());
@@ -75,7 +86,11 @@ export function useSpeechEngine({
   const restartDelayRef = useRef(RESTART_DELAY_MS);
   const unmountedRef = useRef(false);
   const triedFallbackRef = useRef(false);
+  const gotResultThisSessionRef = useRef(false);
+  const emptyStreakRef = useRef(0);
   const scheduleStartRef = useRef<() => void>(() => {});
+  /** Forward handle so handlers built early can swap the engine. */
+  const switchEngineRef = useRef<(from: EngineId) => void>(() => {});
 
   const clearTimer = useCallback(() => {
     if (restartTimerRef.current) {
@@ -110,23 +125,53 @@ export function useSpeechEngine({
     (id: EngineId): SpeechProvider => {
       const callbacks = {
         onUpdate: ({ transcript, isFinal }: { transcript: string; isFinal: boolean }) => {
+          gotResultThisSessionRef.current = true;
+          emptyStreakRef.current = 0;
+          setEmptySessions(0);
+          setLastError(null);
           setSpokenText(transcript);
           onResultRef.current?.(transcript, isFinal);
         },
         onListening: () => {
           pendingStartRef.current = false;
           restartDelayRef.current = RESTART_DELAY_MS;
-          triedFallbackRef.current = false;
+          gotResultThisSessionRef.current = false;
           setIsListening(true);
         },
         onSessionEnd: () => {
           pendingStartRef.current = false;
           setIsListening(false);
+
+          // An engine that starts, ends, and never returns a word is broken
+          // even though nothing threw. Chrome does this when it cannot reach
+          // its speech backend. Count it and switch engines rather than
+          // sitting on "Listening..." forever.
+          if (!gotResultThisSessionRef.current) {
+            emptyStreakRef.current += 1;
+            setEmptySessions(emptyStreakRef.current);
+            if (emptyStreakRef.current >= EMPTY_SESSIONS_BEFORE_FALLBACK && !triedFallbackRef.current) {
+              triedFallbackRef.current = true;
+              emptyStreakRef.current = 0;
+              switchEngineRef.current(id);
+              return;
+            }
+          }
+
           if (wantListeningRef.current) scheduleStartRef.current();
         },
         onError: (code: SpeechErrorCode) => {
           pendingStartRef.current = false;
           if (code === 'no-speech' || code === 'aborted') return;
+
+          setLastError(code);
+
+          // 'network' means the browser engine cannot reach its speech
+          // service. Retrying it forever is pointless — switch engines.
+          if (code === 'network' && !triedFallbackRef.current) {
+            triedFallbackRef.current = true;
+            switchEngineRef.current(id);
+            return;
+          }
 
           if (code === 'not-allowed') {
             wantListeningRef.current = false;
@@ -137,14 +182,8 @@ export function useSpeechEngine({
           }
 
           if (code === 'engine-unavailable' && !triedFallbackRef.current) {
-            // Swap engines once before giving up.
             triedFallbackRef.current = true;
-            const other: EngineId = id === 'web-speech' ? 'vosk' : 'web-speech';
-            disposeProvider();
-            setEngine(other);
-            setEngineNote(`fell back to ${other}`);
-            providerRef.current = buildProvider(other);
-            scheduleStartRef.current();
+            switchEngineRef.current(id);
             return;
           }
 
@@ -157,6 +196,35 @@ export function useSpeechEngine({
     },
     [clearTimer, disposeProvider],
   );
+
+  /** Tear down the current engine and bring the other one up in its place. */
+  const switchEngine = useCallback(
+    (from: EngineId) => {
+      const other: EngineId = from === 'web-speech' ? 'vosk' : 'web-speech';
+      const caps = capsRef.current;
+
+      // Only switch to something that can actually run here.
+      const otherViable =
+        other === 'vosk'
+          ? caps.hasWasm && voskModelConfigured(langRef.current.split('-')[0].toLowerCase())
+          : caps.hasWebSpeech;
+
+      if (!otherViable) {
+        setEngineNote(`${from} is not responding, and no alternative is available`);
+        onErrorRef.current?.('engine-unavailable');
+        return;
+      }
+
+      disposeProvider();
+      setEngine(other);
+      setEngineNote(`switched from ${from} — it returned nothing`);
+      providerRef.current = buildProvider(other);
+      scheduleStartRef.current();
+    },
+    [buildProvider, disposeProvider],
+  );
+
+  switchEngineRef.current = switchEngine;
 
   const ensureProvider = useCallback((): SpeechProvider | null => {
     if (providerRef.current) return providerRef.current;
@@ -243,6 +311,8 @@ export function useSpeechEngine({
     spokenText,
     engine,
     engineNote,
+    lastError,
+    emptySessions,
     startListening,
     stopListening,
   };

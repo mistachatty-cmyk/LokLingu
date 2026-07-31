@@ -12,7 +12,9 @@ export interface ThemeDef {
   wordColor: string;
   wordGlow?: string;
   subColor: string;
-  tier: 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I';
+  tier: 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J';
+  /** Carries its own keyframe animation / gradient treatment. */
+  animated?: boolean;
   /** Language this theme is themed around, when it is language-specific. */
   language?: string;
   /** Flag tier: the all-in 'ultimate' set, or a single-country 'variant'. */
@@ -1355,5 +1357,80 @@ export const THEMES: ThemeDef[] = [
     flagKind: 'variant',
     language: 'pl',
     pack: 'flag-pack',
+  },
+  {
+    num: 90,
+    id: 'theme-aurora-borealis',
+    tier: 'J',
+    name: 'AURORA BOREALIS',
+    label: 'Aurora Borealis',
+    desc: 'A living sky. Green and violet curtains drift behind every word.',
+    font: "'Outfit', sans-serif",
+    bg: '#050810',
+    border: '#07835a',
+    wordColor: '#7CFFCB',
+    wordGlow: '0 0 20px #7CFFCB, 0 0 48px #A97CFF',
+    subColor: '#25f4af8c',
+    animated: true,
+  },
+  {
+    num: 91,
+    id: 'theme-liquid-gold',
+    tier: 'J',
+    name: 'LIQUID GOLD',
+    label: 'Liquid Gold',
+    desc: 'Poured metal. The word has real specular travel across it.',
+    font: "'Playfair Display', serif",
+    bg: '#0e0b07',
+    border: '#866103',
+    wordColor: '#F7D774',
+    wordGlow: '0 0 20px #F7D774, 0 0 48px #B8860B',
+    subColor: '#f9bb1f8c',
+    animated: true,
+  },
+  {
+    num: 92,
+    id: 'theme-obsidian-prism',
+    tier: 'J',
+    name: 'OBSIDIAN PRISM',
+    label: 'Obsidian Prism',
+    desc: 'Black glass splitting light. Edges catch spectrum as you move.',
+    font: "'Rajdhani', sans-serif",
+    bg: '#070609',
+    border: '#7109a5',
+    wordColor: '#FFFFFF',
+    wordGlow: '0 0 20px #B06CFF, 0 0 48px #4DE0FF',
+    subColor: '#bb47f58c',
+    animated: true,
+  },
+  {
+    num: 93,
+    id: 'theme-paper-lantern',
+    tier: 'J',
+    name: 'PAPER LANTERN',
+    label: 'Paper Lantern',
+    desc: 'Warm light through rice paper. Soft, close, unhurried.',
+    font: "'Playfair Display', serif",
+    bg: '#140f0b',
+    border: '#8e370b',
+    wordColor: '#FFD9A0',
+    wordGlow: '0 0 20px #FF9E4F, 0 0 48px #B4531E',
+    subColor: '#ef76398c',
+    animated: true,
+  },
+  {
+    num: 94,
+    id: 'theme-quantum-foam',
+    tier: 'J',
+    name: 'QUANTUM FOAM',
+    label: 'Quantum Foam',
+    desc: 'Vacuum fluctuation. Particles resolve into letters, briefly.',
+    font: "'Space Mono', monospace",
+    bg: '#04050b',
+    border: '#00738a',
+    wordColor: '#66F0FF',
+    wordGlow: '0 0 20px #66F0FF, 0 0 48px #FF52C8',
+    subColor: '#1ad9ff8c',
+    animated: true,
   },
 ];

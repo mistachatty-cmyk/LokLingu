@@ -98,7 +98,13 @@ export type Theme =
   | 'theme-flag-tr'
   | 'theme-flag-th'
   | 'theme-flag-vn'
-  | 'theme-flag-pl';
+  | 'theme-flag-pl'
+  // Category J – Ultra
+  | 'theme-aurora-borealis'
+  | 'theme-liquid-gold'
+  | 'theme-obsidian-prism'
+  | 'theme-paper-lantern'
+  | 'theme-quantum-foam';
 
 export const ALL_THEMES = [
   'theme-baskin',
@@ -191,6 +197,11 @@ export const ALL_THEMES = [
   'theme-flag-th',
   'theme-flag-vn',
   'theme-flag-pl',
+  'theme-aurora-borealis',
+  'theme-liquid-gold',
+  'theme-obsidian-prism',
+  'theme-paper-lantern',
+  'theme-quantum-foam',
 ] as const;
 
 export function useTheme() {

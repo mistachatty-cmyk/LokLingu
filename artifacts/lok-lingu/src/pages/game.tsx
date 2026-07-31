@@ -175,8 +175,17 @@ export default function Game() {
     return [...pool];
   }, [infinite, wordIndex, language, words]);
 
-  const { isListening, isUnsupported, spokenText, engine, engineNote, startListening, stopListening } =
-    useSpeechEngine({
+  const {
+    isListening,
+    isUnsupported,
+    spokenText,
+    engine,
+    engineNote,
+    lastError,
+    emptySessions,
+    startListening,
+    stopListening,
+  } = useSpeechEngine({
       onResult: handleResult,
       onError: (code) => {
         console.error('Speech error:', code);
@@ -250,7 +259,7 @@ export default function Game() {
             className="flex flex-col items-center"
           >
             <h1
-              className={`text-7xl md:text-9xl font-black tracking-tighter capitalize leading-none transition-colors duration-200 ${
+              className={`game-word text-7xl md:text-9xl font-black tracking-tighter capitalize leading-none transition-colors duration-200 ${
                 feedback === 'hit'
                   ? 'text-primary'
                   : feedback === 'miss'
@@ -289,8 +298,14 @@ export default function Game() {
         </AnimatePresence>
       </div>
 
-      <div className="h-6 text-center text-xs font-mono opacity-60">
-        {spokenText || ''}
+      {/* What the engine actually heard. Empty-while-listening is the single
+          most useful diagnostic there is, so it is always visible. */}
+      <div className="h-6 text-center text-xs font-mono">
+        {spokenText ? (
+          <span className="opacity-70">“{spokenText}”</span>
+        ) : isListening ? (
+          <span className="opacity-30">listening…</span>
+        ) : null}
       </div>
 
       <div className="pb-14 px-6 flex flex-col items-center gap-3 w-full">
@@ -316,6 +331,21 @@ export default function Game() {
         {isActive && engine && (
           <span className="text-[10px] font-mono uppercase tracking-widest opacity-40">
             {engine === 'vosk' ? 'offline engine' : 'browser engine'} · {engineNote}
+          </span>
+        )}
+
+        {/* A listening engine that returns nothing used to look identical to
+            one that was working. Say so out loud. */}
+        {isActive && lastError && lastError !== 'no-speech' && (
+          <span className="text-[11px] font-mono text-destructive opacity-90">
+            {lastError === 'network'
+              ? 'Browser speech service unreachable — switching engines'
+              : `Speech engine error: ${lastError}`}
+          </span>
+        )}
+        {isActive && !lastError && emptySessions >= 2 && (
+          <span className="text-[11px] font-mono text-destructive opacity-80">
+            Heard nothing yet — check the mic input device, or try Chrome
           </span>
         )}
         {isUnsupported && (
