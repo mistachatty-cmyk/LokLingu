@@ -134,20 +134,22 @@ export default function Draw() {
     handleSuccess();
   }, [handleSuccess, handleFailure]);
 
+  // Must be declared before the effects below — reading it from a dependency
+  // array while it was still declared further down threw a TDZ ReferenceError
+  // on every render.
+  const currentWord = words?.[wordIndex];
+
   useEffect(() => {
     if (!userId) setLocation('/');
   }, [userId, setLocation]);
 
   useEffect(() => {
-    if (currentWord) {
-      const timer = setTimeout(() => speakWord(currentWord.word, language), 400);
-      return () => clearTimeout(timer);
-    }
+    if (!currentWord) return;
+    const timer = setTimeout(() => speakWord(currentWord.word, language), 400);
+    return () => clearTimeout(timer);
   }, [wordIndex, currentWord, language]);
 
   if (!userId) return null;
-
-  const currentWord = words?.[wordIndex];
 
   return (
     <div className="relative min-h-screen w-full bg-background overflow-hidden flex flex-col select-none">

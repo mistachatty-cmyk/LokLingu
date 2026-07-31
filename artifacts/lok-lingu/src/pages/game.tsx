@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Volume2, Mic } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FALLBACK_WORDS } from '@/lib/offline-data';
+import { useSubmitScore } from '@workspace/api-client-react';
+import { FALLBACK_WORDS, saveLocalScore } from '@/lib/offline-data';
+import { useUser } from '@/hooks/use-user';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { speakWord, matchWord, primeVoices, toLocale } from '@/lib/speech-utils';
 
@@ -66,7 +68,39 @@ export default function Game() {
   currentWordRef.current = currentWord;
   const lockedRef = useRef(false);
 
+  const { userId } = useUser();
+  const submitScore = useSubmitScore({
+    mutation: {
+      // Local save below is the source of truth for the offline leaderboard.
+      onError: () => {},
+    },
+  });
+
+  // A "run" is everything between starting and stopping the mic. The speech
+  // game has no game-over, so the run is committed when the user stops it
+  // (or leaves the page) — otherwise nothing ever reaches the leaderboard.
+  const streakRef = useRef(streak);
+  streakRef.current = streak;
+  const userIdRef = useRef(userId);
+  userIdRef.current = userId;
+  const submitRef = useRef(submitScore);
+  submitRef.current = submitScore;
+
+  const commitRun = useCallback(() => {
+    const count = streakRef.current;
+    if (count <= 0) return;
+    streakRef.current = 0;
+    const uid = userIdRef.current;
+    saveLocalScore({ userId: uid ?? 1, language, category, count });
+    if (uid) {
+      submitRef.current.mutate({ data: { userId: uid, language, category, count } });
+    }
+  }, [language, category]);
+
   useEffect(() => primeVoices(), []);
+
+  // Commit an in-progress run if the player navigates away mid-session.
+  useEffect(() => () => commitRun(), [commitRun]);
 
   const handleResult = useCallback((spoken: string, isFinal: boolean) => {
     if (lockedRef.current) return;
@@ -106,6 +140,8 @@ export default function Game() {
         // instead of leaving the button stuck on "Ready...".
         if (err === 'not-allowed' || err === 'service-not-allowed') {
           setIsActive(false);
+          commitRun();
+          setStreak(0);
           setMicError('Microphone blocked. Allow mic access and try again.');
         }
       },
@@ -116,6 +152,8 @@ export default function Game() {
     if (isActive) {
       setIsActive(false);
       stopListening();
+      commitRun();
+      setStreak(0);
       return;
     }
     setMicError(null);
