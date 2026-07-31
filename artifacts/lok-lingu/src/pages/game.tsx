@@ -44,8 +44,6 @@ function resolveWords(language: string, category: string): NormalWord[] {
   return [];
 }
 
-const LISTEN_TIMEOUT_MS = 7000;
-
 export default function Game() {
   const language = localStorage.getItem('lok-lingu-lang') || 'es';
   const category = localStorage.getItem('lok-lingu-cat') || 'numbers';
@@ -53,6 +51,7 @@ export default function Game() {
   const [wordIndex, setWordIndex] = useState(0);
   const [streak, setStreak] = useState(0);
   const [feedback, setFeedback] = useState<'idle' | 'hit' | 'miss'>('idle');
+  const [isActive, setIsActive] = useState(false);
 
   const words = useMemo(() => resolveWords(language, category), [language, category]);
   const currentWord = words[wordIndex % Math.max(words.length, 1)];
@@ -60,6 +59,8 @@ export default function Game() {
   const currentWordRef = useRef(currentWord);
   currentWordRef.current = currentWord;
   const lockedRef = useRef(false);
+  const isActiveRef = useRef(false);
+  isActiveRef.current = isActive;
 
   useEffect(() => primeVoices(), []);
 
@@ -89,25 +90,25 @@ export default function Game() {
   const { isListening, isUnsupported, spokenText, startListening, stopListening } =
     useSpeechRecognition({
       onResult: handleResult,
+      onError: (err) => console.error('Speech error:', err),
+      onEnd: () => {
+        if (isActiveRef.current) {
+          setTimeout(() => startListeningRef.current(), 150);
+        }
+      },
       lang: toLocale(language),
     });
 
-  useEffect(() => {
-    if (!isListening) return;
-    const t = setTimeout(() => stopListening(), LISTEN_TIMEOUT_MS);
-    return () => clearTimeout(t);
-  }, [isListening, stopListening]);
-
-  useEffect(() => {
-    stopListening();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wordIndex]);
+  const startListeningRef = useRef(startListening);
+  startListeningRef.current = startListening;
 
   const handleMic = () => {
-    if (isListening) {
+    if (isActive) {
+      setIsActive(false);
       stopListening();
       return;
     }
+    setIsActive(true);
     startListening();
   };
 
@@ -179,8 +180,8 @@ export default function Game() {
         </AnimatePresence>
       </div>
 
-      <div className="h-6 text-center text-xs font-mono opacity-40">
-        {isListening && spokenText ? spokenText : ''}
+      <div className="h-6 text-center text-xs font-mono opacity-60">
+        {spokenText || ''}
       </div>
 
       <div className="pb-14 px-6 flex flex-col items-center gap-3 w-full">
@@ -193,9 +194,9 @@ export default function Game() {
               : 'bg-primary text-primary-foreground hover:brightness-110 hover:scale-[1.02] active:scale-95 shadow-xl'
           } disabled:opacity-40 disabled:cursor-not-allowed`}
         >
-          {isListening ? (
+          {isActive ? (
             <>
-              <Mic size={22} /> Listening...
+              <Mic size={22} /> {isListening ? 'Listening...' : 'Ready...'}
             </>
           ) : (
             <>

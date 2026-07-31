@@ -59,10 +59,11 @@ const LANG_MAP: Record<string, string> = {
 export interface SpeechRecognitionOptions {
   onResult?: (text: string, isFinal: boolean) => void;
   onError?: (error: string) => void;
+  onEnd?: () => void;
   lang?: string;
 }
 
-export function useSpeechRecognition({ onResult, onError, lang }: SpeechRecognitionOptions) {
+export function useSpeechRecognition({ onResult, onError, onEnd, lang }: SpeechRecognitionOptions) {
   const [isListening, setIsListening] = useState(false);
   const [spokenText, setSpokenText] = useState('');
   const [isUnsupported] = useState(() => {
@@ -73,8 +74,10 @@ export function useSpeechRecognition({ onResult, onError, lang }: SpeechRecognit
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
   const onResultRef = useRef(onResult);
   const onErrorRef = useRef(onError);
+  const onEndRef = useRef(onEnd);
   onResultRef.current = onResult;
   onErrorRef.current = onError;
+  onEndRef.current = onEnd;
 
   const effectiveLang = LANG_MAP[lang ?? ''] ?? lang ?? 'es-ES';
   const langRef = useRef(effectiveLang);
@@ -133,6 +136,7 @@ export function useSpeechRecognition({ onResult, onError, lang }: SpeechRecognit
     rec.onend = () => {
       if (recognitionRef.current === rec) recognitionRef.current = null;
       setIsListening(false);
+      onEndRef.current?.();
     };
 
     rec.onerror = (e) => {
