@@ -5,7 +5,7 @@ import { useSubmitScore } from '@workspace/api-client-react';
 import { FALLBACK_WORDS, saveLocalScore } from '@/lib/offline-data';
 import { generateNumber, supportsInfiniteCounting } from '@/lib/number-words';
 import { useUser } from '@/hooks/use-user';
-import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
+import { useSpeechEngine } from '@/hooks/use-speech-engine';
 import { speakWord, matchWord, primeVoices, toLocale } from '@/lib/speech-utils';
 
 type NormalWord = { word: string; translation: string; pronunciation?: string };
@@ -149,23 +149,45 @@ export default function Game() {
     }
   }, []);
 
-  const { isListening, isUnsupported, spokenText, startListening, stopListening } =
-    useSpeechRecognition({
-      // The hook owns the restart loop now. game.tsx just starts and stops.
-      continuous: true,
+  // Words the player could plausibly say next. Under Vosk this becomes a hard
+  // grammar, which is the single biggest accuracy win available: while counting
+  // it is impossible to mishear "siete" as an unrelated word.
+  const expectedWords = useMemo(() => {
+    const pool = new Set<string>();
+    const add = (w?: NormalWord) => {
+      if (!w) return;
+      w.word.split(/\s+/).forEach((part) => part && pool.add(part.toLowerCase()));
+      w.pronunciation?.split(/\s+/).forEach((part) => part && pool.add(part.toLowerCase()));
+    };
+    if (infinite) {
+      // The current number plus a small look-ahead, so an eager player who
+      // counts on ahead is still recognised.
+      for (let n = wordIndex + 1; n <= wordIndex + 4; n++) {
+        add(generateNumber(n, language) ?? undefined);
+      }
+    } else {
+      words.forEach(add);
+    }
+    return [...pool];
+  }, [infinite, wordIndex, language, words]);
+
+  const { isListening, isUnsupported, spokenText, engine, engineNote, startListening, stopListening } =
+    useSpeechEngine({
       onResult: handleResult,
-      onError: (err) => {
-        console.error('Speech error:', err);
-        // Permission failures stop the hook's loop; reflect that in the UI
-        // instead of leaving the button stuck on "Ready...".
-        if (err === 'not-allowed' || err === 'service-not-allowed') {
+      onError: (code) => {
+        console.error('Speech error:', code);
+        if (code === 'not-allowed') {
           setIsActive(false);
           commitRun();
           setStreak(0);
           setMicError('Microphone blocked. Allow mic access and try again.');
+        } else if (code === 'engine-unavailable') {
+          setIsActive(false);
+          setMicError('No speech engine available on this device or browser.');
         }
       },
       lang: toLocale(language),
+      expected: expectedWords,
     });
 
   const handleMic = () => {
@@ -287,6 +309,11 @@ export default function Game() {
             </>
           )}
         </button>
+        {isActive && engine && (
+          <span className="text-[10px] font-mono uppercase tracking-widest opacity-40">
+            {engine === 'vosk' ? 'offline engine' : 'browser engine'} · {engineNote}
+          </span>
+        )}
         {isUnsupported && (
           <span className="text-xs opacity-50">Speech recognition needs Chrome or Edge</span>
         )}

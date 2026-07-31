@@ -29,6 +29,7 @@ import { GlitchText } from '@/components/glitch-text';
 import { FontPicker } from '@/components/font-picker';
 
 import { normalizeLanguagesData } from '@/lib/offline-data';
+import { detectCapabilities } from '@/lib/speech/capabilities';
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -76,9 +77,11 @@ export default function Home() {
     }
   }, [categories, category]);
 
+  // Voice is only truly unavailable when neither the browser engine nor
+  // WebAssembly (which powers the offline engine) is present.
   const speechUnsupported = useMemo(() => {
-    if (typeof window === 'undefined') return false;
-    return !window.SpeechRecognition && !window.webkitSpeechRecognition;
+    const c = detectCapabilities();
+    return !c.hasWebSpeech && !c.hasWasm;
   }, []);
 
   const displayName = localUsername.trim() || 'Guest';
@@ -403,6 +406,34 @@ export default function Home() {
           transition={{ duration: 0.5, delay: 0.15 }}
           className="w-full max-w-xs space-y-2"
         >
+          {/* Mode picker — must stay above the fold. It used to live inside the
+              collapsed OPTIONS drawer, so a stale saved mode dropped players
+              into Draw with no visible reason and no mic. */}
+          <div className="grid grid-cols-2 gap-1.5 pb-1">
+            {(['voice', 'draw'] as const).map((m) => (
+              <button
+                key={m}
+                onClick={() => setMode(m)}
+                className={`px-3 py-2.5 rounded-lg border text-sm font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+                  mode === m
+                    ? 'border-primary bg-primary/15 text-primary'
+                    : 'border-border hover:border-primary/30 text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {m === 'voice' ? <Mic className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
+                {m}
+                {m === 'voice' && speechUnsupported && (
+                  <AlertTriangle className="w-3 h-3 text-destructive" />
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* What you are about to play, spelled out. */}
+          <p className="text-center text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground pb-1">
+            {selectedLang?.name ?? language} · {category}
+          </p>
+
           {/* START button */}
           <Button
             onClick={handleStart}
@@ -415,7 +446,7 @@ export default function Home() {
               <Loader2 className="w-6 h-6 animate-spin" />
             ) : (
               <>
-                <Play className="w-5 h-5 mr-3 fill-current" /> START
+                <Play className="w-5 h-5 mr-3 fill-current" /> Start {mode}
               </>
             )}
           </Button>

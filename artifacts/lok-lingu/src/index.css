@@ -2356,3 +2356,1411 @@
   --map-country-border: hsl(var(--border));
 }
 
+/* ── Category H — LINGU CULTURE + Category I — FLAG TIER ───────────── */
+
+:root.theme-kanso {
+  --app-font-sans: 'Playfair Display', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Playfair Display', serif;
+  --word-color: #e8e2d4;
+  --word-glow: 0 0 20px #c8482f, 0 0 48px #2b2b2b;
+  --theme-tier: H;
+
+  --background: 30 12% 7%;
+  --foreground: 35 20% 92%;
+  --border: 0 65% 27%;
+  --input: 0 60% 21%;
+  --ring: 0 65% 55%;
+  --card: 30 12% 11%;
+  --card-foreground: 35 20% 92%;
+  --card-border: 0 65% 31%;
+  --popover: 30 12% 11%;
+  --popover-foreground: 35 20% 92%;
+  --popover-border: 0 65% 31%;
+  --primary: 0 65% 55%;
+  --primary-foreground: 30 12% 7%;
+  --secondary: 35 25% 70%;
+  --secondary-foreground: 30 12% 7%;
+  --muted: 30 12% 16%;
+  --muted-foreground: 35 10% 58%;
+  --accent: 0 65% 23%;
+  --accent-foreground: 0 65% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.125rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(30 12% 13%);
+  --map-land: hsl(30 6% 20%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-shinjuku {
+  --app-font-sans: 'Rajdhani', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Rajdhani', sans-serif;
+  --word-color: #ff2e88;
+  --word-glow: 0 0 20px #ff2e88, 0 0 48px #00d9ff;
+  --theme-tier: H;
+
+  --background: 285 45% 6%;
+  --foreground: 300 60% 92%;
+  --border: 330 100% 34%;
+  --input: 330 60% 28%;
+  --ring: 330 100% 62%;
+  --card: 285 45% 10%;
+  --card-foreground: 300 60% 92%;
+  --card-border: 330 100% 38%;
+  --popover: 285 45% 10%;
+  --popover-foreground: 300 60% 92%;
+  --popover-border: 330 100% 38%;
+  --primary: 330 100% 62%;
+  --primary-foreground: 285 45% 6%;
+  --secondary: 190 100% 58%;
+  --secondary-foreground: 285 45% 6%;
+  --muted: 285 45% 15%;
+  --muted-foreground: 300 20% 58%;
+  --accent: 330 100% 30%;
+  --accent-foreground: 330 100% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.375rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(285 45% 12%);
+  --map-land: hsl(285 39% 19%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flamenco-noche {
+  --app-font-sans: 'Playfair Display', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Playfair Display', serif;
+  --word-color: #d62828;
+  --word-glow: 0 0 20px #d62828, 0 0 48px #f77f00;
+  --theme-tier: H;
+
+  --background: 350 40% 6%;
+  --foreground: 30 40% 92%;
+  --border: 352 90% 22%;
+  --input: 352 60% 16%;
+  --ring: 352 90% 50%;
+  --card: 350 40% 10%;
+  --card-foreground: 30 40% 92%;
+  --card-border: 352 90% 26%;
+  --popover: 350 40% 10%;
+  --popover-foreground: 30 40% 92%;
+  --popover-border: 352 90% 26%;
+  --primary: 352 90% 50%;
+  --primary-foreground: 350 40% 6%;
+  --secondary: 38 95% 55%;
+  --secondary-foreground: 350 40% 6%;
+  --muted: 350 40% 15%;
+  --muted-foreground: 30 10% 58%;
+  --accent: 352 90% 18%;
+  --accent-foreground: 352 90% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(350 40% 12%);
+  --map-land: hsl(350 34% 19%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-azulejo {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #2a6fdb;
+  --word-glow: 0 0 20px #2a6fdb, 0 0 48px #ffd166;
+  --theme-tier: H;
+
+  --background: 210 55% 10%;
+  --foreground: 205 35% 94%;
+  --border: 215 85% 27%;
+  --input: 215 60% 21%;
+  --ring: 215 85% 55%;
+  --card: 210 55% 14%;
+  --card-foreground: 205 35% 94%;
+  --card-border: 215 85% 31%;
+  --popover: 210 55% 14%;
+  --popover-foreground: 205 35% 94%;
+  --popover-border: 215 85% 31%;
+  --primary: 215 85% 55%;
+  --primary-foreground: 210 55% 10%;
+  --secondary: 30 80% 60%;
+  --secondary-foreground: 210 55% 10%;
+  --muted: 210 55% 19%;
+  --muted-foreground: 205 10% 58%;
+  --accent: 215 85% 23%;
+  --accent-foreground: 215 85% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.75rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(210 55% 16%);
+  --map-land: hsl(210 49% 23%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-bistro {
+  --app-font-sans: 'Playfair Display', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Playfair Display', serif;
+  --word-color: #e5c185;
+  --word-glow: 0 0 20px #c1121f, 0 0 48px #3d5a80;
+  --theme-tier: H;
+
+  --background: 220 25% 9%;
+  --foreground: 40 30% 92%;
+  --border: 355 70% 22%;
+  --input: 355 60% 16%;
+  --ring: 355 70% 50%;
+  --card: 220 25% 13%;
+  --card-foreground: 40 30% 92%;
+  --card-border: 355 70% 26%;
+  --popover: 220 25% 13%;
+  --popover-foreground: 40 30% 92%;
+  --popover-border: 355 70% 26%;
+  --primary: 355 70% 50%;
+  --primary-foreground: 220 25% 9%;
+  --secondary: 210 50% 60%;
+  --secondary-foreground: 220 25% 9%;
+  --muted: 220 25% 18%;
+  --muted-foreground: 40 10% 58%;
+  --accent: 355 70% 18%;
+  --accent-foreground: 355 70% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.375rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(220 25% 15%);
+  --map-land: hsl(220 19% 22%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-bauhaus {
+  --app-font-sans: 'Rajdhani', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Rajdhani', sans-serif;
+  --word-color: #e63946;
+  --word-glow: 0 0 20px #e63946, 0 0 48px #f1c40f;
+  --theme-tier: H;
+
+  --background: 0 0% 8%;
+  --foreground: 0 0% 95%;
+  --border: 0 85% 24%;
+  --input: 0 60% 18%;
+  --ring: 0 85% 52%;
+  --card: 0 0% 12%;
+  --card-foreground: 0 0% 95%;
+  --card-border: 0 85% 28%;
+  --popover: 0 0% 12%;
+  --popover-foreground: 0 0% 95%;
+  --popover-border: 0 85% 28%;
+  --primary: 0 85% 52%;
+  --primary-foreground: 0 0% 8%;
+  --secondary: 215 90% 50%;
+  --secondary-foreground: 0 0% 8%;
+  --muted: 0 0% 17%;
+  --muted-foreground: 0 10% 58%;
+  --accent: 0 85% 20%;
+  --accent-foreground: 0 85% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(0 0% 14%);
+  --map-land: hsl(0 4% 21%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-rinascimento {
+  --app-font-sans: 'Playfair Display', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Playfair Display', serif;
+  --word-color: #c8963e;
+  --word-glow: 0 0 20px #c8963e, 0 0 48px #2a9d5c;
+  --theme-tier: H;
+
+  --background: 25 30% 8%;
+  --foreground: 35 35% 92%;
+  --border: 150 50% 14%;
+  --input: 150 50% 8%;
+  --ring: 150 50% 42%;
+  --card: 25 30% 12%;
+  --card-foreground: 35 35% 92%;
+  --card-border: 150 50% 18%;
+  --popover: 25 30% 12%;
+  --popover-foreground: 35 35% 92%;
+  --popover-border: 150 50% 18%;
+  --primary: 150 50% 42%;
+  --primary-foreground: 25 30% 8%;
+  --secondary: 28 80% 55%;
+  --secondary-foreground: 25 30% 8%;
+  --muted: 25 30% 17%;
+  --muted-foreground: 35 10% 58%;
+  --accent: 150 50% 10%;
+  --accent-foreground: 150 50% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(25 30% 14%);
+  --map-land: hsl(25 24% 21%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-samovar {
+  --app-font-sans: 'Space Mono', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Space Mono', monospace;
+  --word-color: #d4a017;
+  --word-glow: 0 0 20px #c1121f, 0 0 48px #d4a017;
+  --theme-tier: H;
+
+  --background: 0 20% 6%;
+  --foreground: 35 30% 92%;
+  --border: 0 80% 20%;
+  --input: 0 60% 14%;
+  --ring: 0 80% 48%;
+  --card: 0 20% 10%;
+  --card-foreground: 35 30% 92%;
+  --card-border: 0 80% 24%;
+  --popover: 0 20% 10%;
+  --popover-foreground: 35 30% 92%;
+  --popover-border: 0 80% 24%;
+  --primary: 0 80% 48%;
+  --primary-foreground: 0 20% 6%;
+  --secondary: 42 90% 55%;
+  --secondary-foreground: 0 20% 6%;
+  --muted: 0 20% 15%;
+  --muted-foreground: 35 10% 58%;
+  --accent: 0 80% 16%;
+  --accent-foreground: 0 80% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.25rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(0 20% 12%);
+  --map-land: hsl(0 14% 19%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-hanbok {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ff7043;
+  --word-glow: 0 0 20px #ff7043, 0 0 48px #26a69a;
+  --theme-tier: H;
+
+  --background: 230 30% 8%;
+  --foreground: 25 30% 94%;
+  --border: 15 85% 32%;
+  --input: 15 60% 26%;
+  --ring: 15 85% 60%;
+  --card: 230 30% 12%;
+  --card-foreground: 25 30% 94%;
+  --card-border: 15 85% 36%;
+  --popover: 230 30% 12%;
+  --popover-foreground: 25 30% 94%;
+  --popover-border: 15 85% 36%;
+  --primary: 15 85% 60%;
+  --primary-foreground: 230 30% 8%;
+  --secondary: 175 70% 45%;
+  --secondary-foreground: 230 30% 8%;
+  --muted: 230 30% 17%;
+  --muted-foreground: 25 10% 58%;
+  --accent: 15 85% 28%;
+  --accent-foreground: 15 85% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.875rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(230 30% 14%);
+  --map-land: hsl(230 24% 21%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-qinghua {
+  --app-font-sans: 'Playfair Display', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Playfair Display', serif;
+  --word-color: #3f7cd6;
+  --word-glow: 0 0 20px #3f7cd6, 0 0 48px #c1272d;
+  --theme-tier: H;
+
+  --background: 215 45% 9%;
+  --foreground: 210 25% 94%;
+  --border: 220 80% 24%;
+  --input: 220 60% 18%;
+  --ring: 220 80% 52%;
+  --card: 215 45% 13%;
+  --card-foreground: 210 25% 94%;
+  --card-border: 220 80% 28%;
+  --popover: 215 45% 13%;
+  --popover-foreground: 210 25% 94%;
+  --popover-border: 220 80% 28%;
+  --primary: 220 80% 52%;
+  --primary-foreground: 215 45% 9%;
+  --secondary: 0 80% 50%;
+  --secondary-foreground: 215 45% 9%;
+  --muted: 215 45% 18%;
+  --muted-foreground: 210 10% 58%;
+  --accent: 220 80% 20%;
+  --accent-foreground: 220 80% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.625rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(215 45% 15%);
+  --map-land: hsl(215 39% 22%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-zellige {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #1eb5a6;
+  --word-glow: 0 0 20px #1eb5a6, 0 0 48px #e0a800;
+  --theme-tier: H;
+
+  --background: 190 45% 7%;
+  --foreground: 40 30% 93%;
+  --border: 175 75% 14%;
+  --input: 175 60% 8%;
+  --ring: 175 75% 42%;
+  --card: 190 45% 11%;
+  --card-foreground: 40 30% 93%;
+  --card-border: 175 75% 18%;
+  --popover: 190 45% 11%;
+  --popover-foreground: 40 30% 93%;
+  --popover-border: 175 75% 18%;
+  --primary: 175 75% 42%;
+  --primary-foreground: 190 45% 7%;
+  --secondary: 40 90% 58%;
+  --secondary-foreground: 190 45% 7%;
+  --muted: 190 45% 16%;
+  --muted-foreground: 40 10% 58%;
+  --accent: 175 75% 10%;
+  --accent-foreground: 175 75% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(190 45% 13%);
+  --map-land: hsl(190 39% 20%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-holi {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ff4da6;
+  --word-glow: 0 0 20px #ff4da6, 0 0 48px #ffd000;
+  --theme-tier: H;
+
+  --background: 300 35% 8%;
+  --foreground: 45 40% 95%;
+  --border: 330 95% 34%;
+  --input: 330 60% 28%;
+  --ring: 330 95% 62%;
+  --card: 300 35% 12%;
+  --card-foreground: 45 40% 95%;
+  --card-border: 330 95% 38%;
+  --popover: 300 35% 12%;
+  --popover-foreground: 45 40% 95%;
+  --popover-border: 330 95% 38%;
+  --primary: 330 95% 62%;
+  --primary-foreground: 300 35% 8%;
+  --secondary: 50 100% 58%;
+  --secondary-foreground: 300 35% 8%;
+  --muted: 300 35% 17%;
+  --muted-foreground: 45 10% 58%;
+  --accent: 330 95% 30%;
+  --accent-foreground: 330 95% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 1rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(300 35% 14%);
+  --map-land: hsl(300 29% 21%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-delftware {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #3b6fc4;
+  --word-glow: 0 0 20px #3b6fc4, 0 0 48px #ff8c1a;
+  --theme-tier: H;
+
+  --background: 215 40% 10%;
+  --foreground: 210 20% 94%;
+  --border: 218 75% 22%;
+  --input: 218 60% 16%;
+  --ring: 218 75% 50%;
+  --card: 215 40% 14%;
+  --card-foreground: 210 20% 94%;
+  --card-border: 218 75% 26%;
+  --popover: 215 40% 14%;
+  --popover-foreground: 210 20% 94%;
+  --popover-border: 218 75% 26%;
+  --primary: 218 75% 50%;
+  --primary-foreground: 215 40% 10%;
+  --secondary: 30 85% 58%;
+  --secondary-foreground: 215 40% 10%;
+  --muted: 215 40% 19%;
+  --muted-foreground: 210 10% 58%;
+  --accent: 218 75% 18%;
+  --accent-foreground: 218 75% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(215 40% 16%);
+  --map-land: hsl(215 34% 23%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-lagom {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #4d8ee0;
+  --word-glow: 0 0 20px #4d8ee0, 0 0 48px #ffd447;
+  --theme-tier: H;
+
+  --background: 210 30% 10%;
+  --foreground: 200 20% 93%;
+  --border: 210 80% 24%;
+  --input: 210 60% 18%;
+  --ring: 210 80% 52%;
+  --card: 210 30% 14%;
+  --card-foreground: 200 20% 93%;
+  --card-border: 210 80% 28%;
+  --popover: 210 30% 14%;
+  --popover-foreground: 200 20% 93%;
+  --popover-border: 210 80% 28%;
+  --primary: 210 80% 52%;
+  --primary-foreground: 210 30% 10%;
+  --secondary: 45 90% 60%;
+  --secondary-foreground: 210 30% 10%;
+  --muted: 210 30% 19%;
+  --muted-foreground: 200 10% 58%;
+  --accent: 210 80% 20%;
+  --accent-foreground: 210 80% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.75rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(210 30% 16%);
+  --map-land: hsl(210 24% 23%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-iznik {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #1fc4b5;
+  --word-glow: 0 0 20px #1fc4b5, 0 0 48px #ff5c4d;
+  --theme-tier: H;
+
+  --background: 190 50% 8%;
+  --foreground: 190 25% 93%;
+  --border: 180 80% 17%;
+  --input: 180 60% 11%;
+  --ring: 180 80% 45%;
+  --card: 190 50% 12%;
+  --card-foreground: 190 25% 93%;
+  --card-border: 180 80% 21%;
+  --popover: 190 50% 12%;
+  --popover-foreground: 190 25% 93%;
+  --popover-border: 180 80% 21%;
+  --primary: 180 80% 45%;
+  --primary-foreground: 190 50% 8%;
+  --secondary: 5 85% 60%;
+  --secondary-foreground: 190 50% 8%;
+  --muted: 190 50% 17%;
+  --muted-foreground: 190 10% 58%;
+  --accent: 180 80% 13%;
+  --accent-foreground: 180 80% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.625rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(190 50% 14%);
+  --map-land: hsl(190 44% 21%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-wat {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffc233;
+  --word-glow: 0 0 20px #ffc233, 0 0 48px #b06ad6;
+  --theme-tier: H;
+
+  --background: 275 35% 7%;
+  --foreground: 45 45% 93%;
+  --border: 45 95% 27%;
+  --input: 45 60% 21%;
+  --ring: 45 95% 55%;
+  --card: 275 35% 11%;
+  --card-foreground: 45 45% 93%;
+  --card-border: 45 95% 31%;
+  --popover: 275 35% 11%;
+  --popover-foreground: 45 45% 93%;
+  --popover-border: 45 95% 31%;
+  --primary: 45 95% 55%;
+  --primary-foreground: 275 35% 7%;
+  --secondary: 300 70% 60%;
+  --secondary-foreground: 275 35% 7%;
+  --muted: 275 35% 16%;
+  --muted-foreground: 45 10% 58%;
+  --accent: 45 95% 23%;
+  --accent-foreground: 45 95% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.75rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(275 35% 13%);
+  --map-land: hsl(275 29% 20%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-sen {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #e63946;
+  --word-glow: 0 0 20px #e63946, 0 0 48px #57cc99;
+  --theme-tier: H;
+
+  --background: 355 35% 7%;
+  --foreground: 30 30% 93%;
+  --border: 355 85% 24%;
+  --input: 355 60% 18%;
+  --ring: 355 85% 52%;
+  --card: 355 35% 11%;
+  --card-foreground: 30 30% 93%;
+  --card-border: 355 85% 28%;
+  --popover: 355 35% 11%;
+  --popover-foreground: 30 30% 93%;
+  --popover-border: 355 85% 28%;
+  --primary: 355 85% 52%;
+  --primary-foreground: 355 35% 7%;
+  --secondary: 150 60% 48%;
+  --secondary-foreground: 355 35% 7%;
+  --muted: 355 35% 16%;
+  --muted-foreground: 30 10% 58%;
+  --accent: 355 85% 20%;
+  --accent-foreground: 355 85% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(355 35% 13%);
+  --map-land: hsl(355 29% 20%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-kosciuszko {
+  --app-font-sans: 'Space Mono', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Space Mono', monospace;
+  --word-color: #dc2626;
+  --word-glow: 0 0 20px #dc2626, 0 0 48px #f5c518;
+  --theme-tier: H;
+
+  --background: 0 0% 7%;
+  --foreground: 35 25% 93%;
+  --border: 0 75% 22%;
+  --input: 0 60% 16%;
+  --ring: 0 75% 50%;
+  --card: 0 0% 11%;
+  --card-foreground: 35 25% 93%;
+  --card-border: 0 75% 26%;
+  --popover: 0 0% 11%;
+  --popover-foreground: 35 25% 93%;
+  --popover-border: 0 75% 26%;
+  --primary: 0 75% 50%;
+  --primary-foreground: 0 0% 7%;
+  --secondary: 40 90% 55%;
+  --secondary-foreground: 0 0% 7%;
+  --muted: 0 0% 16%;
+  --muted-foreground: 35 10% 58%;
+  --accent: 0 75% 18%;
+  --accent-foreground: 0 75% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.25rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(0 0% 13%);
+  --map-land: hsl(0 4% 20%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-ultimate {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffffff;
+  --word-glow: 0 0 20px #4d9fff, 0 0 48px #ff4d6d;
+  --theme-tier: I;
+
+  --background: 225 35% 5%;
+  --foreground: 0 0% 96%;
+  --border: 210 90% 30%;
+  --input: 210 60% 24%;
+  --ring: 210 90% 58%;
+  --card: 225 35% 9%;
+  --card-foreground: 0 0% 96%;
+  --card-border: 210 90% 34%;
+  --popover: 225 35% 9%;
+  --popover-foreground: 0 0% 96%;
+  --popover-border: 210 90% 34%;
+  --primary: 210 90% 58%;
+  --primary-foreground: 225 35% 5%;
+  --secondary: 350 90% 58%;
+  --secondary-foreground: 225 35% 5%;
+  --muted: 225 35% 14%;
+  --muted-foreground: 0 10% 58%;
+  --accent: 210 90% 26%;
+  --accent-foreground: 210 90% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.75rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(225 35% 11%);
+  --map-land: hsl(225 29% 18%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-es {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffc400;
+  --word-glow: 0 0 20px #c60b1e, 0 0 48px #ffc400;
+  --theme-tier: I;
+
+  --background: 0 45% 7%;
+  --foreground: 45 45% 94%;
+  --border: 0 85% 22%;
+  --input: 0 60% 16%;
+  --ring: 0 85% 50%;
+  --card: 0 45% 11%;
+  --card-foreground: 45 45% 94%;
+  --card-border: 0 85% 26%;
+  --popover: 0 45% 11%;
+  --popover-foreground: 45 45% 94%;
+  --popover-border: 0 85% 26%;
+  --primary: 0 85% 50%;
+  --primary-foreground: 0 45% 7%;
+  --secondary: 45 95% 55%;
+  --secondary-foreground: 0 45% 7%;
+  --muted: 0 45% 16%;
+  --muted-foreground: 45 10% 58%;
+  --accent: 0 85% 18%;
+  --accent-foreground: 0 85% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(0 45% 13%);
+  --map-land: hsl(0 39% 20%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-ja {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffffff;
+  --word-glow: 0 0 20px #bc002d, 0 0 48px #ffffff;
+  --theme-tier: I;
+
+  --background: 0 0% 7%;
+  --foreground: 0 0% 95%;
+  --border: 355 85% 24%;
+  --input: 355 60% 18%;
+  --ring: 355 85% 52%;
+  --card: 0 0% 11%;
+  --card-foreground: 0 0% 95%;
+  --card-border: 355 85% 28%;
+  --popover: 0 0% 11%;
+  --popover-foreground: 0 0% 95%;
+  --popover-border: 355 85% 28%;
+  --primary: 355 85% 52%;
+  --primary-foreground: 0 0% 7%;
+  --secondary: 0 0% 85%;
+  --secondary-foreground: 0 0% 7%;
+  --muted: 0 0% 16%;
+  --muted-foreground: 0 10% 58%;
+  --accent: 355 85% 20%;
+  --accent-foreground: 355 85% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(0 0% 13%);
+  --map-land: hsl(0 4% 20%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-fr {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffffff;
+  --word-glow: 0 0 20px #0055a4, 0 0 48px #ef4135;
+  --theme-tier: I;
+
+  --background: 220 40% 7%;
+  --foreground: 0 0% 95%;
+  --border: 225 80% 24%;
+  --input: 225 60% 18%;
+  --ring: 225 80% 52%;
+  --card: 220 40% 11%;
+  --card-foreground: 0 0% 95%;
+  --card-border: 225 80% 28%;
+  --popover: 220 40% 11%;
+  --popover-foreground: 0 0% 95%;
+  --popover-border: 225 80% 28%;
+  --primary: 225 80% 52%;
+  --primary-foreground: 220 40% 7%;
+  --secondary: 355 80% 52%;
+  --secondary-foreground: 220 40% 7%;
+  --muted: 220 40% 16%;
+  --muted-foreground: 0 10% 58%;
+  --accent: 225 80% 20%;
+  --accent-foreground: 225 80% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(220 40% 13%);
+  --map-land: hsl(220 34% 20%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-de {
+  --app-font-sans: 'Rajdhani', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Rajdhani', sans-serif;
+  --word-color: #ffce00;
+  --word-glow: 0 0 20px #dd0000, 0 0 48px #ffce00;
+  --theme-tier: I;
+
+  --background: 0 0% 5%;
+  --foreground: 45 40% 94%;
+  --border: 0 80% 20%;
+  --input: 0 60% 14%;
+  --ring: 0 80% 48%;
+  --card: 0 0% 9%;
+  --card-foreground: 45 40% 94%;
+  --card-border: 0 80% 24%;
+  --popover: 0 0% 9%;
+  --popover-foreground: 45 40% 94%;
+  --popover-border: 0 80% 24%;
+  --primary: 0 80% 48%;
+  --primary-foreground: 0 0% 5%;
+  --secondary: 45 95% 52%;
+  --secondary-foreground: 0 0% 5%;
+  --muted: 0 0% 14%;
+  --muted-foreground: 45 10% 58%;
+  --accent: 0 80% 16%;
+  --accent-foreground: 0 80% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.25rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(0 0% 11%);
+  --map-land: hsl(0 4% 18%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-it {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffffff;
+  --word-glow: 0 0 20px #009246, 0 0 48px #ce2b37;
+  --theme-tier: I;
+
+  --background: 145 35% 6%;
+  --foreground: 0 0% 95%;
+  --border: 145 75% 12%;
+  --input: 145 60% 8%;
+  --ring: 145 75% 40%;
+  --card: 145 35% 10%;
+  --card-foreground: 0 0% 95%;
+  --card-border: 145 75% 16%;
+  --popover: 145 35% 10%;
+  --popover-foreground: 0 0% 95%;
+  --popover-border: 145 75% 16%;
+  --primary: 145 75% 40%;
+  --primary-foreground: 145 35% 6%;
+  --secondary: 355 80% 50%;
+  --secondary-foreground: 145 35% 6%;
+  --muted: 145 35% 15%;
+  --muted-foreground: 0 10% 58%;
+  --accent: 145 75% 10%;
+  --accent-foreground: 145 75% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(145 35% 12%);
+  --map-land: hsl(145 29% 19%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-pt {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffe000;
+  --word-glow: 0 0 20px #006600, 0 0 48px #ff0000;
+  --theme-tier: I;
+
+  --background: 150 40% 6%;
+  --foreground: 45 35% 93%;
+  --border: 150 80% 10%;
+  --input: 150 60% 8%;
+  --ring: 150 80% 35%;
+  --card: 150 40% 10%;
+  --card-foreground: 45 35% 93%;
+  --card-border: 150 80% 12%;
+  --popover: 150 40% 10%;
+  --popover-foreground: 45 35% 93%;
+  --popover-border: 150 80% 12%;
+  --primary: 150 80% 35%;
+  --primary-foreground: 150 40% 6%;
+  --secondary: 355 80% 45%;
+  --secondary-foreground: 150 40% 6%;
+  --muted: 150 40% 15%;
+  --muted-foreground: 45 10% 58%;
+  --accent: 150 80% 10%;
+  --accent-foreground: 150 80% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(150 40% 12%);
+  --map-land: hsl(150 34% 19%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-br {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffdf00;
+  --word-glow: 0 0 20px #009c3b, 0 0 48px #002776;
+  --theme-tier: I;
+
+  --background: 145 45% 6%;
+  --foreground: 50 40% 94%;
+  --border: 145 85% 10%;
+  --input: 145 60% 8%;
+  --ring: 145 85% 38%;
+  --card: 145 45% 10%;
+  --card-foreground: 50 40% 94%;
+  --card-border: 145 85% 14%;
+  --popover: 145 45% 10%;
+  --popover-foreground: 50 40% 94%;
+  --popover-border: 145 85% 14%;
+  --primary: 145 85% 38%;
+  --primary-foreground: 145 45% 6%;
+  --secondary: 50 95% 55%;
+  --secondary-foreground: 145 45% 6%;
+  --muted: 145 45% 15%;
+  --muted-foreground: 50 10% 58%;
+  --accent: 145 85% 10%;
+  --accent-foreground: 145 85% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.625rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(145 45% 12%);
+  --map-land: hsl(145 39% 19%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-zh {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffde00;
+  --word-glow: 0 0 20px #de2910, 0 0 48px #ffde00;
+  --theme-tier: I;
+
+  --background: 355 50% 7%;
+  --foreground: 50 45% 94%;
+  --border: 355 85% 20%;
+  --input: 355 60% 14%;
+  --ring: 355 85% 48%;
+  --card: 355 50% 11%;
+  --card-foreground: 50 45% 94%;
+  --card-border: 355 85% 24%;
+  --popover: 355 50% 11%;
+  --popover-foreground: 50 45% 94%;
+  --popover-border: 355 85% 24%;
+  --primary: 355 85% 48%;
+  --primary-foreground: 355 50% 7%;
+  --secondary: 50 95% 55%;
+  --secondary-foreground: 355 50% 7%;
+  --muted: 355 50% 16%;
+  --muted-foreground: 50 10% 58%;
+  --accent: 355 85% 16%;
+  --accent-foreground: 355 85% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.375rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(355 50% 13%);
+  --map-land: hsl(355 44% 20%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-ko {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffffff;
+  --word-glow: 0 0 20px #0047a0, 0 0 48px #cd2e3a;
+  --theme-tier: I;
+
+  --background: 0 0% 7%;
+  --foreground: 0 0% 95%;
+  --border: 220 80% 22%;
+  --input: 220 60% 16%;
+  --ring: 220 80% 50%;
+  --card: 0 0% 11%;
+  --card-foreground: 0 0% 95%;
+  --card-border: 220 80% 26%;
+  --popover: 0 0% 11%;
+  --popover-foreground: 0 0% 95%;
+  --popover-border: 220 80% 26%;
+  --primary: 220 80% 50%;
+  --primary-foreground: 0 0% 7%;
+  --secondary: 355 80% 52%;
+  --secondary-foreground: 0 0% 7%;
+  --muted: 0 0% 16%;
+  --muted-foreground: 0 10% 58%;
+  --accent: 220 80% 18%;
+  --accent-foreground: 220 80% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(0 0% 13%);
+  --map-land: hsl(0 4% 20%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-ru {
+  --app-font-sans: 'Space Mono', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Space Mono', monospace;
+  --word-color: #ffffff;
+  --word-glow: 0 0 20px #0039a6, 0 0 48px #d52b1e;
+  --theme-tier: I;
+
+  --background: 220 35% 6%;
+  --foreground: 0 0% 95%;
+  --border: 220 80% 20%;
+  --input: 220 60% 14%;
+  --ring: 220 80% 48%;
+  --card: 220 35% 10%;
+  --card-foreground: 0 0% 95%;
+  --card-border: 220 80% 24%;
+  --popover: 220 35% 10%;
+  --popover-foreground: 0 0% 95%;
+  --popover-border: 220 80% 24%;
+  --primary: 220 80% 48%;
+  --primary-foreground: 220 35% 6%;
+  --secondary: 355 80% 50%;
+  --secondary-foreground: 220 35% 6%;
+  --muted: 220 35% 15%;
+  --muted-foreground: 0 10% 58%;
+  --accent: 220 80% 16%;
+  --accent-foreground: 220 80% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.25rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(220 35% 12%);
+  --map-land: hsl(220 29% 19%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-in {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ff9933;
+  --word-glow: 0 0 20px #ff9933, 0 0 48px #138808;
+  --theme-tier: I;
+
+  --background: 30 40% 7%;
+  --foreground: 0 0% 95%;
+  --border: 28 90% 27%;
+  --input: 28 60% 21%;
+  --ring: 28 90% 55%;
+  --card: 30 40% 11%;
+  --card-foreground: 0 0% 95%;
+  --card-border: 28 90% 31%;
+  --popover: 30 40% 11%;
+  --popover-foreground: 0 0% 95%;
+  --popover-border: 28 90% 31%;
+  --primary: 28 90% 55%;
+  --primary-foreground: 30 40% 7%;
+  --secondary: 145 70% 40%;
+  --secondary-foreground: 30 40% 7%;
+  --muted: 30 40% 16%;
+  --muted-foreground: 0 10% 58%;
+  --accent: 28 90% 23%;
+  --accent-foreground: 28 90% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.625rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(30 40% 13%);
+  --map-land: hsl(30 34% 20%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-sa {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffffff;
+  --word-glow: 0 0 20px #006c35, 0 0 48px #ffffff;
+  --theme-tier: I;
+
+  --background: 150 45% 6%;
+  --foreground: 0 0% 95%;
+  --border: 150 80% 10%;
+  --input: 150 60% 8%;
+  --ring: 150 80% 32%;
+  --card: 150 45% 10%;
+  --card-foreground: 0 0% 95%;
+  --card-border: 150 80% 12%;
+  --popover: 150 45% 10%;
+  --popover-foreground: 0 0% 95%;
+  --popover-border: 150 80% 12%;
+  --primary: 150 80% 32%;
+  --primary-foreground: 150 45% 6%;
+  --secondary: 0 0% 90%;
+  --secondary-foreground: 150 45% 6%;
+  --muted: 150 45% 15%;
+  --muted-foreground: 0 10% 58%;
+  --accent: 150 80% 10%;
+  --accent-foreground: 150 80% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(150 45% 12%);
+  --map-land: hsl(150 39% 19%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-nl {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffffff;
+  --word-glow: 0 0 20px #ae1c28, 0 0 48px #ff7f00;
+  --theme-tier: I;
+
+  --background: 220 35% 7%;
+  --foreground: 0 0% 95%;
+  --border: 220 80% 17%;
+  --input: 220 60% 11%;
+  --ring: 220 80% 45%;
+  --card: 220 35% 11%;
+  --card-foreground: 0 0% 95%;
+  --card-border: 220 80% 21%;
+  --popover: 220 35% 11%;
+  --popover-foreground: 0 0% 95%;
+  --popover-border: 220 80% 21%;
+  --primary: 220 80% 45%;
+  --primary-foreground: 220 35% 7%;
+  --secondary: 25 95% 55%;
+  --secondary-foreground: 220 35% 7%;
+  --muted: 220 35% 16%;
+  --muted-foreground: 0 10% 58%;
+  --accent: 220 80% 13%;
+  --accent-foreground: 220 80% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(220 35% 13%);
+  --map-land: hsl(220 29% 20%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-se {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #fecc00;
+  --word-glow: 0 0 20px #fecc00, 0 0 48px #006aa7;
+  --theme-tier: I;
+
+  --background: 215 50% 7%;
+  --foreground: 48 45% 94%;
+  --border: 215 85% 14%;
+  --input: 215 60% 8%;
+  --ring: 215 85% 42%;
+  --card: 215 50% 11%;
+  --card-foreground: 48 45% 94%;
+  --card-border: 215 85% 18%;
+  --popover: 215 50% 11%;
+  --popover-foreground: 48 45% 94%;
+  --popover-border: 215 85% 18%;
+  --primary: 215 85% 42%;
+  --primary-foreground: 215 50% 7%;
+  --secondary: 48 95% 55%;
+  --secondary-foreground: 215 50% 7%;
+  --muted: 215 50% 16%;
+  --muted-foreground: 48 10% 58%;
+  --accent: 215 85% 10%;
+  --accent-foreground: 215 85% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.625rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(215 50% 13%);
+  --map-land: hsl(215 44% 20%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-tr {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffffff;
+  --word-glow: 0 0 20px #e30a17, 0 0 48px #ffffff;
+  --theme-tier: I;
+
+  --background: 355 50% 7%;
+  --foreground: 0 0% 95%;
+  --border: 355 85% 20%;
+  --input: 355 60% 14%;
+  --ring: 355 85% 48%;
+  --card: 355 50% 11%;
+  --card-foreground: 0 0% 95%;
+  --card-border: 355 85% 24%;
+  --popover: 355 50% 11%;
+  --popover-foreground: 0 0% 95%;
+  --popover-border: 355 85% 24%;
+  --primary: 355 85% 48%;
+  --primary-foreground: 355 50% 7%;
+  --secondary: 0 0% 92%;
+  --secondary-foreground: 355 50% 7%;
+  --muted: 355 50% 16%;
+  --muted-foreground: 0 10% 58%;
+  --accent: 355 85% 16%;
+  --accent-foreground: 355 85% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(355 50% 13%);
+  --map-land: hsl(355 44% 20%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-th {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffffff;
+  --word-glow: 0 0 20px #2d2a4a, 0 0 48px #a51931;
+  --theme-tier: I;
+
+  --background: 225 45% 6%;
+  --foreground: 0 0% 95%;
+  --border: 225 80% 10%;
+  --input: 225 60% 8%;
+  --ring: 225 80% 35%;
+  --card: 225 45% 10%;
+  --card-foreground: 0 0% 95%;
+  --card-border: 225 80% 12%;
+  --popover: 225 45% 10%;
+  --popover-foreground: 0 0% 95%;
+  --popover-border: 225 80% 12%;
+  --primary: 225 80% 35%;
+  --primary-foreground: 225 45% 6%;
+  --secondary: 355 80% 50%;
+  --secondary-foreground: 225 45% 6%;
+  --muted: 225 45% 15%;
+  --muted-foreground: 0 10% 58%;
+  --accent: 225 80% 10%;
+  --accent-foreground: 225 80% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(225 45% 12%);
+  --map-land: hsl(225 39% 19%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-vn {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffff00;
+  --word-glow: 0 0 20px #da251d, 0 0 48px #ffff00;
+  --theme-tier: I;
+
+  --background: 355 55% 6%;
+  --foreground: 50 45% 94%;
+  --border: 355 85% 17%;
+  --input: 355 60% 11%;
+  --ring: 355 85% 45%;
+  --card: 355 55% 10%;
+  --card-foreground: 50 45% 94%;
+  --card-border: 355 85% 21%;
+  --popover: 355 55% 10%;
+  --popover-foreground: 50 45% 94%;
+  --popover-border: 355 85% 21%;
+  --primary: 355 85% 45%;
+  --primary-foreground: 355 55% 6%;
+  --secondary: 50 95% 55%;
+  --secondary-foreground: 355 55% 6%;
+  --muted: 355 55% 15%;
+  --muted-foreground: 50 10% 58%;
+  --accent: 355 85% 13%;
+  --accent-foreground: 355 85% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(355 55% 12%);
+  --map-land: hsl(355 49% 19%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-pl {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffffff;
+  --word-glow: 0 0 20px #dc143c, 0 0 48px #ffffff;
+  --theme-tier: I;
+
+  --background: 0 0% 7%;
+  --foreground: 0 0% 95%;
+  --border: 355 80% 20%;
+  --input: 355 60% 14%;
+  --ring: 355 80% 48%;
+  --card: 0 0% 11%;
+  --card-foreground: 0 0% 95%;
+  --card-border: 355 80% 24%;
+  --popover: 0 0% 11%;
+  --popover-foreground: 0 0% 95%;
+  --popover-border: 355 80% 24%;
+  --primary: 355 80% 48%;
+  --primary-foreground: 0 0% 7%;
+  --secondary: 0 0% 92%;
+  --secondary-foreground: 0 0% 7%;
+  --muted: 0 0% 16%;
+  --muted-foreground: 0 10% 58%;
+  --accent: 355 80% 16%;
+  --accent-foreground: 355 80% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.375rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(0 0% 13%);
+  --map-land: hsl(0 4% 20%);
+  --map-country-border: hsl(var(--border));
+}
+

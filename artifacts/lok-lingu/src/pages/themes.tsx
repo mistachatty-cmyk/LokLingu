@@ -62,6 +62,22 @@ const TIERS = [
     color: 'text-lime-400',
     locked: false,
   },
+  {
+    tier: 'H' as const,
+    label: 'Category H — Lingu Culture',
+    sublabel: 'One Theme Per Language, Drawn From Its Design',
+    icon: Globe,
+    color: 'text-amber-400',
+    locked: false,
+  },
+  {
+    tier: 'I' as const,
+    label: 'Category I — Flag Tier',
+    sublabel: 'World Flags Ultimate · Singles · Full Pack',
+    icon: Star,
+    color: 'text-sky-400',
+    locked: false,
+  },
 ];
 
 function ThemePreview({
@@ -75,7 +91,7 @@ function ThemePreview({
 }) {
   const [hovered, setHovered] = useState(false);
 
-  const tierName = { A: 'General', B: 'Premium', C: 'Ultimate', D: 'Animated', E: 'Lingu', F: 'Ultimate', G: 'Feral' }[t.tier];
+  const tierName = { A: 'General', B: 'Premium', C: 'Ultimate', D: 'Animated', E: 'Lingu', F: 'Ultimate', G: 'Feral', H: 'Culture', I: 'Flag' }[t.tier];
 
   return (
     <motion.div
