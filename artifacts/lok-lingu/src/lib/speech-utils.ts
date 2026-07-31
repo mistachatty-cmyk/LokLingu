@@ -101,11 +101,24 @@ export function normalize(str: string): string {
     .replace(/[^\p{L}\p{N}\s'-]/gu, '');
 }
 
-export function matchWord(transcript: string, target: string): boolean {
+export function matchWord(transcript: string, target: string, alternates: string[] = []): boolean {
   const t = normalize(transcript);
-  const tar = normalize(target);
-  if (!t || !tar) return false;
+  if (!t) return false;
 
+  const targets = [target, ...alternates]
+    .filter(Boolean)
+    .map((x) => normalize(x))
+    .filter((x) => x.length > 0);
+
+  for (const tar of targets) {
+    if (matchSingle(t, tar)) return true;
+  }
+  return false;
+}
+
+const CJK_RE = /^[\u3040-\u30ff\u4e00-\u9fff\uac00-\ud7af]+$/;
+
+function matchSingle(t: string, tar: string): boolean {
   const words = t.split(/\s+/).filter(Boolean);
   if (words.some((w) => w === tar)) return true;
   if (t.includes(tar)) return true;
@@ -121,13 +134,47 @@ export function matchWord(transcript: string, target: string): boolean {
     if (hits >= targetWords.length * 0.66) return true;
   }
 
-  if (
-    /^[\u3040-\u30ff\u4e00-\u9fff\uac00-\ud7af]+$/.test(tar) &&
-    tar.includes(t) &&
-    t.length >= 1
-  ) {
-    return true;
+  // CJK: the engine often returns a different-but-equivalent script for the
+  // same utterance (kanji vs kana, hanzi vs a longer phrase). Accept
+  // containment in EITHER direction, but require real length so a single
+  // stray character cannot match everything.
+  if (CJK_RE.test(tar) || CJK_RE.test(t)) {
+    const a = t.replace(/\s+/g, '');
+    const b = tar.replace(/\s+/g, '');
+    if (a === b) return true;
+    if (b.length >= 2 && a.includes(b)) return true;
+    if (a.length >= 2 && b.includes(a)) return true;
+  }
+
+  // Latin-script fuzz: one edit for short words, two for longer. Covers the
+  // engine hearing "dose" for "dos".
+  if (!CJK_RE.test(tar) && tar.length >= 3) {
+    const allowed = tar.length <= 5 ? 1 : 2;
+    if (editDistance(t, tar) <= allowed) return true;
+    for (const w of words) {
+      if (editDistance(w, tar) <= allowed) return true;
+    }
   }
 
   return false;
+}
+
+function editDistance(a: string, b: string): number {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  if (Math.abs(a.length - b.length) > 3) return 99;
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const curr = [i];
+    for (let j = 1; j <= b.length; j++) {
+      curr[j] = Math.min(
+        prev[j] + 1,
+        curr[j - 1] + 1,
+        prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1),
+      );
+    }
+    prev = curr;
+  }
+  return prev[b.length];
 }

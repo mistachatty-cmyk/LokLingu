@@ -5,7 +5,7 @@ import { FALLBACK_WORDS } from '@/lib/offline-data';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { speakWord, matchWord, primeVoices, toLocale } from '@/lib/speech-utils';
 
-type NormalWord = { word: string; translation: string };
+type NormalWord = { word: string; translation: string; pronunciation?: string };
 
 function normalizeWord(raw: any): NormalWord | null {
   if (raw == null) return null;
@@ -20,7 +20,12 @@ function normalizeWord(raw: any): NormalWord | null {
     const translation =
       raw.translation ?? raw.meaning ?? raw.english ?? raw.en ?? raw.definition ?? raw.gloss ?? '';
     if (word == null || String(word).trim() === '') return null;
-    return { word: String(word), translation: String(translation ?? '') };
+    const pronunciation = raw.pronunciation ?? raw.romaji ?? raw.pinyin ?? raw.transliteration;
+    return {
+      word: String(word),
+      translation: String(translation ?? ''),
+      pronunciation: pronunciation ? String(pronunciation) : undefined,
+    };
   }
   return null;
 }
@@ -52,6 +57,7 @@ export default function Game() {
   const [streak, setStreak] = useState(0);
   const [feedback, setFeedback] = useState<'idle' | 'hit' | 'miss'>('idle');
   const [isActive, setIsActive] = useState(false);
+  const [micError, setMicError] = useState<string | null>(null);
 
   const words = useMemo(() => resolveWords(language, category), [language, category]);
   const currentWord = words[wordIndex % Math.max(words.length, 1)];
@@ -59,8 +65,6 @@ export default function Game() {
   const currentWordRef = useRef(currentWord);
   currentWordRef.current = currentWord;
   const lockedRef = useRef(false);
-  const isActiveRef = useRef(false);
-  isActiveRef.current = isActive;
 
   useEffect(() => primeVoices(), []);
 
@@ -69,7 +73,11 @@ export default function Game() {
     const target = currentWordRef.current?.word;
     if (!target || !spoken) return;
 
-    if (matchWord(spoken, target)) {
+    const alternates = currentWordRef.current?.pronunciation
+      ? [currentWordRef.current.pronunciation]
+      : [];
+
+    if (matchWord(spoken, target, alternates)) {
       lockedRef.current = true;
       setFeedback('hit');
       setStreak((s) => s + 1);
@@ -89,18 +97,20 @@ export default function Game() {
 
   const { isListening, isUnsupported, spokenText, startListening, stopListening } =
     useSpeechRecognition({
+      // The hook owns the restart loop now. game.tsx just starts and stops.
+      continuous: true,
       onResult: handleResult,
-      onError: (err) => console.error('Speech error:', err),
-      onEnd: () => {
-        if (isActiveRef.current) {
-          setTimeout(() => startListeningRef.current(), 150);
+      onError: (err) => {
+        console.error('Speech error:', err);
+        // Permission failures stop the hook's loop; reflect that in the UI
+        // instead of leaving the button stuck on "Ready...".
+        if (err === 'not-allowed' || err === 'service-not-allowed') {
+          setIsActive(false);
+          setMicError('Microphone blocked. Allow mic access and try again.');
         }
       },
       lang: toLocale(language),
     });
-
-  const startListeningRef = useRef(startListening);
-  startListeningRef.current = startListening;
 
   const handleMic = () => {
     if (isActive) {
@@ -108,6 +118,7 @@ export default function Game() {
       stopListening();
       return;
     }
+    setMicError(null);
     setIsActive(true);
     startListening();
   };
@@ -207,6 +218,7 @@ export default function Game() {
         {isUnsupported && (
           <span className="text-xs opacity-50">Speech recognition needs Chrome or Edge</span>
         )}
+        {micError && <span className="text-xs text-destructive opacity-80">{micError}</span>}
       </div>
     </div>
   );
