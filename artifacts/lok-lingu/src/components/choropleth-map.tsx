@@ -3,11 +3,14 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { geoPath, geoOrthographic, geoMercator, geoEquirectangular } from 'd3-geo';
 import { feature } from 'topojson-client';
 import { getLanguageForCountry, getLanguageCountry } from '@/data/language-countries';
+import { numericToAlpha3 } from '@/data/iso-country-codes';
 
 type ProjectionType = 'equirectangular' | 'mercator' | 'orthographic';
 
 interface Props {
   onSelectLanguage?: (code: string) => void;
+  /** Fires with the language of the country under the cursor, or null. */
+  onHoverLanguage?: (code: string | null, countryName: string | null) => void;
   selectedLanguage?: string | null;
   projection?: ProjectionType;
   supportedLanguages?: string[];
@@ -23,6 +26,7 @@ interface CountryFeature {
 
 export function ChoroplethMap({
   onSelectLanguage,
+  onHoverLanguage,
   selectedLanguage,
   projection: projType = 'equirectangular',
   supportedLanguages,
@@ -47,7 +51,8 @@ export function ChoroplethMap({
         const cf: CountryFeature[] = countries.features
           .filter((f: any) => f.id != null && f.geometry != null)
           .map((f: any) => ({
-            countryCode: String(f.id),
+            // TopoJSON ids are ISO numeric; the language tables are alpha-3.
+            countryCode: numericToAlpha3(f.id) ?? String(f.id),
             name: f.properties?.name ?? String(f.id),
             path: geoPath().projection(proj)(f) ?? '',
           }))
@@ -125,8 +130,14 @@ export function ChoroplethMap({
               strokeWidth={isHovered ? 1.5 : 0.5}
               opacity={isSupported ? (isHovered ? 1 : 0.85) : (isHovered ? 0.6 : 0.3)}
               className="transition-all duration-200 cursor-pointer"
-              onMouseEnter={() => setHovered(cf.countryCode)}
-              onMouseLeave={() => setHovered(null)}
+              onMouseEnter={() => {
+                setHovered(cf.countryCode);
+                onHoverLanguage?.(lang ?? null, cf.name);
+              }}
+              onMouseLeave={() => {
+                setHovered(null);
+                onHoverLanguage?.(null, null);
+              }}
               onClick={() => {
                 if (lang && onSelectLanguage) {
                   onSelectLanguage(lang);

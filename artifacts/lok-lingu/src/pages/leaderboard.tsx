@@ -66,8 +66,18 @@ export default function Leaderboard() {
       createdAt: s.createdAt,
     }));
 
-  const leaderboard =
-    apiLeaderboard || (localLeaderboard.length > 0 ? localLeaderboard : undefined);
+  // The API can answer with an object (or an HTML error page proxied as JSON)
+  // rather than a list. Rendering that used to crash the page outright, so
+  // anything that is not an array is treated as "no API data".
+  const apiRows = ((): typeof localLeaderboard | null => {
+    const raw: unknown = apiLeaderboard;
+    if (Array.isArray(raw)) return raw as typeof localLeaderboard;
+    const nested = (raw as { leaderboard?: unknown } | null | undefined)?.leaderboard;
+    if (Array.isArray(nested)) return nested as typeof localLeaderboard;
+    return null;
+  })();
+
+  const leaderboard = apiRows ?? (localLeaderboard.length > 0 ? localLeaderboard : []);
 
   const localSummary = {
     totalPlayers: 1,
@@ -76,7 +86,10 @@ export default function Leaderboard() {
     topPlayer: localStorage.getItem('lok-lingu-username') || 'Local Player',
   };
 
-  const summary = apiSummary || localSummary;
+  const summary =
+    apiSummary && typeof apiSummary === 'object' && !Array.isArray(apiSummary)
+      ? apiSummary
+      : localSummary;
 
   const categories =
     language !== 'all'
@@ -173,12 +186,12 @@ export default function Leaderboard() {
           </div>
         ) : isLoading ? (
           <div className="text-center py-12 text-muted-foreground">Loading ranks...</div>
-        ) : leaderboard?.length === 0 ? (
+        ) : leaderboard.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground font-serif italic">
             No runs found for these filters.
           </div>
         ) : (
-          leaderboard?.map((entry, i) => (
+          leaderboard.map((entry, i) => (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}

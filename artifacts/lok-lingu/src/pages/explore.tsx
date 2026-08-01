@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useGetLanguages } from '@workspace/api-client-react';
 import { useCelebration } from '@/hooks/use-celebration';
@@ -6,6 +6,20 @@ import { ChoroplethMap } from '@/components/choropleth-map';
 import { LanguageRadar } from '@/components/language-radar';
 import { LANGUAGE_COUNTRIES, getLanguageCountry } from '@/data/language-countries';
 import { normalizeLanguagesData } from '@/lib/offline-data';
+import { readableOn } from '@/lib/contrast';
+
+/**
+ * Approximate card background. Themes vary, but every one of them is a dark
+ * ground, so a single dark reference is enough to lift brand colours out of
+ * the unreadable range without recomputing per theme.
+ */
+const CARD_BG = '#12121a';
+
+/**
+ * Target above the 4.5 minimum. Cards sit on slightly different grounds per
+ * theme, so aiming exactly at the threshold leaves some themes just under it.
+ */
+const MIN_CONTRAST = 6;
 import {
   Globe, Play, ArrowLeft, Sparkles, Map, List, ChevronDown, ChevronUp, X, BarChart3,
 } from 'lucide-react';
@@ -27,9 +41,12 @@ function formatSpeakersCompact(n: number): string {
 
 const RADAR_METRICS = [
   { key: 'speakers', label: 'Speakers' },
-  { key: 'countries', label: 'Countries' },
+  { key: 'countries', label: 'Reach' },
   { key: 'ease', label: 'Ease' },
-  { key: 'writing', label: 'Writing' },
+  // "Writing" used to plot how many OTHER languages shared this script,
+  // which told a learner nothing. Native share is a real property of the
+  // language: how much of its speaker base grew up with it.
+  { key: 'native', label: 'Native share' },
 ];
 
 const DIFFICULTY_LABELS: Record<number, string> = {
@@ -39,6 +56,60 @@ const DIFFICULTY_LABELS: Record<number, string> = {
   4: 'Hard',
   5: 'Very Hard',
 };
+
+/**
+ * Live figures for the country under the cursor. Sticky: keeps the last
+ * hovered country on screen so the numbers can actually be read.
+ */
+function HoverReadout({ hover }: { hover: { lang: string | null; country: string | null } }) {
+  const [last, setLast] = useState<{ lang: string | null; country: string | null } | null>(null);
+  useEffect(() => {
+    if (hover.country) setLast(hover);
+  }, [hover]);
+
+  const shown = hover.country ? hover : last;
+  if (!shown?.country) {
+    return (
+      <div className="mt-2 px-3 py-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+        Hover a country for speaker figures
+      </div>
+    );
+  }
+
+  const lc = shown.lang ? getLanguageCountry(shown.lang) : null;
+  const fmt = (millions: number) =>
+    millions >= 1000 ? `${(millions / 1000).toFixed(2)}B` : `${Math.round(millions)}M`;
+
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1 px-3 py-2 rounded-lg bg-muted/40 border border-border">
+      <span className="text-sm font-bold">{shown.country}</span>
+      {lc ? (
+        <>
+          <span
+            className="text-xs font-mono uppercase tracking-widest"
+            style={{ color: readableOn(lc.color, CARD_BG, MIN_CONTRAST) }}
+          >
+            {lc.flag} {lc.name}
+          </span>
+          <span className="text-[11px] font-mono text-muted-foreground">
+            <span className="text-foreground font-bold">{fmt(lc.totalSpeakers)}</span> speakers
+          </span>
+          <span className="text-[11px] font-mono text-muted-foreground">
+            <span className="text-foreground font-bold">{fmt(lc.nativeSpeakers)}</span> native
+          </span>
+          <span className="text-[11px] font-mono text-muted-foreground">
+            official in <span className="text-foreground font-bold">{lc.countryCodes.length}</span>
+          </span>
+          <span className="text-[11px] font-mono text-muted-foreground">{lc.languageFamily}</span>
+        </>
+      ) : (
+        <span className="text-[11px] font-mono text-muted-foreground">
+          No LokLingu language yet
+        </span>
+      )}
+    </div>
+  );
+}
 
 export default function Explore() {
   const [, setLocation] = useLocation();
@@ -51,6 +122,11 @@ export default function Explore() {
   const [showAll, setShowAll] = useState(false);
   const [compareMode, setCompareMode] = useState(false);
   const [compareLangs, setCompareLangs] = useState<string[]>([]);
+  // Live readout for whatever the cursor is over on the map.
+  const [hover, setHover] = useState<{ lang: string | null; country: string | null }>({
+    lang: null,
+    country: null,
+  });
 
   const supportedCodes = useMemo(() => languagesData?.map((l) => l.code) ?? [], [languagesData]);
 
@@ -62,24 +138,19 @@ export default function Explore() {
   const radarMeta = useMemo(() => {
     const maxSpeakers = Math.max(...availableLanguages.map((l) => l.totalSpeakers), 1);
     const maxCountries = Math.max(...availableLanguages.map((l) => l.countryCodes.length), 1);
-    const wsCounts: Record<string, number> = {};
-    for (const l of availableLanguages) {
-      wsCounts[l.writingSystem] = (wsCounts[l.writingSystem] || 0) + 1;
-    }
-    const maxWS = Math.max(...Object.values(wsCounts), 1);
-    return { maxSpeakers, maxCountries, wsCounts, maxWS };
+    return { maxSpeakers, maxCountries };
   }, [availableLanguages]);
 
   const radarMetrics = useMemo(
     () =>
       availableLanguages.map((l) => ({
         label: l.name,
-        color: l.color,
+        color: readableOn(l.color, CARD_BG, MIN_CONTRAST),
         values: {
           speakers: (l.totalSpeakers / radarMeta.maxSpeakers) * 100,
           countries: (l.countryCodes.length / radarMeta.maxCountries) * 100,
           ease: ((6 - l.difficulty) / 5) * 100,
-          writing: ((radarMeta.wsCounts[l.writingSystem] || 1) / radarMeta.maxWS) * 100,
+          native: l.totalSpeakers > 0 ? (l.nativeSpeakers / l.totalSpeakers) * 100 : 0,
         },
       })),
     [availableLanguages, radarMeta],
@@ -87,33 +158,33 @@ export default function Explore() {
 
   const avgValues = useMemo(() => {
     if (radarMetrics.length === 0) {
-      return { speakers: 0, countries: 0, ease: 0, writing: 0 };
+      return { speakers: 0, countries: 0, ease: 0, native: 0 };
     }
-    const sum = { speakers: 0, countries: 0, ease: 0, writing: 0 };
+    const sum = { speakers: 0, countries: 0, ease: 0, native: 0 };
     for (const m of radarMetrics) {
       sum.speakers += m.values.speakers;
       sum.countries += m.values.countries;
       sum.ease += m.values.ease;
-      sum.writing += m.values.writing;
+      sum.native += m.values.native;
     }
     const n = radarMetrics.length;
     return {
       speakers: sum.speakers / n,
       countries: sum.countries / n,
       ease: sum.ease / n,
-      writing: sum.writing / n,
+      native: sum.native / n,
     };
   }, [radarMetrics]);
 
   function buildRadarItem(lc: (typeof LANGUAGE_COUNTRIES)[number]) {
     return {
       label: lc.name,
-      color: lc.color,
+      color: readableOn(lc.color, CARD_BG, MIN_CONTRAST),
       values: {
         speakers: (lc.totalSpeakers / radarMeta.maxSpeakers) * 100,
         countries: (lc.countryCodes.length / radarMeta.maxCountries) * 100,
         ease: ((6 - lc.difficulty) / 5) * 100,
-        writing: ((radarMeta.wsCounts[lc.writingSystem] || 1) / radarMeta.maxWS) * 100,
+        native: lc.totalSpeakers > 0 ? (lc.nativeSpeakers / lc.totalSpeakers) * 100 : 0,
       },
     };
   }
@@ -239,12 +310,18 @@ export default function Explore() {
             <div className="bg-card border border-border rounded-xl overflow-hidden p-2">
               <ChoroplethMap
                 onSelectLanguage={handleSelectLanguage}
+                onHoverLanguage={(lang, country) => setHover({ lang, country })}
                 selectedLanguage={selectedLang}
                 supportedLanguages={supportedCodes}
                 projection="equirectangular"
                 width={700}
                 height={380}
               />
+
+              {/* Reacts to the country under the cursor. Holds the last
+                  hovered country when the cursor leaves so the numbers do
+                  not flicker away mid-read. */}
+              <HoverReadout hover={hover} />
             </div>
           </motion.div>
         ) : (

@@ -1,11 +1,15 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Volume2, Mic } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FALLBACK_WORDS } from '@/lib/offline-data';
-import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
+import { useSubmitScore } from '@workspace/api-client-react';
+import { FALLBACK_WORDS, saveLocalScore, incrementLifetimeWords } from '@/lib/offline-data';
+import { generateNumber, supportsInfiniteCounting } from '@/lib/number-words';
+import { useUser } from '@/hooks/use-user';
+import { useSpeechEngine } from '@/hooks/use-speech-engine';
+import { useDevMode } from '@/hooks/use-dev-mode';
 import { speakWord, matchWord, primeVoices, toLocale } from '@/lib/speech-utils';
 
-type NormalWord = { word: string; translation: string };
+type NormalWord = { word: string; translation: string; pronunciation?: string };
 
 function normalizeWord(raw: any): NormalWord | null {
   if (raw == null) return null;
@@ -20,28 +24,38 @@ function normalizeWord(raw: any): NormalWord | null {
     const translation =
       raw.translation ?? raw.meaning ?? raw.english ?? raw.en ?? raw.definition ?? raw.gloss ?? '';
     if (word == null || String(word).trim() === '') return null;
-    return { word: String(word), translation: String(translation ?? '') };
+    const pronunciation = raw.pronunciation ?? raw.romaji ?? raw.pinyin ?? raw.transliteration;
+    return {
+      word: String(word),
+      translation: String(translation ?? ''),
+      pronunciation: pronunciation ? String(pronunciation) : undefined,
+    };
   }
   return null;
 }
 
-function resolveWords(language: string, category: string): NormalWord[] {
-  const candidates = [
-    (FALLBACK_WORDS as any)?.[language]?.[category],
-    (FALLBACK_WORDS as any)?.[language]?.numbers,
-    (FALLBACK_WORDS as any)?.es?.numbers,
-    [
-      { word: 'uno', translation: 'one' },
-      { word: 'dos', translation: 'two' },
-      { word: 'tres', translation: 'three' },
-    ],
-  ];
-  for (const c of candidates) {
-    if (!Array.isArray(c) || c.length === 0) continue;
-    const cleaned = c.map(normalizeWord).filter(Boolean) as NormalWord[];
-    if (cleaned.length > 0) return cleaned;
-  }
-  return [];
+interface Resolved {
+  words: NormalWord[];
+  /** True when we had to substitute another language's list. */
+  substituted: boolean;
+}
+
+/**
+ * Only ever falls back within the requested language. Substituting Spanish
+ * for a missing Japanese list used to leave the player speaking Japanese at
+ * Spanish targets with no way to score, so a substitution is now surfaced.
+ */
+function resolveWords(language: string, category: string): Resolved {
+  const clean = (c: unknown): NormalWord[] =>
+    Array.isArray(c) ? (c.map(normalizeWord).filter(Boolean) as NormalWord[]) : [];
+
+  const exact = clean(FALLBACK_WORDS?.[language]?.[category]);
+  if (exact.length) return { words: exact, substituted: false };
+
+  const sameLanguage = clean(FALLBACK_WORDS?.[language]?.numbers);
+  if (sameLanguage.length) return { words: sameLanguage, substituted: true };
+
+  return { words: [], substituted: false };
 }
 
 export default function Game() {
@@ -52,27 +66,81 @@ export default function Game() {
   const [streak, setStreak] = useState(0);
   const [feedback, setFeedback] = useState<'idle' | 'hit' | 'miss'>('idle');
   const [isActive, setIsActive] = useState(false);
+  const [micError, setMicError] = useState<string | null>(null);
+  const devMode = useDevMode();
 
-  const words = useMemo(() => resolveWords(language, category), [language, category]);
-  const currentWord = words[wordIndex % Math.max(words.length, 1)];
+  // Numbers are a sequence, not a list: when the language has a generator the
+  // player can keep counting past the end of any table, forever.
+  const infinite = category === 'numbers' && supportsInfiniteCounting(language);
+
+  const { words, substituted } = useMemo(
+    () => resolveWords(language, category),
+    [language, category],
+  );
+
+  const currentWord: NormalWord | undefined = useMemo(() => {
+    if (infinite) {
+      const generated = generateNumber(wordIndex + 1, language);
+      if (generated) return generated;
+    }
+    return words[wordIndex % Math.max(words.length, 1)];
+  }, [infinite, wordIndex, language, words]);
 
   const currentWordRef = useRef(currentWord);
   currentWordRef.current = currentWord;
+  const languageRef = useRef(language);
+  languageRef.current = language;
   const lockedRef = useRef(false);
-  const isActiveRef = useRef(false);
-  isActiveRef.current = isActive;
+
+  const { userId } = useUser();
+  const submitScore = useSubmitScore({
+    mutation: {
+      // Local save below is the source of truth for the offline leaderboard.
+      onError: () => {},
+    },
+  });
+
+  // A "run" is everything between starting and stopping the mic. The speech
+  // game has no game-over, so the run is committed when the user stops it
+  // (or leaves the page) — otherwise nothing ever reaches the leaderboard.
+  const streakRef = useRef(streak);
+  streakRef.current = streak;
+  const userIdRef = useRef(userId);
+  userIdRef.current = userId;
+  const submitRef = useRef(submitScore);
+  submitRef.current = submitScore;
+
+  const commitRun = useCallback(() => {
+    const count = streakRef.current;
+    if (count <= 0) return;
+    streakRef.current = 0;
+    const uid = userIdRef.current;
+    saveLocalScore({ userId: uid ?? 1, language, category, count });
+    if (uid) {
+      submitRef.current.mutate({ data: { userId: uid, language, category, count } });
+    }
+  }, [language, category]);
 
   useEffect(() => primeVoices(), []);
+
+  // Commit an in-progress run if the player navigates away mid-session.
+  useEffect(() => () => commitRun(), [commitRun]);
 
   const handleResult = useCallback((spoken: string, isFinal: boolean) => {
     if (lockedRef.current) return;
     const target = currentWordRef.current?.word;
     if (!target || !spoken) return;
 
-    if (matchWord(spoken, target)) {
+    const alternates = currentWordRef.current?.pronunciation
+      ? [currentWordRef.current.pronunciation]
+      : [];
+
+    if (matchWord(spoken, target, alternates)) {
       lockedRef.current = true;
       setFeedback('hit');
       setStreak((s) => s + 1);
+      // Feeds the lifetime pie on the stats page.
+      incrementLifetimeWords(languageRef.current);
       setTimeout(() => {
         setWordIndex((i) => i + 1);
         setFeedback('idle');
@@ -87,34 +155,72 @@ export default function Game() {
     }
   }, []);
 
-  const { isListening, isUnsupported, spokenText, startListening, stopListening } =
-    useSpeechRecognition({
+  // Words the player could plausibly say next. Under Vosk this becomes a hard
+  // grammar, which is the single biggest accuracy win available: while counting
+  // it is impossible to mishear "siete" as an unrelated word.
+  const expectedWords = useMemo(() => {
+    const pool = new Set<string>();
+    const add = (w?: NormalWord) => {
+      if (!w) return;
+      w.word.split(/\s+/).forEach((part) => part && pool.add(part.toLowerCase()));
+      w.pronunciation?.split(/\s+/).forEach((part) => part && pool.add(part.toLowerCase()));
+    };
+    if (infinite) {
+      // The current number plus a small look-ahead, so an eager player who
+      // counts on ahead is still recognised.
+      for (let n = wordIndex + 1; n <= wordIndex + 4; n++) {
+        add(generateNumber(n, language) ?? undefined);
+      }
+    } else {
+      words.forEach(add);
+    }
+    return [...pool];
+  }, [infinite, wordIndex, language, words]);
+
+  const {
+    isListening,
+    isUnsupported,
+    spokenText,
+    engine,
+    engineNote,
+    lastError,
+    emptySessions,
+    startListening,
+    stopListening,
+  } = useSpeechEngine({
       onResult: handleResult,
-      onError: (err) => console.error('Speech error:', err),
-      onEnd: () => {
-        if (isActiveRef.current) {
-          setTimeout(() => startListeningRef.current(), 150);
+      onError: (code) => {
+        console.error('Speech error:', code);
+        if (code === 'not-allowed') {
+          setIsActive(false);
+          commitRun();
+          setStreak(0);
+          setMicError('Microphone blocked. Allow mic access and try again.');
+        } else if (code === 'engine-unavailable') {
+          setIsActive(false);
+          setMicError('No speech engine available on this device or browser.');
         }
       },
       lang: toLocale(language),
+      expected: expectedWords,
     });
-
-  const startListeningRef = useRef(startListening);
-  startListeningRef.current = startListening;
 
   const handleMic = () => {
     if (isActive) {
       setIsActive(false);
       stopListening();
+      commitRun();
+      setStreak(0);
       return;
     }
+    setMicError(null);
     setIsActive(true);
     startListening();
   };
 
   const handleSlowSpeak = () => speakWord(currentWord?.word ?? '', language, { slow: true });
 
-  if (words.length === 0) {
+  if (!currentWord) {
     return (
       <div className="h-screen flex items-center justify-center bg-background text-muted-foreground text-sm font-mono">
         No words loaded for {language} / {category}
@@ -125,9 +231,17 @@ export default function Game() {
   return (
     <div className="relative flex flex-col h-screen bg-background text-foreground overflow-hidden">
       <div className="flex justify-between items-start p-6 w-full absolute top-0 z-10">
-        <span className="text-[10px] tracking-widest uppercase opacity-40">
-          {language} · {(wordIndex % words.length) + 1}/{words.length}
-        </span>
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] tracking-widest uppercase opacity-70">
+            {language} ·{' '}
+            {infinite ? `#${wordIndex + 1} · ∞` : `${(wordIndex % words.length) + 1}/${words.length}`}
+          </span>
+          {substituted && (
+            <span className="text-[10px] tracking-widest uppercase text-destructive opacity-80">
+              No {category} list — using numbers
+            </span>
+          )}
+        </div>
         <div className="flex flex-col items-end">
           <span className="text-sm tracking-widest uppercase opacity-70">Streak</span>
           <span className="text-4xl font-bold tabular-nums" style={{ color: 'var(--word-color)' }}>
@@ -147,7 +261,7 @@ export default function Game() {
             className="flex flex-col items-center"
           >
             <h1
-              className={`text-7xl md:text-9xl font-black tracking-tighter capitalize leading-none transition-colors duration-200 ${
+              className={`game-word text-7xl md:text-9xl font-black tracking-tighter capitalize leading-none transition-colors duration-200 ${
                 feedback === 'hit'
                   ? 'text-primary'
                   : feedback === 'miss'
@@ -160,8 +274,14 @@ export default function Game() {
             </h1>
 
             <p className="text-xl md:text-3xl italic opacity-50 mt-5">
-              {currentWord.translation || '—'}
+              {infinite ? `${wordIndex + 1} · ${currentWord.translation}` : currentWord.translation || '—'}
             </p>
+
+            {currentWord.pronunciation && (
+              <p className="text-sm md:text-base font-mono opacity-40 mt-2 tracking-wide">
+                {currentWord.pronunciation}
+              </p>
+            )}
 
             <div className="group relative mt-10 flex flex-col items-center">
               <button
@@ -180,8 +300,14 @@ export default function Game() {
         </AnimatePresence>
       </div>
 
-      <div className="h-6 text-center text-xs font-mono opacity-60">
-        {spokenText || ''}
+      {/* What the engine actually heard. Empty-while-listening is the single
+          most useful diagnostic there is, so it is always visible. */}
+      <div className="h-6 text-center text-xs font-mono">
+        {spokenText ? (
+          <span className="opacity-70">“{spokenText}”</span>
+        ) : isListening ? (
+          <span className="opacity-30">listening…</span>
+        ) : null}
       </div>
 
       <div className="pb-14 px-6 flex flex-col items-center gap-3 w-full">
@@ -204,9 +330,30 @@ export default function Game() {
             </>
           )}
         </button>
+        {devMode && isActive && engine && (
+          <span className="text-[10px] font-mono uppercase tracking-widest opacity-40">
+            {engine === 'vosk' ? 'offline engine' : 'browser engine'} · {engineNote}
+          </span>
+        )}
+
+        {/* A listening engine that returns nothing used to look identical to
+            one that was working. Say so out loud. */}
+        {devMode && isActive && lastError && lastError !== 'no-speech' && (
+          <span className="text-[11px] font-mono text-destructive opacity-90">
+            {lastError === 'network'
+              ? 'Browser speech service unreachable — switching engines'
+              : `Speech engine error: ${lastError}`}
+          </span>
+        )}
+        {isActive && !lastError && emptySessions >= 2 && (
+          <span className="text-[11px] font-mono text-destructive opacity-80">
+            Heard nothing yet — check the mic input device, or try Chrome
+          </span>
+        )}
         {isUnsupported && (
           <span className="text-xs opacity-50">Speech recognition needs Chrome or Edge</span>
         )}
+        {micError && <span className="text-xs text-destructive opacity-80">{micError}</span>}
       </div>
     </div>
   );

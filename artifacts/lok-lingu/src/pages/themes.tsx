@@ -4,6 +4,8 @@ import { Check, Lock, Star, Zap, Sparkles, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { THEMES, type ThemeDef } from './themes-data';
+import { flagEmojiFromLanguageOrCountry } from './theme-emoji';
+import { readableOn } from '@/lib/contrast';
 
 const TIERS = [
   {
@@ -54,6 +56,38 @@ const TIERS = [
     color: 'text-cyan-400',
     locked: false,
   },
+  {
+    tier: 'G' as const,
+    label: 'Category G — Feral',
+    sublabel: 'Maximum Intensity · Not For Everyone',
+    icon: Zap,
+    color: 'text-lime-400',
+    locked: false,
+  },
+  {
+    tier: 'H' as const,
+    label: 'Category H — Lingu Culture',
+    sublabel: 'One Theme Per Language, Drawn From Its Design',
+    icon: Globe,
+    color: 'text-amber-400',
+    locked: false,
+  },
+  {
+    tier: 'I' as const,
+    label: 'Category I — Flag Tier',
+    sublabel: 'World Flags Ultimate · Singles · Full Pack',
+    icon: Star,
+    color: 'text-sky-400',
+    locked: false,
+  },
+  {
+    tier: 'J' as const,
+    label: 'Category J — Ultra',
+    sublabel: 'Animated · Every Surface Customised',
+    icon: Sparkles,
+    color: 'text-fuchsia-400',
+    locked: false,
+  },
 ];
 
 function ThemePreview({
@@ -67,7 +101,14 @@ function ThemePreview({
 }) {
   const [hovered, setHovered] = useState(false);
 
-  const tierName = { A: 'General', B: 'Premium', C: 'Ultimate', D: 'Animated', E: 'Lingu', F: 'Ultimate' }[t.tier];
+  // Flag themes carry their country in the id: theme-flag-ja -> 🇯🇵
+  const emoji = (() => {
+    const m = /^theme-flag-([a-z]{2})$/.exec(t.id);
+    if (!m) return null;
+    return flagEmojiFromLanguageOrCountry(m[1]);
+  })();
+
+  const tierName = { A: 'General', B: 'Premium', C: 'Ultimate', D: 'Animated', E: 'Lingu', F: 'Ultimate', G: 'Feral', H: 'Culture', I: 'Flag', J: 'Ultra' }[t.tier];
 
   return (
     <motion.div
@@ -103,7 +144,7 @@ function ThemePreview({
         </div>
         <div
           className="text-[10px] mt-0.5 uppercase tracking-widest"
-          style={{ color: t.subColor, fontFamily: t.font }}
+          style={{ color: readableOn(t.subColor.slice(0, 7), t.bg, 4.5), fontFamily: t.font }}
         >
           (THREE)
         </div>
@@ -149,8 +190,13 @@ function ThemePreview({
         )}
       </div>
       <div className="bg-card px-3 py-2 flex justify-between items-center">
-        <span className="font-bold text-xs uppercase tracking-wider">{t.label}</span>
-        <span className="text-[10px] text-muted-foreground font-mono">#{t.num}</span>
+        <span className="font-bold text-xs uppercase tracking-wider flex items-center gap-1.5">
+          {emoji && <span aria-hidden>{emoji}</span>}
+          {t.label}
+        </span>
+        <span className="text-[10px] text-muted-foreground font-mono">
+          {t.animated && <span className="mr-1" title="Animated">✦</span>}#{t.num}
+        </span>
       </div>
     </motion.div>
   );
@@ -169,7 +215,7 @@ export default function Themes() {
       <div className="space-y-1">
         <h1 className="text-3xl font-black tracking-tighter uppercase">Theme Shop</h1>
         <p className="text-muted-foreground text-sm">
-          32 aesthetics · 15 font styles · Your arcade, your look
+          {THEMES.length} aesthetics · 15 font styles · Your arcade, your look
         </p>
       </div>
 

@@ -17,6 +17,13 @@ import Explore from './pages/explore';
 import Inventory from './pages/inventory';
 import { LiquidGlassCursor } from '@/components/liquid-glass-cursor';
 import { useCursorCosmetics } from '@/hooks/use-cursor-cosmetics';
+import { useTheme } from '@/hooks/use-theme';
+import { DevOverlay } from '@/components/dev-overlay';
+import { installDevCapture } from '@/lib/dev-mode';
+
+// Mirrors console errors and uncaught failures into the in-app dev log.
+// Installed at module scope so nothing is missed during first render.
+installDevCapture();
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -29,6 +36,10 @@ const queryClient = new QueryClient({
 });
 
 function Router() {
+  // Applies the saved theme class to <html> for every route. Previously only
+  // pages that happened to call useTheme did this, so /game and /draw — the
+  // two screens you actually play on — always rendered in the default theme.
+  useTheme();
   const { glassId, trailId, isActive } = useCursorCosmetics();
   return (
     <Layout>
@@ -45,6 +56,7 @@ function Router() {
         <Route component={NotFound} />
       </Switch>
       <LiquidGlassCursor glassId={glassId} trailId={trailId} isActive={isActive} />
+      <DevOverlay />
     </Layout>
   );
 }

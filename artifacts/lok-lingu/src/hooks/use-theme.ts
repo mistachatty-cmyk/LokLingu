@@ -39,7 +39,72 @@ export type Theme =
   | 'theme-flamenco'
   | 'theme-wabi'
   // Category F – Ultimate
-  | 'theme-ultimate';
+  | 'theme-ultimate'
+  // Category G – Feral
+  | 'theme-acid-rain'
+  | 'theme-vaporwave'
+  | 'theme-blacklight'
+  | 'theme-magma'
+  | 'theme-radioactive'
+  | 'theme-bubblegum'
+  | 'theme-oil-slick'
+  | 'theme-infrared'
+  | 'theme-plasma'
+  | 'theme-solar-flare'
+  | 'theme-glitch'
+  | 'theme-toxic-slime'
+  | 'theme-deep-sea'
+  | 'theme-supernova'
+  | 'theme-venom'
+  | 'theme-hologram'
+  | 'theme-inferno'
+  | 'theme-cotton-candy'
+  | 'theme-circuit'
+  | 'theme-eclipse'
+  // Category H – Lingu Culture / Category I – Flags
+  | 'theme-kanso'
+  | 'theme-shinjuku'
+  | 'theme-flamenco-noche'
+  | 'theme-azulejo'
+  | 'theme-bistro'
+  | 'theme-bauhaus'
+  | 'theme-rinascimento'
+  | 'theme-samovar'
+  | 'theme-hanbok'
+  | 'theme-qinghua'
+  | 'theme-zellige'
+  | 'theme-holi'
+  | 'theme-delftware'
+  | 'theme-lagom'
+  | 'theme-iznik'
+  | 'theme-wat'
+  | 'theme-sen'
+  | 'theme-kosciuszko'
+  | 'theme-flag-ultimate'
+  | 'theme-flag-es'
+  | 'theme-flag-ja'
+  | 'theme-flag-fr'
+  | 'theme-flag-de'
+  | 'theme-flag-it'
+  | 'theme-flag-pt'
+  | 'theme-flag-br'
+  | 'theme-flag-zh'
+  | 'theme-flag-ko'
+  | 'theme-flag-ru'
+  | 'theme-flag-in'
+  | 'theme-flag-sa'
+  | 'theme-flag-nl'
+  | 'theme-flag-se'
+  | 'theme-flag-tr'
+  | 'theme-flag-th'
+  | 'theme-flag-vn'
+  | 'theme-flag-pl'
+  // Category J – Ultra
+  | 'theme-aurora-borealis'
+  | 'theme-liquid-gold'
+  | 'theme-obsidian-prism'
+  | 'theme-paper-lantern'
+  | 'theme-quantum-foam';
 
 export const ALL_THEMES = [
   'theme-baskin',
@@ -75,6 +140,68 @@ export const ALL_THEMES = [
   'theme-flamenco',
   'theme-wabi',
   'theme-ultimate',
+  'theme-acid-rain',
+  'theme-vaporwave',
+  'theme-blacklight',
+  'theme-magma',
+  'theme-radioactive',
+  'theme-bubblegum',
+  'theme-oil-slick',
+  'theme-infrared',
+  'theme-plasma',
+  'theme-solar-flare',
+  'theme-glitch',
+  'theme-toxic-slime',
+  'theme-deep-sea',
+  'theme-supernova',
+  'theme-venom',
+  'theme-hologram',
+  'theme-inferno',
+  'theme-cotton-candy',
+  'theme-circuit',
+  'theme-eclipse',
+  'theme-kanso',
+  'theme-shinjuku',
+  'theme-flamenco-noche',
+  'theme-azulejo',
+  'theme-bistro',
+  'theme-bauhaus',
+  'theme-rinascimento',
+  'theme-samovar',
+  'theme-hanbok',
+  'theme-qinghua',
+  'theme-zellige',
+  'theme-holi',
+  'theme-delftware',
+  'theme-lagom',
+  'theme-iznik',
+  'theme-wat',
+  'theme-sen',
+  'theme-kosciuszko',
+  'theme-flag-ultimate',
+  'theme-flag-es',
+  'theme-flag-ja',
+  'theme-flag-fr',
+  'theme-flag-de',
+  'theme-flag-it',
+  'theme-flag-pt',
+  'theme-flag-br',
+  'theme-flag-zh',
+  'theme-flag-ko',
+  'theme-flag-ru',
+  'theme-flag-in',
+  'theme-flag-sa',
+  'theme-flag-nl',
+  'theme-flag-se',
+  'theme-flag-tr',
+  'theme-flag-th',
+  'theme-flag-vn',
+  'theme-flag-pl',
+  'theme-aurora-borealis',
+  'theme-liquid-gold',
+  'theme-obsidian-prism',
+  'theme-paper-lantern',
+  'theme-quantum-foam',
 ] as const;
 
 export function useTheme() {
