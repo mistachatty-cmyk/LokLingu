@@ -11,9 +11,9 @@ export interface HealthStatus {
 
 export interface UserInput {
   /**
-     * @minLength 1
-     * @maxLength 32
-     */
+   * @minLength 1
+   * @maxLength 32
+   */
   username: string;
 }
 
@@ -30,6 +30,7 @@ export interface ScoreInput {
   category: string;
   /** @minimum 0 */
   count: number;
+  tokensEarned?: number;
 }
 
 export interface Score {
@@ -94,8 +95,7 @@ export interface UserStats {
 }
 
 export type GetLeaderboardParams = {
-language?: string;
-category?: string;
-limit?: number;
+  language?: string;
+  category?: string;
+  limit?: number;
 };
-

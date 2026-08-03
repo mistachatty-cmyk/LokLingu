@@ -1,0 +1,93 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "typecheck:libs",
+      "type": "shell",
+      "command": "pnpm run typecheck:libs",
+      "group": "build",
+      "problemMatcher": ["$tsc"],
+      "detail": "Typecheck library packages (tsc --build)"
+    },
+    {
+      "label": "typecheck:full",
+      "type": "shell",
+      "command": "pnpm run typecheck",
+      "group": "build",
+      "problemMatcher": ["$tsc"],
+      "detail": "Full workspace typecheck"
+    },
+    {
+      "label": "dev:frontend",
+      "type": "shell",
+      "command": "pnpm --filter @workspace/lok-lingu run dev",
+      "group": "build",
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": { "regexp": ".*", "file": 1, "location": 2, "message": 3 },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*",
+          "endsPattern": ".*"
+        }
+      },
+      "detail": "Start frontend dev server"
+    },
+    {
+      "label": "dev:api",
+      "type": "shell",
+      "command": "pnpm --filter @workspace/api-server run dev",
+      "group": "build",
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": { "regexp": ".*", "file": 1, "location": 2, "message": 3 },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*",
+          "endsPattern": ".*"
+        }
+      },
+      "detail": "Build and start API server"
+    },
+    {
+      "label": "codegen",
+      "type": "shell",
+      "command": "pnpm --filter @workspace/api-spec run codegen",
+      "group": "build",
+      "problemMatcher": [],
+      "detail": "Regenerate API client + Zod schemas from OpenAPI spec"
+    },
+    {
+      "label": "db:push",
+      "type": "shell",
+      "command": "pnpm --filter @workspace/db run push",
+      "group": "build",
+      "problemMatcher": [],
+      "detail": "Push DB schema to Postgres (dev)"
+    },
+    {
+      "label": "lint",
+      "type": "shell",
+      "command": "pnpm run lint",
+      "group": "build",
+      "problemMatcher": ["$eslint-stylish"],
+      "detail": "Run ESLint across the workspace"
+    },
+    {
+      "label": "format",
+      "type": "shell",
+      "command": "pnpm run format",
+      "group": "build",
+      "problemMatcher": [],
+      "detail": "Format all files with Prettier"
+    },
+    {
+      "label": "clean",
+      "type": "shell",
+      "command": "pnpm run clean",
+      "group": "build",
+      "problemMatcher": [],
+      "detail": "Clean all build artifacts"
+    }
+  ]
+}

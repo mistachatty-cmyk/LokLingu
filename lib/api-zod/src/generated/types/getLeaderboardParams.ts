@@ -7,7 +7,7 @@
  */
 
 export type GetLeaderboardParams = {
-language?: string;
-category?: string;
-limit?: number;
+  language?: string;
+  category?: string;
+  limit?: number;
 };

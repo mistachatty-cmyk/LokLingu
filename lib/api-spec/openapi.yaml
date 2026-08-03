@@ -28,12 +28,12 @@ paths:
       tags: [health]
       summary: Health check
       responses:
-        "200":
+        '200':
           description: Healthy
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HealthStatus"
+                $ref: '#/components/schemas/HealthStatus'
 
   /users:
     post:
@@ -45,14 +45,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UserInput"
+              $ref: '#/components/schemas/UserInput'
       responses:
-        "200":
+        '200':
           description: User found or created
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/User"
+                $ref: '#/components/schemas/User'
 
   /users/{id}:
     get:
@@ -66,13 +66,13 @@ paths:
           schema:
             type: integer
       responses:
-        "200":
+        '200':
           description: User found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/User"
-        "404":
+                $ref: '#/components/schemas/User'
+        '404':
           description: User not found
 
   /scores:
@@ -85,14 +85,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ScoreInput"
+              $ref: '#/components/schemas/ScoreInput'
       responses:
-        "201":
+        '201':
           description: Score submitted
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Score"
+                $ref: '#/components/schemas/Score'
 
   /scores/user/{userId}:
     get:
@@ -106,14 +106,14 @@ paths:
           schema:
             type: integer
       responses:
-        "200":
+        '200':
           description: User scores
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Score"
+                  $ref: '#/components/schemas/Score'
 
   /leaderboard:
     get:
@@ -135,14 +135,14 @@ paths:
             type: integer
             default: 20
       responses:
-        "200":
+        '200':
           description: Leaderboard entries
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/LeaderboardEntry"
+                  $ref: '#/components/schemas/LeaderboardEntry'
 
   /leaderboard/summary:
     get:
@@ -150,12 +150,12 @@ paths:
       tags: [leaderboard]
       summary: Get leaderboard stats summary (total players, highest ever count, etc.)
       responses:
-        "200":
+        '200':
           description: Leaderboard summary stats
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/LeaderboardSummary"
+                $ref: '#/components/schemas/LeaderboardSummary'
 
   /words/{language}/{category}:
     get:
@@ -174,15 +174,15 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: Word list
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Word"
-        "404":
+                  $ref: '#/components/schemas/Word'
+        '404':
           description: Language or category not found
 
   /words/languages:
@@ -191,14 +191,14 @@ paths:
       tags: [words]
       summary: Get all available languages and categories
       responses:
-        "200":
+        '200':
           description: Available languages
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Language"
+                  $ref: '#/components/schemas/Language'
 
   /stats/global:
     get:
@@ -206,12 +206,12 @@ paths:
       tags: [stats]
       summary: Get global app statistics
       responses:
-        "200":
+        '200':
           description: Global stats
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GlobalStats"
+                $ref: '#/components/schemas/GlobalStats'
 
   /stats/user/{userId}:
     get:
@@ -225,12 +225,12 @@ paths:
           schema:
             type: integer
       responses:
-        "200":
+        '200':
           description: User stats
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserStats"
+                $ref: '#/components/schemas/UserStats'
 
 components:
   schemas:
@@ -327,7 +327,7 @@ components:
         allTimeHighCount:
           type: integer
         topPlayer:
-          type: ["string", "null"]
+          type: ['string', 'null']
 
     Word:
       type: object
@@ -340,7 +340,7 @@ components:
         index:
           type: integer
         pronunciation:
-          type: ["string", "null"]
+          type: ['string', 'null']
 
     Language:
       type: object
@@ -370,7 +370,16 @@ components:
 
     UserStats:
       type: object
-      required: [userId, username, totalGames, bestCount, totalWordsSpoken, favoriteLanguage, favoriteCategory]
+      required:
+        [
+          userId,
+          username,
+          totalGames,
+          bestCount,
+          totalWordsSpoken,
+          favoriteLanguage,
+          favoriteCategory,
+        ]
       properties:
         userId:
           type: integer
@@ -383,10 +392,10 @@ components:
         totalWordsSpoken:
           type: integer
         favoriteLanguage:
-          type: ["string", "null"]
+          type: ['string', 'null']
         favoriteCategory:
-          type: ["string", "null"]
+          type: ['string', 'null']
         personalBests:
           type: array
           items:
-            $ref: "#/components/schemas/Score"
+            $ref: '#/components/schemas/Score'

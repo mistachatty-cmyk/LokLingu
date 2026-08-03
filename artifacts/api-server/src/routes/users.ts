@@ -1,15 +1,15 @@
-import { Router } from "express";
-import { db, usersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
-import { CreateUserBody, GetUserParams } from "@workspace/api-zod";
+import { Router } from 'express';
+import { db, usersTable } from '@workspace/db';
+import { eq } from 'drizzle-orm';
+import { CreateUserBody, GetUserParams } from '@workspace/api-zod';
 
 const router = Router();
 
 // POST /users - create or get user by username
-router.post("/users", async (req, res) => {
+router.post('/users', async (req, res) => {
   const parsed = CreateUserBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid request body", details: parsed.error.issues });
+    res.status(400).json({ error: 'Invalid request body', details: parsed.error.issues });
     return;
   }
 
@@ -34,10 +34,7 @@ router.post("/users", async (req, res) => {
   }
 
   // Create new user
-  const [newUser] = await db
-    .insert(usersTable)
-    .values({ username })
-    .returning();
+  const [newUser] = await db.insert(usersTable).values({ username }).returning();
 
   res.status(200).json({
     id: newUser.id,
@@ -48,10 +45,10 @@ router.post("/users", async (req, res) => {
 });
 
 // GET /users/:id
-router.get("/users/:id", async (req, res) => {
+router.get('/users/:id', async (req, res) => {
   const parsed = GetUserParams.safeParse({ id: Number(req.params.id) });
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid user ID" });
+    res.status(400).json({ error: 'Invalid user ID' });
     return;
   }
 
@@ -62,7 +59,7 @@ router.get("/users/:id", async (req, res) => {
     .limit(1);
 
   if (!user) {
-    res.status(404).json({ error: "User not found" });
+    res.status(404).json({ error: 'User not found' });
     return;
   }
 

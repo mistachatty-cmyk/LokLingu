@@ -1,5 +1,5 @@
 /* ── Google Fonts ─────────────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;700;900&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400&family=Space+Mono:wght@400;700&family=Orbitron:wght@400;600;700;900&family=Bebas+Neue&family=Special+Elite&family=Rajdhani:wght@400;500;600;700&family=Josefin+Sans:ital,wght@0,300;0,400;0,600;0,700;1,300&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Press+Start+2P&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;700;900&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400&family=Space+Mono:wght@400;700&family=Orbitron:wght@400;600;700;900&family=Bebas+Neue&family=Special+Elite&family=Rajdhani:wght@400;500;600;700&family=Josefin+Sans:ital,wght@0,300;0,400;0,600;0,700;1,300&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Press+Start+2P&family=Unbounded:wght@400;500;600;700;900&family=DM+Serif+Display:ital@0;1&family=Zen+Kurenaido&family=Noto+Sans+JP:wght@300;400;500;700&family=Rock+Salt&family=Fredericka+the+Great&family=Major+Mono+Display&display=swap');
 
 @import 'tailwindcss';
 @import 'tw-animate-css';
@@ -42,11 +42,62 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+:root {
+  --map-ocean: hsl(var(--primary) / 0.08);
+  --map-land: hsl(var(--muted));
+  --map-country-border: hsl(var(--background));
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    CATEGORY A — GENERAL  (Lock Pass · 50 Tokens/mo)
    ═══════════════════════════════════════════════════════════════════ */
 
 /* 1 ─ NEON  (default) ───────────────────────────────────────────── */
+/* ── BASKIN  (default — 31-flavors rainbow) ────────────────────────── */
+:root, :root.theme-baskin {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: hsl(330 100% 65%);
+  --word-glow: 0 0 20px hsl(330 100% 65%), 0 0 40px hsl(200 100% 50%);
+  --theme-tier: A;
+
+  --background: 240 15% 8%;
+  --foreground: 220 20% 90%;
+  --border: 320 60% 25%;
+  --input: 320 40% 15%;
+  --ring: 330 100% 60%;
+  --card: 240 12% 11%;
+  --card-foreground: 220 20% 90%;
+  --card-border: 320 50% 28%;
+  --popover: 240 12% 11%;
+  --popover-foreground: 220 20% 90%;
+  --popover-border: 320 50% 28%;
+  --primary: 330 100% 60%;
+  --primary-foreground: 240 15% 8%;
+  --secondary: 200 100% 55%;
+  --secondary-foreground: 240 15% 8%;
+  --muted: 240 12% 16%;
+  --muted-foreground: 220 10% 60%;
+  --accent: 320 60% 20%;
+  --accent-foreground: 320 100% 85%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.75rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(220 30% 14%);
+  --map-land: hsl(220 15% 20%);
+  --map-country-border: hsl(var(--border));
+}
+:root.theme-baskin .game-word {
+  background: linear-gradient(135deg, #ff6b9d, #c44dff, #4da6ff, #4dffb5);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 :root, :root.theme-neon {
   --app-font-sans: 'Outfit', sans-serif;
   --app-font-serif: 'Playfair Display', serif;
@@ -224,36 +275,40 @@
 /* 6 ─ ARCTIC  (light icy blue) ─────────────────────────────────── */
 :root.theme-arctic {
   --app-font-sans: 'Inter', sans-serif;
-  --app-font-serif: 'Playfair Display', serif;
+  --app-font-serif: 'Inter', sans-serif;
   --app-font-mono: 'Space Mono', monospace;
   --word-font: 'Inter', sans-serif;
-  --word-color: hsl(205 80% 30%);
-  --word-glow: none;
+  --word-color: hsl(208 60% 30%);
+  --word-glow: ;
   --theme-tier: A;
 
-  --background: 205 60% 96%;
-  --foreground: 205 80% 18%;
-  --border: 205 40% 80%;
-  --input: 205 40% 88%;
-  --ring: 205 80% 45%;
-  --card: 205 50% 92%;
-  --card-foreground: 205 80% 18%;
-  --card-border: 205 40% 80%;
-  --popover: 205 50% 92%;
-  --popover-foreground: 205 80% 18%;
-  --popover-border: 205 40% 80%;
-  --primary: 205 80% 40%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 190 70% 38%;
-  --secondary-foreground: 0 0% 100%;
-  --muted: 205 40% 86%;
-  --muted-foreground: 205 40% 45%;
-  --accent: 205 50% 82%;
-  --accent-foreground: 205 80% 18%;
-  --destructive: 0 75% 48%;
+  --background: 206 60% 95%;
+  --foreground: 208 40% 15%;
+  --border: 208 30% 70%;
+  --input: 208 20% 88%;
+  --ring: 208 60% 50%;
+  --card: 206 50% 92%;
+  --card-foreground: 208 40% 15%;
+  --card-border: 208 30% 75%;
+  --popover: 206 50% 92%;
+  --popover-foreground: 208 40% 15%;
+  --popover-border: 208 30% 75%;
+  --primary: 208 60% 40%;
+  --primary-foreground: 206 60% 95%;
+  --secondary: 200 50% 50%;
+  --secondary-foreground: 206 60% 95%;
+  --muted: 206 40% 85%;
+  --muted-foreground: 208 20% 40%;
+  --accent: 208 30% 80%;
+  --accent-foreground: 208 40% 15%;
+  --destructive: 0 70% 50%;
   --destructive-foreground: 0 0% 100%;
-  --radius: 0.5rem;
-  --opaque-button-border-intensity: -8;
+  --radius: 0.875rem;
+  --opaque-button-border-intensity: 2;
+
+  --map-ocean: hsl(206 40% 78%);
+  --map-land: hsl(206 30% 85%);
+  --map-country-border: hsl(208 30% 75%);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -334,70 +389,78 @@
 :root.theme-sand {
   --app-font-sans: 'Playfair Display', serif;
   --app-font-serif: 'Playfair Display', serif;
-  --app-font-mono: 'Courier Prime', monospace;
+  --app-font-mono: 'Space Mono', monospace;
   --word-font: 'Playfair Display', serif;
-  --word-color: hsl(43 75% 28%);
-  --word-glow: none;
+  --word-color: hsl(42 60% 25%);
+  --word-glow: ;
   --theme-tier: B;
 
-  --background: 43 50% 92%;
-  --foreground: 43 75% 20%;
-  --border: 43 30% 80%;
-  --input: 43 30% 85%;
-  --ring: 43 75% 31%;
-  --card: 43 50% 88%;
-  --card-foreground: 43 75% 20%;
-  --card-border: 43 30% 80%;
-  --popover: 43 50% 88%;
-  --popover-foreground: 43 75% 20%;
-  --popover-border: 43 30% 80%;
-  --primary: 43 75% 31%;
-  --primary-foreground: 43 50% 92%;
-  --secondary: 20 40% 40%;
-  --secondary-foreground: 43 50% 92%;
-  --muted: 43 30% 85%;
-  --muted-foreground: 43 40% 40%;
-  --accent: 43 40% 80%;
-  --accent-foreground: 43 75% 20%;
-  --destructive: 0 70% 45%;
+  --background: 42 40% 90%;
+  --foreground: 42 50% 15%;
+  --border: 42 25% 60%;
+  --input: 42 20% 82%;
+  --ring: 42 60% 35%;
+  --card: 42 35% 87%;
+  --card-foreground: 42 50% 15%;
+  --card-border: 42 25% 65%;
+  --popover: 42 35% 87%;
+  --popover-foreground: 42 50% 15%;
+  --popover-border: 42 25% 65%;
+  --primary: 42 60% 30%;
+  --primary-foreground: 42 40% 90%;
+  --secondary: 30 40% 45%;
+  --secondary-foreground: 42 40% 90%;
+  --muted: 42 30% 80%;
+  --muted-foreground: 42 15% 40%;
+  --accent: 42 25% 70%;
+  --accent-foreground: 42 50% 15%;
+  --destructive: 0 60% 45%;
   --destructive-foreground: 0 0% 100%;
-  --radius: 0rem;
-  --opaque-button-border-intensity: -8;
+  --radius: 0.75rem;
+  --opaque-button-border-intensity: 2;
+
+  --map-ocean: hsl(42 25% 72%);
+  --map-land: hsl(42 20% 80%);
+  --map-country-border: hsl(42 25% 65%);
 }
 
 /* 10 ─ E-INK  (existing — pure white minimal) ────────────────────── */
 :root.theme-eink {
   --app-font-sans: 'Inter', sans-serif;
-  --app-font-serif: 'Playfair Display', serif;
+  --app-font-serif: 'Inter', serif;
   --app-font-mono: 'Space Mono', monospace;
   --word-font: 'Inter', sans-serif;
-  --word-color: hsl(0 0% 10%);
-  --word-glow: none;
+  --word-color: hsl(0 0% 7%);
+  --word-glow: ;
   --theme-tier: B;
 
   --background: 0 0% 100%;
-  --foreground: 0 0% 10%;
+  --foreground: 0 0% 7%;
   --border: 0 0% 88%;
   --input: 0 0% 94%;
-  --ring: 0 0% 10%;
-  --card: 0 0% 98%;
-  --card-foreground: 0 0% 10%;
+  --ring: 0 0% 50%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 7%;
   --card-border: 0 0% 88%;
-  --popover: 0 0% 98%;
-  --popover-foreground: 0 0% 10%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 7%;
   --popover-border: 0 0% 88%;
   --primary: 0 0% 10%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 0 0% 30%;
+  --secondary: 0 0% 60%;
   --secondary-foreground: 0 0% 100%;
-  --muted: 0 0% 95%;
-  --muted-foreground: 0 0% 42%;
+  --muted: 0 0% 93%;
+  --muted-foreground: 0 0% 50%;
   --accent: 0 0% 90%;
-  --accent-foreground: 0 0% 10%;
-  --destructive: 0 80% 42%;
+  --accent-foreground: 0 0% 7%;
+  --destructive: 0 70% 40%;
   --destructive-foreground: 0 0% 100%;
   --radius: 0.25rem;
-  --opaque-button-border-intensity: -8;
+  --opaque-button-border-intensity: 2;
+
+  --map-ocean: hsl(0 0% 85%);
+  --map-land: hsl(0 0% 90%);
+  --map-country-border: hsl(0 0% 80%);
 }
 
 /* 11 ─ PHANTOM  (dark silver / ghost grey) ──────────────────────── */
@@ -437,37 +500,41 @@
 
 /* 12 ─ TYPEWRITER  (cream paper + monospace) ────────────────────── */
 :root.theme-typewriter {
-  --app-font-sans: 'Courier Prime', monospace;
+  --app-font-sans: 'Special Elite', cursive;
   --app-font-serif: 'Special Elite', cursive;
-  --app-font-mono: 'Courier Prime', monospace;
+  --app-font-mono: 'Space Mono', monospace;
   --word-font: 'Special Elite', cursive;
-  --word-color: hsl(25 30% 18%);
-  --word-glow: none;
+  --word-color: hsl(35 50% 12%);
+  --word-glow: ;
   --theme-tier: B;
 
-  --background: 42 30% 93%;
-  --foreground: 25 30% 18%;
-  --border: 30 20% 75%;
-  --input: 42 20% 86%;
-  --ring: 25 30% 35%;
-  --card: 42 25% 89%;
-  --card-foreground: 25 30% 18%;
-  --card-border: 30 20% 75%;
-  --popover: 42 25% 89%;
-  --popover-foreground: 25 30% 18%;
-  --popover-border: 30 20% 75%;
-  --primary: 25 30% 28%;
-  --primary-foreground: 42 30% 93%;
-  --secondary: 30 25% 40%;
-  --secondary-foreground: 42 30% 93%;
-  --muted: 42 20% 83%;
-  --muted-foreground: 25 20% 45%;
-  --accent: 42 20% 80%;
-  --accent-foreground: 25 30% 18%;
-  --destructive: 0 65% 42%;
+  --background: 38 40% 88%;
+  --foreground: 35 50% 12%;
+  --border: 38 25% 60%;
+  --input: 38 20% 82%;
+  --ring: 35 40% 35%;
+  --card: 38 35% 85%;
+  --card-foreground: 35 50% 12%;
+  --card-border: 38 25% 65%;
+  --popover: 38 35% 85%;
+  --popover-foreground: 35 50% 12%;
+  --popover-border: 38 25% 65%;
+  --primary: 35 50% 25%;
+  --primary-foreground: 38 40% 88%;
+  --secondary: 25 25% 45%;
+  --secondary-foreground: 38 40% 88%;
+  --muted: 38 25% 78%;
+  --muted-foreground: 35 15% 35%;
+  --accent: 38 25% 70%;
+  --accent-foreground: 35 50% 12%;
+  --destructive: 0 50% 40%;
   --destructive-foreground: 0 0% 100%;
-  --radius: 0rem;
-  --opaque-button-border-intensity: -8;
+  --radius: 0.375rem;
+  --opaque-button-border-intensity: 2;
+
+  --map-ocean: hsl(38 20% 70%);
+  --map-land: hsl(38 18% 78%);
+  --map-country-border: hsl(38 25% 65%);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -617,36 +684,40 @@
 /* 17 ─ CHALK  (very clean off-white / neutral) ──────────────────── */
 :root.theme-chalk {
   --app-font-sans: 'Inter', sans-serif;
-  --app-font-serif: 'Playfair Display', serif;
+  --app-font-serif: 'Inter', serif;
   --app-font-mono: 'Space Mono', monospace;
   --word-font: 'Inter', sans-serif;
-  --word-color: hsl(220 20% 20%);
-  --word-glow: none;
+  --word-color: hsl(228 35% 15%);
+  --word-glow: ;
   --theme-tier: C;
 
-  --background: 220 15% 96%;
-  --foreground: 220 20% 18%;
-  --border: 220 15% 82%;
-  --input: 220 15% 90%;
-  --ring: 220 20% 35%;
-  --card: 220 12% 92%;
-  --card-foreground: 220 20% 18%;
-  --card-border: 220 15% 82%;
-  --popover: 220 12% 92%;
-  --popover-foreground: 220 20% 18%;
-  --popover-border: 220 15% 82%;
-  --primary: 220 70% 42%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 220 20% 35%;
-  --secondary-foreground: 0 0% 100%;
-  --muted: 220 12% 87%;
-  --muted-foreground: 220 12% 45%;
-  --accent: 220 15% 84%;
-  --accent-foreground: 220 20% 18%;
-  --destructive: 0 75% 46%;
+  --background: 225 15% 94%;
+  --foreground: 228 35% 15%;
+  --border: 225 12% 78%;
+  --input: 225 10% 88%;
+  --ring: 228 25% 40%;
+  --card: 225 12% 91%;
+  --card-foreground: 228 35% 15%;
+  --card-border: 225 12% 80%;
+  --popover: 225 12% 91%;
+  --popover-foreground: 228 35% 15%;
+  --popover-border: 225 12% 80%;
+  --primary: 228 35% 30%;
+  --primary-foreground: 225 15% 94%;
+  --secondary: 220 20% 50%;
+  --secondary-foreground: 225 15% 94%;
+  --muted: 225 10% 85%;
+  --muted-foreground: 228 10% 45%;
+  --accent: 225 10% 78%;
+  --accent-foreground: 228 35% 15%;
+  --destructive: 0 60% 50%;
   --destructive-foreground: 0 0% 100%;
-  --radius: 0.375rem;
-  --opaque-button-border-intensity: -8;
+  --radius: 0.625rem;
+  --opaque-button-border-intensity: 2;
+
+  --map-ocean: hsl(225 8% 76%);
+  --map-land: hsl(225 6% 84%);
+  --map-country-border: hsl(225 10% 72%);
 }
 
 /* 18 ─ ONYX  (ultra-dark textured charcoal) ─────────────────────── */
@@ -794,6 +865,485 @@
   --opaque-button-border-intensity: 9;
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   CATEGORY A — GENERAL (new additions)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* 22 ─ SAKURA  (light pink / cherry blossom) ────────────────────── */
+:root.theme-sakura {
+  --app-font-sans: 'Josefin Sans', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Josefin Sans', sans-serif;
+  --word-color: hsl(340 60% 30%);
+  --word-glow: none;
+  --theme-tier: A;
+
+  --background: 340 50% 96%;
+  --foreground: 340 60% 25%;
+  --border: 340 30% 80%;
+  --input: 340 30% 88%;
+  --ring: 340 70% 55%;
+  --card: 340 45% 92%;
+  --card-foreground: 340 60% 25%;
+  --card-border: 340 30% 80%;
+  --popover: 340 45% 92%;
+  --popover-foreground: 340 60% 25%;
+  --popover-border: 340 30% 80%;
+  --primary: 340 70% 50%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 10 70% 60%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 340 30% 86%;
+  --muted-foreground: 340 30% 45%;
+  --accent: 340 40% 82%;
+  --accent-foreground: 340 60% 25%;
+  --destructive: 0 75% 48%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.75rem;
+  --opaque-button-border-intensity: -8;
+
+  --map-ocean: hsl(340 30% 78%);
+  --map-land: hsl(340 25% 85%);
+  --map-country-border: hsl(340 30% 75%);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CATEGORY B — PREMIUM (new additions)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* 23 ─ FOREST  (dark woodland green) ────────────────────────────── */
+:root.theme-forest {
+  --app-font-sans: 'DM Serif Display', serif;
+  --app-font-serif: 'DM Serif Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'DM Serif Display', serif;
+  --word-color: hsl(120 100% 75%);
+  --word-glow: 0 0 15px hsl(120 60% 40%), 0 0 35px hsl(120 50% 25%);
+  --theme-tier: B;
+
+  --background: 120 25% 6%;
+  --foreground: 120 60% 85%;
+  --border: 120 40% 18%;
+  --input: 120 40% 10%;
+  --ring: 120 100% 50%;
+  --card: 120 22% 9%;
+  --card-foreground: 120 60% 85%;
+  --card-border: 120 40% 18%;
+  --popover: 120 22% 9%;
+  --popover-foreground: 120 60% 85%;
+  --popover-border: 120 40% 18%;
+  --primary: 120 100% 45%;
+  --primary-foreground: 120 25% 6%;
+  --secondary: 90 60% 40%;
+  --secondary-foreground: 120 25% 6%;
+  --muted: 120 18% 14%;
+  --muted-foreground: 120 30% 48%;
+  --accent: 120 40% 14%;
+  --accent-foreground: 120 60% 85%;
+  --destructive: 0 85% 52%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.375rem;
+  --opaque-button-border-intensity: 9;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CATEGORY C — ULTIMATE (new additions)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* 24 ─ MIDNIGHT  (deep navy / gold stars) ───────────────────────── */
+:root.theme-midnight {
+  --app-font-sans: 'Unbounded', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Unbounded', sans-serif;
+  --word-color: hsl(45 100% 60%);
+  --word-glow: 0 0 25px hsl(45 100% 50%), 0 0 50px hsl(45 80% 35%);
+  --theme-tier: C;
+
+  --background: 225 50% 4%;
+  --foreground: 45 80% 90%;
+  --border: 225 40% 16%;
+  --input: 225 40% 9%;
+  --ring: 45 100% 55%;
+  --card: 225 45% 7%;
+  --card-foreground: 45 80% 90%;
+  --card-border: 225 40% 16%;
+  --popover: 225 45% 7%;
+  --popover-foreground: 45 80% 90%;
+  --popover-border: 225 40% 16%;
+  --primary: 45 100% 50%;
+  --primary-foreground: 225 50% 4%;
+  --secondary: 220 80% 50%;
+  --secondary-foreground: 225 50% 4%;
+  --muted: 225 30% 12%;
+  --muted-foreground: 45 30% 50%;
+  --accent: 225 40% 12%;
+  --accent-foreground: 45 80% 90%;
+  --destructive: 0 90% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+}
+
+/* 25 ─ STEEL  (industrial blue-grey) ────────────────────────────── */
+:root.theme-steel {
+  --app-font-sans: 'Barlow Condensed', sans-serif;
+  --app-font-serif: 'Barlow Condensed', sans-serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Barlow Condensed', sans-serif;
+  --word-color: hsl(210 20% 70%);
+  --word-glow: 0 0 12px rgba(180,200,220,0.3);
+  --theme-tier: C;
+
+  --background: 210 15% 8%;
+  --foreground: 210 20% 82%;
+  --border: 210 15% 22%;
+  --input: 210 15% 13%;
+  --ring: 210 30% 55%;
+  --card: 210 12% 11%;
+  --card-foreground: 210 20% 82%;
+  --card-border: 210 15% 22%;
+  --popover: 210 12% 11%;
+  --popover-foreground: 210 20% 82%;
+  --popover-border: 210 15% 22%;
+  --primary: 210 50% 50%;
+  --primary-foreground: 210 15% 8%;
+  --secondary: 200 40% 40%;
+  --secondary-foreground: 210 15% 8%;
+  --muted: 210 10% 16%;
+  --muted-foreground: 210 15% 48%;
+  --accent: 210 15% 18%;
+  --accent-foreground: 210 20% 82%;
+  --destructive: 0 80% 52%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.125rem;
+  --opaque-button-border-intensity: 9;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CATEGORY D — ANIMATED (new additions)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* 26 ─ HORIZON  (animated sunset gradient drift) ────────────────── */
+:root.theme-horizon {
+  --app-font-sans: 'DM Serif Display', serif;
+  --app-font-serif: 'DM Serif Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'DM Serif Display', serif;
+  --word-color: hsl(25 100% 70%);
+  --word-glow: 0 0 25px hsl(25 100% 55%), 0 0 60px hsl(350 100% 50%);
+  --theme-tier: D;
+
+  --background: 350 10% 5%;
+  --foreground: 25 80% 88%;
+  --border: 350 30% 18%;
+  --input: 350 30% 10%;
+  --ring: 25 100% 55%;
+  --card: 350 12% 8%;
+  --card-foreground: 25 80% 88%;
+  --card-border: 350 30% 18%;
+  --popover: 350 12% 8%;
+  --popover-foreground: 25 80% 88%;
+  --popover-border: 350 30% 18%;
+  --primary: 25 100% 50%;
+  --primary-foreground: 350 10% 5%;
+  --secondary: 350 80% 50%;
+  --secondary-foreground: 350 10% 5%;
+  --muted: 350 10% 14%;
+  --muted-foreground: 25 35% 52%;
+  --accent: 350 30% 14%;
+  --accent-foreground: 25 80% 88%;
+  --destructive: 0 90% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+}
+
+/* 27 ─ CYBERWAVE  (animated cyberpunk wave / glitch) ────────────── */
+:root.theme-cyberwave {
+  --app-font-sans: 'Unbounded', sans-serif;
+  --app-font-serif: 'Unbounded', sans-serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Unbounded', sans-serif;
+  --word-color: hsl(290 100% 65%);
+  --word-glow: 0 0 20px hsl(290 100% 55%), 0 0 50px hsl(330 100% 50%), 0 0 80px hsl(250 100% 50%);
+  --theme-tier: D;
+
+  --background: 260 30% 5%;
+  --foreground: 290 80% 85%;
+  --border: 290 50% 20%;
+  --input: 290 50% 12%;
+  --ring: 290 100% 55%;
+  --card: 260 25% 8%;
+  --card-foreground: 290 80% 85%;
+  --card-border: 290 50% 20%;
+  --popover: 260 25% 8%;
+  --popover-foreground: 290 80% 85%;
+  --popover-border: 290 50% 20%;
+  --primary: 290 100% 50%;
+  --primary-foreground: 260 30% 5%;
+  --secondary: 330 100% 50%;
+  --secondary-foreground: 260 30% 5%;
+  --muted: 260 20% 14%;
+  --muted-foreground: 290 35% 52%;
+  --accent: 290 50% 16%;
+  --accent-foreground: 290 80% 85%;
+  --destructive: 0 90% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0rem;
+  --opaque-button-border-intensity: 9;
+}
+
+/* 28 ─ OCEAN  (animated deep ocean wave) ────────────────────────── */
+:root.theme-ocean {
+  --app-font-sans: 'Josefin Sans', sans-serif;
+  --app-font-serif: 'Josefin Sans', sans-serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Josefin Sans', sans-serif;
+  --word-color: hsl(190 100% 65%);
+  --word-glow: 0 0 25px hsl(190 100% 55%), 0 0 60px hsl(220 100% 45%);
+  --theme-tier: D;
+
+  --background: 200 40% 5%;
+  --foreground: 190 80% 85%;
+  --border: 200 50% 18%;
+  --input: 200 50% 10%;
+  --ring: 190 100% 50%;
+  --card: 200 35% 8%;
+  --card-foreground: 190 80% 85%;
+  --card-border: 200 50% 18%;
+  --popover: 200 35% 8%;
+  --popover-foreground: 190 80% 85%;
+  --popover-border: 200 50% 18%;
+  --primary: 190 100% 50%;
+  --primary-foreground: 200 40% 5%;
+  --secondary: 220 80% 50%;
+  --secondary-foreground: 200 40% 5%;
+  --muted: 200 25% 14%;
+  --muted-foreground: 190 35% 50%;
+  --accent: 200 50% 14%;
+  --accent-foreground: 190 80% 85%;
+  --destructive: 0 90% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.75rem;
+  --opaque-button-border-intensity: 9;
+}
+
+/* 29 ─ EMBERS  (animated glowing embers / fire) ─────────────────── */
+:root.theme-embers {
+  --app-font-sans: 'Playfair Display', serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Playfair Display', serif;
+  --word-color: hsl(15 100% 65%);
+  --word-glow: 0 0 20px hsl(15 100% 55%), 0 0 50px hsl(0 100% 45%);
+  --theme-tier: D;
+
+  --background: 10 20% 5%;
+  --foreground: 15 80% 85%;
+  --border: 15 50% 18%;
+  --input: 15 50% 10%;
+  --ring: 15 100% 55%;
+  --card: 10 18% 8%;
+  --card-foreground: 15 80% 85%;
+  --card-border: 15 50% 18%;
+  --popover: 10 18% 8%;
+  --popover-foreground: 15 80% 85%;
+  --popover-border: 15 50% 18%;
+  --primary: 15 100% 50%;
+  --primary-foreground: 10 20% 5%;
+  --secondary: 350 80% 50%;
+  --secondary-foreground: 10 20% 5%;
+  --muted: 10 12% 14%;
+  --muted-foreground: 15 35% 50%;
+  --accent: 15 50% 14%;
+  --accent-foreground: 15 80% 85%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.375rem;
+  --opaque-button-border-intensity: 9;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CATEGORY F — ULTIMATE  (Liquid Glass · Apple Precision)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* 32 ─ ULTIMATE  (liquid glass / glitch FX / apple precision) ──── */
+:root.theme-ultimate {
+  --app-font-sans: 'Orbitron', 'Major Mono Display', monospace;
+  --app-font-serif: 'Orbitron', sans-serif;
+  --app-font-mono: 'Major Mono Display', monospace;
+  --word-font: 'Major Mono Display', monospace;
+  --word-color: hsl(180 100% 55%);
+  --word-glow: 0 0 25px hsl(180 100% 55%), 0 0 60px hsl(180 100% 30%), 0 0 100px hsl(180 80% 20%);
+  --theme-tier: F;
+
+  --background: 240 10% 3%;
+  --foreground: 180 80% 88%;
+  --border: 180 60% 15%;
+  --input: 180 40% 8%;
+  --ring: 180 100% 50%;
+  --card: 240 8% 6%;
+  --card-foreground: 180 80% 88%;
+  --card-border: 180 40% 12%;
+  --popover: 240 8% 6%;
+  --popover-foreground: 180 80% 88%;
+  --popover-border: 180 40% 12%;
+  --primary: 180 100% 50%;
+  --primary-foreground: 240 10% 3%;
+  --secondary: 40 100% 50%;
+  --secondary-foreground: 240 10% 3%;
+  --muted: 240 8% 12%;
+  --muted-foreground: 180 25% 50%;
+  --accent: 180 60% 12%;
+  --accent-foreground: 180 80% 88%;
+  --destructive: 0 100% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.75rem;
+  --opaque-button-border-intensity: 9;
+}
+
+/* ── Glass utility ─────────────────────────────────── */
+@keyframes glass-shimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* ── Glitch scan line ───────────────────────────────── */
+@keyframes glitch-scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+/* ── Glitch flicker ─────────────────────────────────── */
+@keyframes glitch-flicker {
+  0%, 100% { opacity: 1; }
+  3% { opacity: 0.7; }
+  6% { opacity: 1; }
+  7% { opacity: 0.85; }
+  8% { opacity: 1; }
+  50% { opacity: 0.95; }
+  51% { opacity: 0.75; }
+  52% { opacity: 1; }
+}
+
+/* ── Glitch skew ────────────────────────────────────── */
+@keyframes glitch-skew {
+  0%, 100% { transform: skewX(0deg); }
+  10% { transform: skewX(-1deg); }
+  20% { transform: skewX(0.5deg); }
+  30% { transform: skewX(1.5deg); }
+  50% { transform: skewX(-0.5deg); }
+  70% { transform: skewX(2deg); }
+  90% { transform: skewX(-1deg); }
+}
+
+:root.theme-ultimate .game-word {
+  animation: glitch-flicker 3s ease-in-out infinite, glitch-skew 4s ease-in-out infinite;
+  font-family: 'Major Mono Display', monospace;
+  text-shadow:
+    2px 0 hsl(180 100% 50%),
+    -2px 0 hsl(330 100% 50%),
+    0 0 20px hsl(180 100% 50%);
+}
+
+/* Ultimate glass cursor overlay */
+:root.theme-ultimate .glass-cursor-overlay {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, hsl(180 100% 70% / 0.08), transparent 70%);
+  backdrop-filter: blur(4px);
+  border: 1px solid hsl(180 100% 50% / 0.15);
+  transform: translate(-50%, -50%);
+  transition: width 0.3s, height 0.3s, opacity 0.3s;
+  box-shadow:
+    0 0 20px hsl(180 100% 50% / 0.1),
+    inset 0 0 20px hsl(180 100% 50% / 0.05);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CATEGORY E — LINGU TIER  (Language-Specific)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* 30 ─ FLAMENCO  (Spanish / Español tier — warm gold & red) ────── */
+:root.theme-flamenco {
+  --app-font-sans: 'Playfair Display', serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Playfair Display', serif;
+  --word-color: hsl(350 90% 60%);
+  --word-glow: 0 0 20px hsl(350 90% 50%), 0 0 45px hsl(30 100% 45%);
+  --theme-tier: E;
+
+  --background: 350 25% 6%;
+  --foreground: 30 80% 85%;
+  --border: 350 50% 20%;
+  --input: 350 50% 12%;
+  --ring: 350 90% 55%;
+  --card: 350 22% 9%;
+  --card-foreground: 30 80% 85%;
+  --card-border: 350 50% 20%;
+  --popover: 350 22% 9%;
+  --popover-foreground: 30 80% 85%;
+  --popover-border: 350 50% 20%;
+  --primary: 350 90% 55%;
+  --primary-foreground: 350 25% 6%;
+  --secondary: 30 100% 45%;
+  --secondary-foreground: 350 25% 6%;
+  --muted: 350 15% 14%;
+  --muted-foreground: 30 35% 50%;
+  --accent: 350 50% 16%;
+  --accent-foreground: 30 80% 85%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+}
+
+/* 31 ─ WABI  (Japanese / 日本語 tier — zen ink wash) ────────────── */
+:root.theme-wabi {
+  --app-font-sans: 'Noto Sans JP', sans-serif;
+  --app-font-serif: 'Zen Kurenaido', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Noto Sans JP', sans-serif;
+  --word-color: hsl(0 0% 25%);
+  --word-glow: none;
+  --theme-tier: E;
+
+  --background: 0 0% 94%;
+  --foreground: 0 0% 20%;
+  --border: 0 0% 78%;
+  --input: 0 0% 86%;
+  --ring: 0 0% 30%;
+  --card: 0 0% 90%;
+  --card-foreground: 0 0% 20%;
+  --card-border: 0 0% 78%;
+  --popover: 0 0% 90%;
+  --popover-foreground: 0 0% 20%;
+  --popover-border: 0 0% 78%;
+  --primary: 0 0% 20%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 40%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 0 0% 85%;
+  --muted-foreground: 0 0% 42%;
+  --accent: 0 0% 80%;
+  --accent-foreground: 0 0% 20%;
+  --destructive: 0 70% 42%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.25rem;
+  --opaque-button-border-intensity: -8;
+
+  --map-ocean: hsl(0 0% 76%);
+  --map-land: hsl(0 0% 82%);
+  --map-country-border: hsl(0 0% 70%);
+}
+
 /* ── Base layer ──────────────────────────────────────────────────── */
 @layer base {
   * { @apply border-border; }
@@ -882,6 +1432,157 @@
   }
   :root.theme-nebula .game-word { animation: nebula-drift 5s ease-in-out infinite; }
 
+  /* Horizon animated drift */
+  @keyframes horizon-drift {
+    0%, 100% { filter: hue-rotate(-5deg) brightness(1); }
+    50% { filter: hue-rotate(15deg) brightness(1.08); }
+  }
+  :root.theme-horizon .game-word { animation: horizon-drift 6s ease-in-out infinite; }
+
+  /* Cyberwave glitch + pulse */
+  @keyframes cyberwave-glitch {
+    0%, 100% { transform: skewX(0deg); filter: drop-shadow(0 0 8px hsl(290 100% 55%)); }
+    25% { transform: skewX(-2deg); filter: drop-shadow(0 0 12px hsl(330 100% 50%)); }
+    75% { transform: skewX(2deg); filter: drop-shadow(0 0 12px hsl(250 100% 50%)); }
+  }
+  :root.theme-cyberwave .game-word { animation: cyberwave-glitch 3s ease-in-out infinite; }
+
+  /* Ocean wave drift */
+  @keyframes ocean-drift {
+    0%, 100% { filter: hue-rotate(0deg) brightness(1); }
+    33% { filter: hue-rotate(10deg) brightness(1.05); }
+    66% { filter: hue-rotate(-8deg) brightness(0.95); }
+  }
+  :root.theme-ocean .game-word { animation: ocean-drift 5s ease-in-out infinite; }
+
+  /* Embers glow pulse */
+  @keyframes embers-pulse {
+    0%, 100% { filter: brightness(1) drop-shadow(0 0 8px hsl(15 100% 50%)); }
+    50% { filter: brightness(1.12) drop-shadow(0 0 20px hsl(0 100% 45%)); }
+  }
+  :root.theme-embers .game-word { animation: embers-pulse 2.5s ease-in-out infinite; }
+
+  /* Cyberwave animated background */
+  :root.theme-cyberwave body,
+  .theme-cyberwave body {
+    background: linear-gradient(135deg, hsl(260 30% 5%), hsl(290 25% 7%), hsl(250 30% 5%));
+  }
+
+  /* Horizon animated background */
+  :root.theme-horizon body,
+  .theme-horizon body {
+    background: linear-gradient(135deg, hsl(350 10% 5%), hsl(25 15% 7%), hsl(350 10% 5%));
+  }
+
+  /* Ocean animated background */
+  :root.theme-ocean body,
+  .theme-ocean body {
+    background: linear-gradient(135deg, hsl(200 40% 5%), hsl(220 35% 7%), hsl(190 30% 5%));
+  }
+
+  /* Embers animated background */
+  :root.theme-embers body,
+  .theme-embers body {
+    background: linear-gradient(135deg, hsl(10 20% 5%), hsl(0 15% 7%), hsl(20 18% 5%));
+  }
+
+  /* Flamenco — polka dot lace pattern overlay */
+  :root.theme-flamenco body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.04;
+    background-image: radial-gradient(circle 2px, hsl(30 100% 60%) 0%, transparent 100%);
+    background-size: 24px 24px;
+  }
+
+  /* Wabi — sumi-e ink wash texture */
+  :root.theme-wabi body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23w)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 300px 300px;
+  }
+
+  /* Midnight — subtle starfield */
+  :root.theme-midnight body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle 1px at 8% 15%, rgba(255,200,80,0.5) 0%, transparent 50%),
+      radial-gradient(circle 1px at 25% 65%, rgba(255,200,80,0.3) 0%, transparent 50%),
+      radial-gradient(circle 1px at 50% 20%, rgba(255,200,80,0.4) 0%, transparent 50%),
+      radial-gradient(circle 1px at 70% 55%, rgba(255,200,80,0.3) 0%, transparent 50%),
+      radial-gradient(circle 1px at 85% 80%, rgba(255,200,80,0.35) 0%, transparent 50%),
+      radial-gradient(circle 1px at 15% 85%, rgba(255,200,80,0.3) 0%, transparent 50%),
+      radial-gradient(circle 1px at 60% 40%, rgba(255,200,80,0.25) 0%, transparent 50%),
+      radial-gradient(circle 1px at 40% 75%, rgba(255,200,80,0.3) 0%, transparent 50%);
+  }
+
+  /* Steel — subtle brushed metal lines */
+  :root.theme-steel body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.025;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 1px,
+      rgba(180,200,220,0.1) 1px,
+      rgba(180,200,220,0.1) 2px
+    );
+  }
+
+  /* Forest — mossy vignette */
+  :root.theme-forest body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background: radial-gradient(ellipse at 50% 80%, transparent 40%, hsla(120 25% 6% / 0.6) 100%);
+  }
+
+  /* Sakura — falling petal overlay */
+  @keyframes sakura-fall {
+    0% { transform: translateY(-10px) rotate(0deg); opacity: 0; }
+    10% { opacity: 0.15; }
+    90% { opacity: 0.08; }
+    100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+  }
+  :root.theme-sakura body::after {
+    content: '🌸';
+    position: fixed;
+    font-size: 16px;
+    pointer-events: none;
+    z-index: 0;
+    animation: sakura-fall 12s linear infinite;
+    left: 15%;
+  }
+  :root.theme-sakura body::before {
+    content: '🌸';
+    position: fixed;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 0;
+    animation: sakura-fall 18s linear infinite;
+    left: 75%;
+    animation-delay: 4s;
+  }
+
   /* Word font override in game */
   .game-word { font-family: var(--word-font); }
 
@@ -892,3 +1593,2457 @@
     pointer-events: none;
   }
 }
+
+/* ── Category G — FERAL (20 high-intensity themes) ─────────────────── */
+
+:root.theme-acid-rain {
+  --app-font-sans: 'Space Mono', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Space Mono', monospace;
+  --word-color: #4cff4c;
+  --word-glow: 0 0 22px #4cff4c, 0 0 52px #00aa22;
+  --theme-tier: G;
+
+  --background: 120 18% 4%;
+  --foreground: 110 80% 88%;
+  --border: 115 100% 22%;
+  --input: 115 60% 16%;
+  --ring: 115 100% 50%;
+  --card: 120 18% 8%;
+  --card-foreground: 110 80% 88%;
+  --card-border: 115 100% 26%;
+  --popover: 120 18% 8%;
+  --popover-foreground: 110 80% 88%;
+  --popover-border: 115 100% 26%;
+  --primary: 115 100% 50%;
+  --primary-foreground: 120 18% 4%;
+  --secondary: 85 100% 45%;
+  --secondary-foreground: 120 18% 4%;
+  --muted: 120 18% 13%;
+  --muted-foreground: 110 40% 58%;
+  --accent: 115 100% 18%;
+  --accent-foreground: 115 100% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.25rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(120 18% 10%);
+  --map-land: hsl(120 12% 17%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-vaporwave {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ff71ce;
+  --word-glow: 0 0 22px #ff71ce, 0 0 52px #01cdfe;
+  --theme-tier: G;
+
+  --background: 280 40% 8%;
+  --foreground: 300 60% 92%;
+  --border: 320 100% 42%;
+  --input: 320 60% 36%;
+  --ring: 320 100% 70%;
+  --card: 280 40% 12%;
+  --card-foreground: 300 60% 92%;
+  --card-border: 320 100% 46%;
+  --popover: 280 40% 12%;
+  --popover-foreground: 300 60% 92%;
+  --popover-border: 320 100% 46%;
+  --primary: 320 100% 70%;
+  --primary-foreground: 280 40% 8%;
+  --secondary: 190 100% 60%;
+  --secondary-foreground: 280 40% 8%;
+  --muted: 280 40% 17%;
+  --muted-foreground: 300 20% 58%;
+  --accent: 320 100% 38%;
+  --accent-foreground: 320 100% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 1rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(280 40% 14%);
+  --map-land: hsl(280 34% 21%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-blacklight {
+  --app-font-sans: 'Rajdhani', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Rajdhani', sans-serif;
+  --word-color: #b388ff;
+  --word-glow: 0 0 22px #b388ff, 0 0 52px #7c4dff;
+  --theme-tier: G;
+
+  --background: 265 45% 5%;
+  --foreground: 270 70% 90%;
+  --border: 275 100% 40%;
+  --input: 275 60% 34%;
+  --ring: 275 100% 68%;
+  --card: 265 45% 9%;
+  --card-foreground: 270 70% 90%;
+  --card-border: 275 100% 44%;
+  --popover: 265 45% 9%;
+  --popover-foreground: 270 70% 90%;
+  --popover-border: 275 100% 44%;
+  --primary: 275 100% 68%;
+  --primary-foreground: 265 45% 5%;
+  --secondary: 310 100% 60%;
+  --secondary-foreground: 265 45% 5%;
+  --muted: 265 45% 14%;
+  --muted-foreground: 270 30% 58%;
+  --accent: 275 100% 36%;
+  --accent-foreground: 275 100% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(265 45% 11%);
+  --map-land: hsl(265 39% 18%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-magma {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ff5722;
+  --word-glow: 0 0 22px #ff5722, 0 0 52px #ff9100;
+  --theme-tier: G;
+
+  --background: 15 45% 5%;
+  --foreground: 25 80% 90%;
+  --border: 20 100% 27%;
+  --input: 20 60% 21%;
+  --ring: 20 100% 55%;
+  --card: 15 45% 9%;
+  --card-foreground: 25 80% 90%;
+  --card-border: 20 100% 31%;
+  --popover: 15 45% 9%;
+  --popover-foreground: 25 80% 90%;
+  --popover-border: 20 100% 31%;
+  --primary: 20 100% 55%;
+  --primary-foreground: 15 45% 5%;
+  --secondary: 45 100% 55%;
+  --secondary-foreground: 15 45% 5%;
+  --muted: 15 45% 14%;
+  --muted-foreground: 25 40% 58%;
+  --accent: 20 100% 23%;
+  --accent-foreground: 20 100% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.375rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(15 45% 11%);
+  --map-land: hsl(15 39% 18%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-radioactive {
+  --app-font-sans: 'Space Mono', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Space Mono', monospace;
+  --word-color: #e8ff00;
+  --word-glow: 0 0 22px #e8ff00, 0 0 52px #aacc00;
+  --theme-tier: G;
+
+  --background: 60 20% 5%;
+  --foreground: 60 90% 90%;
+  --border: 58 100% 24%;
+  --input: 58 60% 18%;
+  --ring: 58 100% 52%;
+  --card: 60 20% 9%;
+  --card-foreground: 60 90% 90%;
+  --card-border: 58 100% 28%;
+  --popover: 60 20% 9%;
+  --popover-foreground: 60 90% 90%;
+  --popover-border: 58 100% 28%;
+  --primary: 58 100% 52%;
+  --primary-foreground: 60 20% 5%;
+  --secondary: 80 100% 45%;
+  --secondary-foreground: 60 20% 5%;
+  --muted: 60 20% 14%;
+  --muted-foreground: 60 50% 58%;
+  --accent: 58 100% 20%;
+  --accent-foreground: 58 100% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.125rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(60 20% 11%);
+  --map-land: hsl(60 14% 18%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-bubblegum {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ff4fa3;
+  --word-glow: 0 0 22px #ff4fa3, 0 0 52px #ff9ecb;
+  --theme-tier: G;
+
+  --background: 330 35% 10%;
+  --foreground: 330 70% 95%;
+  --border: 335 100% 42%;
+  --input: 335 60% 36%;
+  --ring: 335 100% 70%;
+  --card: 330 35% 14%;
+  --card-foreground: 330 70% 95%;
+  --card-border: 335 100% 46%;
+  --popover: 330 35% 14%;
+  --popover-foreground: 330 70% 95%;
+  --popover-border: 335 100% 46%;
+  --primary: 335 100% 70%;
+  --primary-foreground: 330 35% 10%;
+  --secondary: 190 95% 65%;
+  --secondary-foreground: 330 35% 10%;
+  --muted: 330 35% 19%;
+  --muted-foreground: 330 30% 58%;
+  --accent: 335 100% 38%;
+  --accent-foreground: 335 100% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 1.25rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(330 35% 16%);
+  --map-land: hsl(330 29% 23%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-oil-slick {
+  --app-font-sans: 'Rajdhani', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Rajdhani', sans-serif;
+  --word-color: #8f6dff;
+  --word-glow: 0 0 22px #8f6dff, 0 0 52px #22d3b8;
+  --theme-tier: G;
+
+  --background: 240 30% 4%;
+  --foreground: 200 40% 88%;
+  --border: 275 85% 34%;
+  --input: 275 60% 28%;
+  --ring: 275 85% 62%;
+  --card: 240 30% 8%;
+  --card-foreground: 200 40% 88%;
+  --card-border: 275 85% 38%;
+  --popover: 240 30% 8%;
+  --popover-foreground: 200 40% 88%;
+  --popover-border: 275 85% 38%;
+  --primary: 275 85% 62%;
+  --primary-foreground: 240 30% 4%;
+  --secondary: 170 90% 55%;
+  --secondary-foreground: 240 30% 4%;
+  --muted: 240 30% 13%;
+  --muted-foreground: 200 10% 58%;
+  --accent: 275 85% 30%;
+  --accent-foreground: 275 85% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(240 30% 10%);
+  --map-land: hsl(240 24% 17%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-infrared {
+  --app-font-sans: 'Space Mono', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Space Mono', monospace;
+  --word-color: #ff2d2d;
+  --word-glow: 0 0 22px #ff2d2d, 0 0 52px #8b0000;
+  --theme-tier: G;
+
+  --background: 0 40% 4%;
+  --foreground: 0 70% 88%;
+  --border: 0 100% 27%;
+  --input: 0 60% 21%;
+  --ring: 0 100% 55%;
+  --card: 0 40% 8%;
+  --card-foreground: 0 70% 88%;
+  --card-border: 0 100% 31%;
+  --popover: 0 40% 8%;
+  --popover-foreground: 0 70% 88%;
+  --popover-border: 0 100% 31%;
+  --primary: 0 100% 55%;
+  --primary-foreground: 0 40% 4%;
+  --secondary: 30 100% 50%;
+  --secondary-foreground: 0 40% 4%;
+  --muted: 0 40% 13%;
+  --muted-foreground: 0 30% 58%;
+  --accent: 0 100% 23%;
+  --accent-foreground: 0 100% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.25rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(0 40% 10%);
+  --map-land: hsl(0 34% 17%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-plasma {
+  --app-font-sans: 'Rajdhani', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Rajdhani', sans-serif;
+  --word-color: #e040fb;
+  --word-glow: 0 0 22px #e040fb, 0 0 52px #2979ff;
+  --theme-tier: G;
+
+  --background: 250 50% 5%;
+  --foreground: 280 70% 92%;
+  --border: 295 100% 37%;
+  --input: 295 60% 31%;
+  --ring: 295 100% 65%;
+  --card: 250 50% 9%;
+  --card-foreground: 280 70% 92%;
+  --card-border: 295 100% 41%;
+  --popover: 250 50% 9%;
+  --popover-foreground: 280 70% 92%;
+  --popover-border: 295 100% 41%;
+  --primary: 295 100% 65%;
+  --primary-foreground: 250 50% 5%;
+  --secondary: 205 100% 60%;
+  --secondary-foreground: 250 50% 5%;
+  --muted: 250 50% 14%;
+  --muted-foreground: 280 30% 58%;
+  --accent: 295 100% 33%;
+  --accent-foreground: 295 100% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(250 50% 11%);
+  --map-land: hsl(250 44% 18%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-solar-flare {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffb300;
+  --word-glow: 0 0 22px #ffb300, 0 0 52px #ff6d00;
+  --theme-tier: G;
+
+  --background: 35 50% 4%;
+  --foreground: 45 90% 92%;
+  --border: 40 100% 30%;
+  --input: 40 60% 24%;
+  --ring: 40 100% 58%;
+  --card: 35 50% 8%;
+  --card-foreground: 45 90% 92%;
+  --card-border: 40 100% 34%;
+  --popover: 35 50% 8%;
+  --popover-foreground: 45 90% 92%;
+  --popover-border: 40 100% 34%;
+  --primary: 40 100% 58%;
+  --primary-foreground: 35 50% 4%;
+  --secondary: 15 100% 55%;
+  --secondary-foreground: 35 50% 4%;
+  --muted: 35 50% 13%;
+  --muted-foreground: 45 50% 58%;
+  --accent: 40 100% 26%;
+  --accent-foreground: 40 100% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.375rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(35 50% 10%);
+  --map-land: hsl(35 44% 17%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-glitch {
+  --app-font-sans: 'Space Mono', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Space Mono', monospace;
+  --word-color: #ff0055;
+  --word-glow: 0 0 22px #ff0055, 0 0 52px #00fff0;
+  --theme-tier: G;
+
+  --background: 0 0% 3%;
+  --foreground: 0 0% 92%;
+  --border: 345 100% 32%;
+  --input: 345 60% 26%;
+  --ring: 345 100% 60%;
+  --card: 0 0% 7%;
+  --card-foreground: 0 0% 92%;
+  --card-border: 345 100% 36%;
+  --popover: 0 0% 7%;
+  --popover-foreground: 0 0% 92%;
+  --popover-border: 345 100% 36%;
+  --primary: 345 100% 60%;
+  --primary-foreground: 0 0% 4%;
+  --secondary: 180 100% 55%;
+  --secondary-foreground: 0 0% 4%;
+  --muted: 0 0% 12%;
+  --muted-foreground: 0 10% 58%;
+  --accent: 345 100% 28%;
+  --accent-foreground: 345 100% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(0 0% 9%);
+  --map-land: hsl(0 4% 16%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-toxic-slime {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #aaff00;
+  --word-glow: 0 0 22px #aaff00, 0 0 52px #00ff88;
+  --theme-tier: G;
+
+  --background: 100 30% 5%;
+  --foreground: 90 70% 90%;
+  --border: 95 100% 22%;
+  --input: 95 60% 16%;
+  --ring: 95 100% 50%;
+  --card: 100 30% 9%;
+  --card-foreground: 90 70% 90%;
+  --card-border: 95 100% 26%;
+  --popover: 100 30% 9%;
+  --popover-foreground: 90 70% 90%;
+  --popover-border: 95 100% 26%;
+  --primary: 95 100% 50%;
+  --primary-foreground: 100 30% 5%;
+  --secondary: 150 100% 45%;
+  --secondary-foreground: 100 30% 5%;
+  --muted: 100 30% 14%;
+  --muted-foreground: 90 30% 58%;
+  --accent: 95 100% 18%;
+  --accent-foreground: 95 100% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.75rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(100 30% 11%);
+  --map-land: hsl(100 24% 18%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-deep-sea {
+  --app-font-sans: 'Rajdhani', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Rajdhani', sans-serif;
+  --word-color: #00e5c0;
+  --word-glow: 0 0 22px #00e5c0, 0 0 52px #0066ff;
+  --theme-tier: G;
+
+  --background: 200 60% 4%;
+  --foreground: 185 60% 88%;
+  --border: 180 100% 22%;
+  --input: 180 60% 16%;
+  --ring: 180 100% 50%;
+  --card: 200 60% 8%;
+  --card-foreground: 185 60% 88%;
+  --card-border: 180 100% 26%;
+  --popover: 200 60% 8%;
+  --popover-foreground: 185 60% 88%;
+  --popover-border: 180 100% 26%;
+  --primary: 180 100% 50%;
+  --primary-foreground: 200 60% 4%;
+  --secondary: 260 90% 60%;
+  --secondary-foreground: 200 60% 4%;
+  --muted: 200 60% 13%;
+  --muted-foreground: 185 20% 58%;
+  --accent: 180 100% 18%;
+  --accent-foreground: 180 100% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.625rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(200 60% 10%);
+  --map-land: hsl(200 54% 17%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-supernova {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffd54f;
+  --word-glow: 0 0 22px #ffd54f, 0 0 52px #b388ff;
+  --theme-tier: G;
+
+  --background: 230 40% 3%;
+  --foreground: 45 60% 94%;
+  --border: 48 100% 34%;
+  --input: 48 60% 28%;
+  --ring: 48 100% 62%;
+  --card: 230 40% 7%;
+  --card-foreground: 45 60% 94%;
+  --card-border: 48 100% 38%;
+  --popover: 230 40% 7%;
+  --popover-foreground: 45 60% 94%;
+  --popover-border: 48 100% 38%;
+  --primary: 48 100% 62%;
+  --primary-foreground: 230 40% 4%;
+  --secondary: 280 100% 68%;
+  --secondary-foreground: 230 40% 4%;
+  --muted: 230 40% 12%;
+  --muted-foreground: 45 20% 58%;
+  --accent: 48 100% 30%;
+  --accent-foreground: 48 100% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(230 40% 9%);
+  --map-land: hsl(230 34% 16%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-venom {
+  --app-font-sans: 'Rajdhani', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Rajdhani', sans-serif;
+  --word-color: #a855f7;
+  --word-glow: 0 0 22px #a855f7, 0 0 52px #39ff14;
+  --theme-tier: G;
+
+  --background: 275 50% 4%;
+  --foreground: 280 50% 90%;
+  --border: 285 100% 34%;
+  --input: 285 60% 28%;
+  --ring: 285 100% 62%;
+  --card: 275 50% 8%;
+  --card-foreground: 280 50% 90%;
+  --card-border: 285 100% 38%;
+  --popover: 275 50% 8%;
+  --popover-foreground: 280 50% 90%;
+  --popover-border: 285 100% 38%;
+  --primary: 285 100% 62%;
+  --primary-foreground: 275 50% 4%;
+  --secondary: 120 100% 50%;
+  --secondary-foreground: 275 50% 4%;
+  --muted: 275 50% 13%;
+  --muted-foreground: 280 10% 58%;
+  --accent: 285 100% 30%;
+  --accent-foreground: 285 100% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.375rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(275 50% 10%);
+  --map-land: hsl(275 44% 17%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-hologram {
+  --app-font-sans: 'Space Mono', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Space Mono', monospace;
+  --word-color: #5ce1e6;
+  --word-glow: 0 0 22px #5ce1e6, 0 0 52px #ff6ec7;
+  --theme-tier: G;
+
+  --background: 195 50% 5%;
+  --foreground: 185 70% 92%;
+  --border: 185 100% 32%;
+  --input: 185 60% 26%;
+  --ring: 185 100% 60%;
+  --card: 195 50% 9%;
+  --card-foreground: 185 70% 92%;
+  --card-border: 185 100% 36%;
+  --popover: 195 50% 9%;
+  --popover-foreground: 185 70% 92%;
+  --popover-border: 185 100% 36%;
+  --primary: 185 100% 60%;
+  --primary-foreground: 195 50% 5%;
+  --secondary: 320 90% 65%;
+  --secondary-foreground: 195 50% 5%;
+  --muted: 195 50% 14%;
+  --muted-foreground: 185 30% 58%;
+  --accent: 185 100% 28%;
+  --accent-foreground: 185 100% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.25rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(195 50% 11%);
+  --map-land: hsl(195 44% 18%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-inferno {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ff6b00;
+  --word-glow: 0 0 22px #ff6b00, 0 0 52px #ff1744;
+  --theme-tier: G;
+
+  --background: 20 30% 3%;
+  --foreground: 30 85% 92%;
+  --border: 25 100% 24%;
+  --input: 25 60% 18%;
+  --ring: 25 100% 52%;
+  --card: 20 30% 7%;
+  --card-foreground: 30 85% 92%;
+  --card-border: 25 100% 28%;
+  --popover: 20 30% 7%;
+  --popover-foreground: 30 85% 92%;
+  --popover-border: 25 100% 28%;
+  --primary: 25 100% 52%;
+  --primary-foreground: 20 30% 4%;
+  --secondary: 0 100% 50%;
+  --secondary-foreground: 20 30% 4%;
+  --muted: 20 30% 12%;
+  --muted-foreground: 30 45% 58%;
+  --accent: 25 100% 20%;
+  --accent-foreground: 25 100% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.375rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(20 30% 9%);
+  --map-land: hsl(20 24% 16%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-cotton-candy {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffb3de;
+  --word-glow: 0 0 22px #ffb3de, 0 0 52px #b3e5ff;
+  --theme-tier: G;
+
+  --background: 300 30% 9%;
+  --foreground: 300 50% 95%;
+  --border: 320 90% 50%;
+  --input: 320 60% 44%;
+  --ring: 320 90% 78%;
+  --card: 300 30% 13%;
+  --card-foreground: 300 50% 95%;
+  --card-border: 320 90% 54%;
+  --popover: 300 30% 13%;
+  --popover-foreground: 300 50% 95%;
+  --popover-border: 320 90% 54%;
+  --primary: 320 90% 78%;
+  --primary-foreground: 300 30% 9%;
+  --secondary: 200 90% 75%;
+  --secondary-foreground: 300 30% 9%;
+  --muted: 300 30% 18%;
+  --muted-foreground: 300 10% 58%;
+  --accent: 320 90% 46%;
+  --accent-foreground: 320 90% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 1.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(300 30% 15%);
+  --map-land: hsl(300 24% 22%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-circuit {
+  --app-font-sans: 'Space Mono', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Space Mono', monospace;
+  --word-color: #2fd96f;
+  --word-glow: 0 0 22px #2fd96f, 0 0 52px #ffc107;
+  --theme-tier: G;
+
+  --background: 150 45% 5%;
+  --foreground: 140 40% 88%;
+  --border: 145 90% 17%;
+  --input: 145 60% 11%;
+  --ring: 145 90% 45%;
+  --card: 150 45% 9%;
+  --card-foreground: 140 40% 88%;
+  --card-border: 145 90% 21%;
+  --popover: 150 45% 9%;
+  --popover-foreground: 140 40% 88%;
+  --popover-border: 145 90% 21%;
+  --primary: 145 90% 45%;
+  --primary-foreground: 150 45% 5%;
+  --secondary: 45 90% 55%;
+  --secondary-foreground: 150 45% 5%;
+  --muted: 150 45% 14%;
+  --muted-foreground: 140 10% 58%;
+  --accent: 145 90% 13%;
+  --accent-foreground: 145 90% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.125rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(150 45% 11%);
+  --map-land: hsl(150 39% 18%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-eclipse {
+  --app-font-sans: 'Rajdhani', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Rajdhani', sans-serif;
+  --word-color: #ffca28;
+  --word-glow: 0 0 22px #ffca28, 0 0 52px #ffffff;
+  --theme-tier: G;
+
+  --background: 0 0% 2%;
+  --foreground: 40 30% 90%;
+  --border: 40 95% 32%;
+  --input: 40 60% 26%;
+  --ring: 40 95% 60%;
+  --card: 0 0% 6%;
+  --card-foreground: 40 30% 90%;
+  --card-border: 40 95% 36%;
+  --popover: 0 0% 6%;
+  --popover-foreground: 40 30% 90%;
+  --popover-border: 40 95% 36%;
+  --primary: 40 95% 60%;
+  --primary-foreground: 0 0% 4%;
+  --secondary: 0 0% 100%;
+  --secondary-foreground: 0 0% 4%;
+  --muted: 0 0% 11%;
+  --muted-foreground: 40 10% 58%;
+  --accent: 40 95% 28%;
+  --accent-foreground: 40 95% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 2rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(0 0% 8%);
+  --map-land: hsl(0 4% 15%);
+  --map-country-border: hsl(var(--border));
+}
+
+/* ── Category H — LINGU CULTURE + Category I — FLAG TIER ───────────── */
+
+:root.theme-kanso {
+  --app-font-sans: 'Playfair Display', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Playfair Display', serif;
+  --word-color: #e8e2d4;
+  --word-glow: 0 0 20px #c8482f, 0 0 48px #2b2b2b;
+  --theme-tier: H;
+
+  --background: 30 12% 7%;
+  --foreground: 35 20% 92%;
+  --border: 0 65% 27%;
+  --input: 0 60% 21%;
+  --ring: 0 65% 55%;
+  --card: 30 12% 11%;
+  --card-foreground: 35 20% 92%;
+  --card-border: 0 65% 31%;
+  --popover: 30 12% 11%;
+  --popover-foreground: 35 20% 92%;
+  --popover-border: 0 65% 31%;
+  --primary: 0 65% 55%;
+  --primary-foreground: 30 12% 7%;
+  --secondary: 35 25% 70%;
+  --secondary-foreground: 30 12% 7%;
+  --muted: 30 12% 16%;
+  --muted-foreground: 35 10% 58%;
+  --accent: 0 65% 23%;
+  --accent-foreground: 0 65% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.125rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(30 12% 13%);
+  --map-land: hsl(30 6% 20%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-shinjuku {
+  --app-font-sans: 'Rajdhani', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Rajdhani', sans-serif;
+  --word-color: #ff2e88;
+  --word-glow: 0 0 20px #ff2e88, 0 0 48px #00d9ff;
+  --theme-tier: H;
+
+  --background: 285 45% 6%;
+  --foreground: 300 60% 92%;
+  --border: 330 100% 34%;
+  --input: 330 60% 28%;
+  --ring: 330 100% 62%;
+  --card: 285 45% 10%;
+  --card-foreground: 300 60% 92%;
+  --card-border: 330 100% 38%;
+  --popover: 285 45% 10%;
+  --popover-foreground: 300 60% 92%;
+  --popover-border: 330 100% 38%;
+  --primary: 330 100% 62%;
+  --primary-foreground: 285 45% 6%;
+  --secondary: 190 100% 58%;
+  --secondary-foreground: 285 45% 6%;
+  --muted: 285 45% 15%;
+  --muted-foreground: 300 20% 58%;
+  --accent: 330 100% 30%;
+  --accent-foreground: 330 100% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.375rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(285 45% 12%);
+  --map-land: hsl(285 39% 19%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flamenco-noche {
+  --app-font-sans: 'Playfair Display', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Playfair Display', serif;
+  --word-color: #d62828;
+  --word-glow: 0 0 20px #d62828, 0 0 48px #f77f00;
+  --theme-tier: H;
+
+  --background: 350 40% 6%;
+  --foreground: 30 40% 92%;
+  --border: 352 90% 22%;
+  --input: 352 60% 16%;
+  --ring: 352 90% 50%;
+  --card: 350 40% 10%;
+  --card-foreground: 30 40% 92%;
+  --card-border: 352 90% 26%;
+  --popover: 350 40% 10%;
+  --popover-foreground: 30 40% 92%;
+  --popover-border: 352 90% 26%;
+  --primary: 352 90% 50%;
+  --primary-foreground: 350 40% 6%;
+  --secondary: 38 95% 55%;
+  --secondary-foreground: 350 40% 6%;
+  --muted: 350 40% 15%;
+  --muted-foreground: 30 10% 58%;
+  --accent: 352 90% 18%;
+  --accent-foreground: 352 90% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(350 40% 12%);
+  --map-land: hsl(350 34% 19%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-azulejo {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #2a6fdb;
+  --word-glow: 0 0 20px #2a6fdb, 0 0 48px #ffd166;
+  --theme-tier: H;
+
+  --background: 210 55% 10%;
+  --foreground: 205 35% 94%;
+  --border: 215 85% 27%;
+  --input: 215 60% 21%;
+  --ring: 215 85% 55%;
+  --card: 210 55% 14%;
+  --card-foreground: 205 35% 94%;
+  --card-border: 215 85% 31%;
+  --popover: 210 55% 14%;
+  --popover-foreground: 205 35% 94%;
+  --popover-border: 215 85% 31%;
+  --primary: 215 85% 55%;
+  --primary-foreground: 210 55% 10%;
+  --secondary: 30 80% 60%;
+  --secondary-foreground: 210 55% 10%;
+  --muted: 210 55% 19%;
+  --muted-foreground: 205 10% 58%;
+  --accent: 215 85% 23%;
+  --accent-foreground: 215 85% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.75rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(210 55% 16%);
+  --map-land: hsl(210 49% 23%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-bistro {
+  --app-font-sans: 'Playfair Display', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Playfair Display', serif;
+  --word-color: #e5c185;
+  --word-glow: 0 0 20px #c1121f, 0 0 48px #3d5a80;
+  --theme-tier: H;
+
+  --background: 220 25% 9%;
+  --foreground: 40 30% 92%;
+  --border: 355 70% 22%;
+  --input: 355 60% 16%;
+  --ring: 355 70% 50%;
+  --card: 220 25% 13%;
+  --card-foreground: 40 30% 92%;
+  --card-border: 355 70% 26%;
+  --popover: 220 25% 13%;
+  --popover-foreground: 40 30% 92%;
+  --popover-border: 355 70% 26%;
+  --primary: 355 70% 50%;
+  --primary-foreground: 220 25% 9%;
+  --secondary: 210 50% 60%;
+  --secondary-foreground: 220 25% 9%;
+  --muted: 220 25% 18%;
+  --muted-foreground: 40 10% 58%;
+  --accent: 355 70% 18%;
+  --accent-foreground: 355 70% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.375rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(220 25% 15%);
+  --map-land: hsl(220 19% 22%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-bauhaus {
+  --app-font-sans: 'Rajdhani', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Rajdhani', sans-serif;
+  --word-color: #e63946;
+  --word-glow: 0 0 20px #e63946, 0 0 48px #f1c40f;
+  --theme-tier: H;
+
+  --background: 0 0% 8%;
+  --foreground: 0 0% 95%;
+  --border: 0 85% 24%;
+  --input: 0 60% 18%;
+  --ring: 0 85% 52%;
+  --card: 0 0% 12%;
+  --card-foreground: 0 0% 95%;
+  --card-border: 0 85% 28%;
+  --popover: 0 0% 12%;
+  --popover-foreground: 0 0% 95%;
+  --popover-border: 0 85% 28%;
+  --primary: 0 85% 52%;
+  --primary-foreground: 0 0% 8%;
+  --secondary: 215 90% 50%;
+  --secondary-foreground: 0 0% 8%;
+  --muted: 0 0% 17%;
+  --muted-foreground: 0 10% 58%;
+  --accent: 0 85% 20%;
+  --accent-foreground: 0 85% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(0 0% 14%);
+  --map-land: hsl(0 4% 21%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-rinascimento {
+  --app-font-sans: 'Playfair Display', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Playfair Display', serif;
+  --word-color: #c8963e;
+  --word-glow: 0 0 20px #c8963e, 0 0 48px #2a9d5c;
+  --theme-tier: H;
+
+  --background: 25 30% 8%;
+  --foreground: 35 35% 92%;
+  --border: 150 50% 14%;
+  --input: 150 50% 8%;
+  --ring: 150 50% 42%;
+  --card: 25 30% 12%;
+  --card-foreground: 35 35% 92%;
+  --card-border: 150 50% 18%;
+  --popover: 25 30% 12%;
+  --popover-foreground: 35 35% 92%;
+  --popover-border: 150 50% 18%;
+  --primary: 150 50% 42%;
+  --primary-foreground: 25 30% 8%;
+  --secondary: 28 80% 55%;
+  --secondary-foreground: 25 30% 8%;
+  --muted: 25 30% 17%;
+  --muted-foreground: 35 10% 58%;
+  --accent: 150 50% 10%;
+  --accent-foreground: 150 50% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(25 30% 14%);
+  --map-land: hsl(25 24% 21%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-samovar {
+  --app-font-sans: 'Space Mono', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Space Mono', monospace;
+  --word-color: #d4a017;
+  --word-glow: 0 0 20px #c1121f, 0 0 48px #d4a017;
+  --theme-tier: H;
+
+  --background: 0 20% 6%;
+  --foreground: 35 30% 92%;
+  --border: 0 80% 20%;
+  --input: 0 60% 14%;
+  --ring: 0 80% 48%;
+  --card: 0 20% 10%;
+  --card-foreground: 35 30% 92%;
+  --card-border: 0 80% 24%;
+  --popover: 0 20% 10%;
+  --popover-foreground: 35 30% 92%;
+  --popover-border: 0 80% 24%;
+  --primary: 0 80% 48%;
+  --primary-foreground: 0 20% 6%;
+  --secondary: 42 90% 55%;
+  --secondary-foreground: 0 20% 6%;
+  --muted: 0 20% 15%;
+  --muted-foreground: 35 10% 58%;
+  --accent: 0 80% 16%;
+  --accent-foreground: 0 80% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.25rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(0 20% 12%);
+  --map-land: hsl(0 14% 19%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-hanbok {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ff7043;
+  --word-glow: 0 0 20px #ff7043, 0 0 48px #26a69a;
+  --theme-tier: H;
+
+  --background: 230 30% 8%;
+  --foreground: 25 30% 94%;
+  --border: 15 85% 32%;
+  --input: 15 60% 26%;
+  --ring: 15 85% 60%;
+  --card: 230 30% 12%;
+  --card-foreground: 25 30% 94%;
+  --card-border: 15 85% 36%;
+  --popover: 230 30% 12%;
+  --popover-foreground: 25 30% 94%;
+  --popover-border: 15 85% 36%;
+  --primary: 15 85% 60%;
+  --primary-foreground: 230 30% 8%;
+  --secondary: 175 70% 45%;
+  --secondary-foreground: 230 30% 8%;
+  --muted: 230 30% 17%;
+  --muted-foreground: 25 10% 58%;
+  --accent: 15 85% 28%;
+  --accent-foreground: 15 85% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.875rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(230 30% 14%);
+  --map-land: hsl(230 24% 21%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-qinghua {
+  --app-font-sans: 'Playfair Display', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Playfair Display', serif;
+  --word-color: #3f7cd6;
+  --word-glow: 0 0 20px #3f7cd6, 0 0 48px #c1272d;
+  --theme-tier: H;
+
+  --background: 215 45% 9%;
+  --foreground: 210 25% 94%;
+  --border: 220 80% 24%;
+  --input: 220 60% 18%;
+  --ring: 220 80% 52%;
+  --card: 215 45% 13%;
+  --card-foreground: 210 25% 94%;
+  --card-border: 220 80% 28%;
+  --popover: 215 45% 13%;
+  --popover-foreground: 210 25% 94%;
+  --popover-border: 220 80% 28%;
+  --primary: 220 80% 52%;
+  --primary-foreground: 215 45% 9%;
+  --secondary: 0 80% 50%;
+  --secondary-foreground: 215 45% 9%;
+  --muted: 215 45% 18%;
+  --muted-foreground: 210 10% 58%;
+  --accent: 220 80% 20%;
+  --accent-foreground: 220 80% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.625rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(215 45% 15%);
+  --map-land: hsl(215 39% 22%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-zellige {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #1eb5a6;
+  --word-glow: 0 0 20px #1eb5a6, 0 0 48px #e0a800;
+  --theme-tier: H;
+
+  --background: 190 45% 7%;
+  --foreground: 40 30% 93%;
+  --border: 175 75% 14%;
+  --input: 175 60% 8%;
+  --ring: 175 75% 42%;
+  --card: 190 45% 11%;
+  --card-foreground: 40 30% 93%;
+  --card-border: 175 75% 18%;
+  --popover: 190 45% 11%;
+  --popover-foreground: 40 30% 93%;
+  --popover-border: 175 75% 18%;
+  --primary: 175 75% 42%;
+  --primary-foreground: 190 45% 7%;
+  --secondary: 40 90% 58%;
+  --secondary-foreground: 190 45% 7%;
+  --muted: 190 45% 16%;
+  --muted-foreground: 40 10% 58%;
+  --accent: 175 75% 10%;
+  --accent-foreground: 175 75% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(190 45% 13%);
+  --map-land: hsl(190 39% 20%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-holi {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ff4da6;
+  --word-glow: 0 0 20px #ff4da6, 0 0 48px #ffd000;
+  --theme-tier: H;
+
+  --background: 300 35% 8%;
+  --foreground: 45 40% 95%;
+  --border: 330 95% 34%;
+  --input: 330 60% 28%;
+  --ring: 330 95% 62%;
+  --card: 300 35% 12%;
+  --card-foreground: 45 40% 95%;
+  --card-border: 330 95% 38%;
+  --popover: 300 35% 12%;
+  --popover-foreground: 45 40% 95%;
+  --popover-border: 330 95% 38%;
+  --primary: 330 95% 62%;
+  --primary-foreground: 300 35% 8%;
+  --secondary: 50 100% 58%;
+  --secondary-foreground: 300 35% 8%;
+  --muted: 300 35% 17%;
+  --muted-foreground: 45 10% 58%;
+  --accent: 330 95% 30%;
+  --accent-foreground: 330 95% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 1rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(300 35% 14%);
+  --map-land: hsl(300 29% 21%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-delftware {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #3b6fc4;
+  --word-glow: 0 0 20px #3b6fc4, 0 0 48px #ff8c1a;
+  --theme-tier: H;
+
+  --background: 215 40% 10%;
+  --foreground: 210 20% 94%;
+  --border: 218 75% 22%;
+  --input: 218 60% 16%;
+  --ring: 218 75% 50%;
+  --card: 215 40% 14%;
+  --card-foreground: 210 20% 94%;
+  --card-border: 218 75% 26%;
+  --popover: 215 40% 14%;
+  --popover-foreground: 210 20% 94%;
+  --popover-border: 218 75% 26%;
+  --primary: 218 75% 50%;
+  --primary-foreground: 215 40% 10%;
+  --secondary: 30 85% 58%;
+  --secondary-foreground: 215 40% 10%;
+  --muted: 215 40% 19%;
+  --muted-foreground: 210 10% 58%;
+  --accent: 218 75% 18%;
+  --accent-foreground: 218 75% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(215 40% 16%);
+  --map-land: hsl(215 34% 23%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-lagom {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #4d8ee0;
+  --word-glow: 0 0 20px #4d8ee0, 0 0 48px #ffd447;
+  --theme-tier: H;
+
+  --background: 210 30% 10%;
+  --foreground: 200 20% 93%;
+  --border: 210 80% 24%;
+  --input: 210 60% 18%;
+  --ring: 210 80% 52%;
+  --card: 210 30% 14%;
+  --card-foreground: 200 20% 93%;
+  --card-border: 210 80% 28%;
+  --popover: 210 30% 14%;
+  --popover-foreground: 200 20% 93%;
+  --popover-border: 210 80% 28%;
+  --primary: 210 80% 52%;
+  --primary-foreground: 210 30% 10%;
+  --secondary: 45 90% 60%;
+  --secondary-foreground: 210 30% 10%;
+  --muted: 210 30% 19%;
+  --muted-foreground: 200 10% 58%;
+  --accent: 210 80% 20%;
+  --accent-foreground: 210 80% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.75rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(210 30% 16%);
+  --map-land: hsl(210 24% 23%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-iznik {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #1fc4b5;
+  --word-glow: 0 0 20px #1fc4b5, 0 0 48px #ff5c4d;
+  --theme-tier: H;
+
+  --background: 190 50% 8%;
+  --foreground: 190 25% 93%;
+  --border: 180 80% 17%;
+  --input: 180 60% 11%;
+  --ring: 180 80% 45%;
+  --card: 190 50% 12%;
+  --card-foreground: 190 25% 93%;
+  --card-border: 180 80% 21%;
+  --popover: 190 50% 12%;
+  --popover-foreground: 190 25% 93%;
+  --popover-border: 180 80% 21%;
+  --primary: 180 80% 45%;
+  --primary-foreground: 190 50% 8%;
+  --secondary: 5 85% 60%;
+  --secondary-foreground: 190 50% 8%;
+  --muted: 190 50% 17%;
+  --muted-foreground: 190 10% 58%;
+  --accent: 180 80% 13%;
+  --accent-foreground: 180 80% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.625rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(190 50% 14%);
+  --map-land: hsl(190 44% 21%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-wat {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffc233;
+  --word-glow: 0 0 20px #ffc233, 0 0 48px #b06ad6;
+  --theme-tier: H;
+
+  --background: 275 35% 7%;
+  --foreground: 45 45% 93%;
+  --border: 45 95% 27%;
+  --input: 45 60% 21%;
+  --ring: 45 95% 55%;
+  --card: 275 35% 11%;
+  --card-foreground: 45 45% 93%;
+  --card-border: 45 95% 31%;
+  --popover: 275 35% 11%;
+  --popover-foreground: 45 45% 93%;
+  --popover-border: 45 95% 31%;
+  --primary: 45 95% 55%;
+  --primary-foreground: 275 35% 7%;
+  --secondary: 300 70% 60%;
+  --secondary-foreground: 275 35% 7%;
+  --muted: 275 35% 16%;
+  --muted-foreground: 45 10% 58%;
+  --accent: 45 95% 23%;
+  --accent-foreground: 45 95% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.75rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(275 35% 13%);
+  --map-land: hsl(275 29% 20%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-sen {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #e63946;
+  --word-glow: 0 0 20px #e63946, 0 0 48px #57cc99;
+  --theme-tier: H;
+
+  --background: 355 35% 7%;
+  --foreground: 30 30% 93%;
+  --border: 355 85% 24%;
+  --input: 355 60% 18%;
+  --ring: 355 85% 52%;
+  --card: 355 35% 11%;
+  --card-foreground: 30 30% 93%;
+  --card-border: 355 85% 28%;
+  --popover: 355 35% 11%;
+  --popover-foreground: 30 30% 93%;
+  --popover-border: 355 85% 28%;
+  --primary: 355 85% 52%;
+  --primary-foreground: 355 35% 7%;
+  --secondary: 150 60% 48%;
+  --secondary-foreground: 355 35% 7%;
+  --muted: 355 35% 16%;
+  --muted-foreground: 30 10% 58%;
+  --accent: 355 85% 20%;
+  --accent-foreground: 355 85% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(355 35% 13%);
+  --map-land: hsl(355 29% 20%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-kosciuszko {
+  --app-font-sans: 'Space Mono', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Space Mono', monospace;
+  --word-color: #dc2626;
+  --word-glow: 0 0 20px #dc2626, 0 0 48px #f5c518;
+  --theme-tier: H;
+
+  --background: 0 0% 7%;
+  --foreground: 35 25% 93%;
+  --border: 0 75% 22%;
+  --input: 0 60% 16%;
+  --ring: 0 75% 50%;
+  --card: 0 0% 11%;
+  --card-foreground: 35 25% 93%;
+  --card-border: 0 75% 26%;
+  --popover: 0 0% 11%;
+  --popover-foreground: 35 25% 93%;
+  --popover-border: 0 75% 26%;
+  --primary: 0 75% 50%;
+  --primary-foreground: 0 0% 7%;
+  --secondary: 40 90% 55%;
+  --secondary-foreground: 0 0% 7%;
+  --muted: 0 0% 16%;
+  --muted-foreground: 35 10% 58%;
+  --accent: 0 75% 18%;
+  --accent-foreground: 0 75% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.25rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(0 0% 13%);
+  --map-land: hsl(0 4% 20%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-ultimate {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffffff;
+  --word-glow: 0 0 20px #4d9fff, 0 0 48px #ff4d6d;
+  --theme-tier: I;
+
+  --background: 225 35% 5%;
+  --foreground: 0 0% 96%;
+  --border: 210 90% 30%;
+  --input: 210 60% 24%;
+  --ring: 210 90% 58%;
+  --card: 225 35% 9%;
+  --card-foreground: 0 0% 96%;
+  --card-border: 210 90% 34%;
+  --popover: 225 35% 9%;
+  --popover-foreground: 0 0% 96%;
+  --popover-border: 210 90% 34%;
+  --primary: 210 90% 58%;
+  --primary-foreground: 225 35% 5%;
+  --secondary: 350 90% 58%;
+  --secondary-foreground: 225 35% 5%;
+  --muted: 225 35% 14%;
+  --muted-foreground: 0 10% 58%;
+  --accent: 210 90% 26%;
+  --accent-foreground: 210 90% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.75rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(225 35% 11%);
+  --map-land: hsl(225 29% 18%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-es {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffc400;
+  --word-glow: 0 0 20px #c60b1e, 0 0 48px #ffc400;
+  --theme-tier: I;
+
+  --background: 0 45% 7%;
+  --foreground: 45 45% 94%;
+  --border: 0 85% 22%;
+  --input: 0 60% 16%;
+  --ring: 0 85% 50%;
+  --card: 0 45% 11%;
+  --card-foreground: 45 45% 94%;
+  --card-border: 0 85% 26%;
+  --popover: 0 45% 11%;
+  --popover-foreground: 45 45% 94%;
+  --popover-border: 0 85% 26%;
+  --primary: 0 85% 50%;
+  --primary-foreground: 0 45% 7%;
+  --secondary: 45 95% 55%;
+  --secondary-foreground: 0 45% 7%;
+  --muted: 0 45% 16%;
+  --muted-foreground: 45 10% 58%;
+  --accent: 0 85% 18%;
+  --accent-foreground: 0 85% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(0 45% 13%);
+  --map-land: hsl(0 39% 20%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-ja {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffffff;
+  --word-glow: 0 0 20px #bc002d, 0 0 48px #ffffff;
+  --theme-tier: I;
+
+  --background: 0 0% 7%;
+  --foreground: 0 0% 95%;
+  --border: 355 85% 24%;
+  --input: 355 60% 18%;
+  --ring: 355 85% 52%;
+  --card: 0 0% 11%;
+  --card-foreground: 0 0% 95%;
+  --card-border: 355 85% 28%;
+  --popover: 0 0% 11%;
+  --popover-foreground: 0 0% 95%;
+  --popover-border: 355 85% 28%;
+  --primary: 355 85% 52%;
+  --primary-foreground: 0 0% 7%;
+  --secondary: 0 0% 85%;
+  --secondary-foreground: 0 0% 7%;
+  --muted: 0 0% 16%;
+  --muted-foreground: 0 10% 58%;
+  --accent: 355 85% 20%;
+  --accent-foreground: 355 85% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(0 0% 13%);
+  --map-land: hsl(0 4% 20%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-fr {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffffff;
+  --word-glow: 0 0 20px #0055a4, 0 0 48px #ef4135;
+  --theme-tier: I;
+
+  --background: 220 40% 7%;
+  --foreground: 0 0% 95%;
+  --border: 225 80% 24%;
+  --input: 225 60% 18%;
+  --ring: 225 80% 52%;
+  --card: 220 40% 11%;
+  --card-foreground: 0 0% 95%;
+  --card-border: 225 80% 28%;
+  --popover: 220 40% 11%;
+  --popover-foreground: 0 0% 95%;
+  --popover-border: 225 80% 28%;
+  --primary: 225 80% 52%;
+  --primary-foreground: 220 40% 7%;
+  --secondary: 355 80% 52%;
+  --secondary-foreground: 220 40% 7%;
+  --muted: 220 40% 16%;
+  --muted-foreground: 0 10% 58%;
+  --accent: 225 80% 20%;
+  --accent-foreground: 225 80% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(220 40% 13%);
+  --map-land: hsl(220 34% 20%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-de {
+  --app-font-sans: 'Rajdhani', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Rajdhani', sans-serif;
+  --word-color: #ffce00;
+  --word-glow: 0 0 20px #dd0000, 0 0 48px #ffce00;
+  --theme-tier: I;
+
+  --background: 0 0% 5%;
+  --foreground: 45 40% 94%;
+  --border: 0 80% 20%;
+  --input: 0 60% 14%;
+  --ring: 0 80% 48%;
+  --card: 0 0% 9%;
+  --card-foreground: 45 40% 94%;
+  --card-border: 0 80% 24%;
+  --popover: 0 0% 9%;
+  --popover-foreground: 45 40% 94%;
+  --popover-border: 0 80% 24%;
+  --primary: 0 80% 48%;
+  --primary-foreground: 0 0% 5%;
+  --secondary: 45 95% 52%;
+  --secondary-foreground: 0 0% 5%;
+  --muted: 0 0% 14%;
+  --muted-foreground: 45 10% 58%;
+  --accent: 0 80% 16%;
+  --accent-foreground: 0 80% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.25rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(0 0% 11%);
+  --map-land: hsl(0 4% 18%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-it {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffffff;
+  --word-glow: 0 0 20px #009246, 0 0 48px #ce2b37;
+  --theme-tier: I;
+
+  --background: 145 35% 6%;
+  --foreground: 0 0% 95%;
+  --border: 145 75% 12%;
+  --input: 145 60% 8%;
+  --ring: 145 75% 40%;
+  --card: 145 35% 10%;
+  --card-foreground: 0 0% 95%;
+  --card-border: 145 75% 16%;
+  --popover: 145 35% 10%;
+  --popover-foreground: 0 0% 95%;
+  --popover-border: 145 75% 16%;
+  --primary: 145 75% 40%;
+  --primary-foreground: 145 35% 6%;
+  --secondary: 355 80% 50%;
+  --secondary-foreground: 145 35% 6%;
+  --muted: 145 35% 15%;
+  --muted-foreground: 0 10% 58%;
+  --accent: 145 75% 10%;
+  --accent-foreground: 145 75% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(145 35% 12%);
+  --map-land: hsl(145 29% 19%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-pt {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffe000;
+  --word-glow: 0 0 20px #006600, 0 0 48px #ff0000;
+  --theme-tier: I;
+
+  --background: 150 40% 6%;
+  --foreground: 45 35% 93%;
+  --border: 150 80% 10%;
+  --input: 150 60% 8%;
+  --ring: 150 80% 35%;
+  --card: 150 40% 10%;
+  --card-foreground: 45 35% 93%;
+  --card-border: 150 80% 12%;
+  --popover: 150 40% 10%;
+  --popover-foreground: 45 35% 93%;
+  --popover-border: 150 80% 12%;
+  --primary: 150 80% 35%;
+  --primary-foreground: 150 40% 6%;
+  --secondary: 355 80% 45%;
+  --secondary-foreground: 150 40% 6%;
+  --muted: 150 40% 15%;
+  --muted-foreground: 45 10% 58%;
+  --accent: 150 80% 10%;
+  --accent-foreground: 150 80% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(150 40% 12%);
+  --map-land: hsl(150 34% 19%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-br {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffdf00;
+  --word-glow: 0 0 20px #009c3b, 0 0 48px #002776;
+  --theme-tier: I;
+
+  --background: 145 45% 6%;
+  --foreground: 50 40% 94%;
+  --border: 145 85% 10%;
+  --input: 145 60% 8%;
+  --ring: 145 85% 38%;
+  --card: 145 45% 10%;
+  --card-foreground: 50 40% 94%;
+  --card-border: 145 85% 14%;
+  --popover: 145 45% 10%;
+  --popover-foreground: 50 40% 94%;
+  --popover-border: 145 85% 14%;
+  --primary: 145 85% 38%;
+  --primary-foreground: 145 45% 6%;
+  --secondary: 50 95% 55%;
+  --secondary-foreground: 145 45% 6%;
+  --muted: 145 45% 15%;
+  --muted-foreground: 50 10% 58%;
+  --accent: 145 85% 10%;
+  --accent-foreground: 145 85% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.625rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(145 45% 12%);
+  --map-land: hsl(145 39% 19%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-zh {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffde00;
+  --word-glow: 0 0 20px #de2910, 0 0 48px #ffde00;
+  --theme-tier: I;
+
+  --background: 355 50% 7%;
+  --foreground: 50 45% 94%;
+  --border: 355 85% 20%;
+  --input: 355 60% 14%;
+  --ring: 355 85% 48%;
+  --card: 355 50% 11%;
+  --card-foreground: 50 45% 94%;
+  --card-border: 355 85% 24%;
+  --popover: 355 50% 11%;
+  --popover-foreground: 50 45% 94%;
+  --popover-border: 355 85% 24%;
+  --primary: 355 85% 48%;
+  --primary-foreground: 355 50% 7%;
+  --secondary: 50 95% 55%;
+  --secondary-foreground: 355 50% 7%;
+  --muted: 355 50% 16%;
+  --muted-foreground: 50 10% 58%;
+  --accent: 355 85% 16%;
+  --accent-foreground: 355 85% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.375rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(355 50% 13%);
+  --map-land: hsl(355 44% 20%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-ko {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffffff;
+  --word-glow: 0 0 20px #0047a0, 0 0 48px #cd2e3a;
+  --theme-tier: I;
+
+  --background: 0 0% 7%;
+  --foreground: 0 0% 95%;
+  --border: 220 80% 22%;
+  --input: 220 60% 16%;
+  --ring: 220 80% 50%;
+  --card: 0 0% 11%;
+  --card-foreground: 0 0% 95%;
+  --card-border: 220 80% 26%;
+  --popover: 0 0% 11%;
+  --popover-foreground: 0 0% 95%;
+  --popover-border: 220 80% 26%;
+  --primary: 220 80% 50%;
+  --primary-foreground: 0 0% 7%;
+  --secondary: 355 80% 52%;
+  --secondary-foreground: 0 0% 7%;
+  --muted: 0 0% 16%;
+  --muted-foreground: 0 10% 58%;
+  --accent: 220 80% 18%;
+  --accent-foreground: 220 80% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(0 0% 13%);
+  --map-land: hsl(0 4% 20%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-ru {
+  --app-font-sans: 'Space Mono', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Space Mono', monospace;
+  --word-color: #ffffff;
+  --word-glow: 0 0 20px #0039a6, 0 0 48px #d52b1e;
+  --theme-tier: I;
+
+  --background: 220 35% 6%;
+  --foreground: 0 0% 95%;
+  --border: 220 80% 20%;
+  --input: 220 60% 14%;
+  --ring: 220 80% 48%;
+  --card: 220 35% 10%;
+  --card-foreground: 0 0% 95%;
+  --card-border: 220 80% 24%;
+  --popover: 220 35% 10%;
+  --popover-foreground: 0 0% 95%;
+  --popover-border: 220 80% 24%;
+  --primary: 220 80% 48%;
+  --primary-foreground: 220 35% 6%;
+  --secondary: 355 80% 50%;
+  --secondary-foreground: 220 35% 6%;
+  --muted: 220 35% 15%;
+  --muted-foreground: 0 10% 58%;
+  --accent: 220 80% 16%;
+  --accent-foreground: 220 80% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.25rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(220 35% 12%);
+  --map-land: hsl(220 29% 19%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-in {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ff9933;
+  --word-glow: 0 0 20px #ff9933, 0 0 48px #138808;
+  --theme-tier: I;
+
+  --background: 30 40% 7%;
+  --foreground: 0 0% 95%;
+  --border: 28 90% 27%;
+  --input: 28 60% 21%;
+  --ring: 28 90% 55%;
+  --card: 30 40% 11%;
+  --card-foreground: 0 0% 95%;
+  --card-border: 28 90% 31%;
+  --popover: 30 40% 11%;
+  --popover-foreground: 0 0% 95%;
+  --popover-border: 28 90% 31%;
+  --primary: 28 90% 55%;
+  --primary-foreground: 30 40% 7%;
+  --secondary: 145 70% 40%;
+  --secondary-foreground: 30 40% 7%;
+  --muted: 30 40% 16%;
+  --muted-foreground: 0 10% 58%;
+  --accent: 28 90% 23%;
+  --accent-foreground: 28 90% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.625rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(30 40% 13%);
+  --map-land: hsl(30 34% 20%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-sa {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffffff;
+  --word-glow: 0 0 20px #006c35, 0 0 48px #ffffff;
+  --theme-tier: I;
+
+  --background: 150 45% 6%;
+  --foreground: 0 0% 95%;
+  --border: 150 80% 10%;
+  --input: 150 60% 8%;
+  --ring: 150 80% 32%;
+  --card: 150 45% 10%;
+  --card-foreground: 0 0% 95%;
+  --card-border: 150 80% 12%;
+  --popover: 150 45% 10%;
+  --popover-foreground: 0 0% 95%;
+  --popover-border: 150 80% 12%;
+  --primary: 150 80% 32%;
+  --primary-foreground: 150 45% 6%;
+  --secondary: 0 0% 90%;
+  --secondary-foreground: 150 45% 6%;
+  --muted: 150 45% 15%;
+  --muted-foreground: 0 10% 58%;
+  --accent: 150 80% 10%;
+  --accent-foreground: 150 80% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(150 45% 12%);
+  --map-land: hsl(150 39% 19%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-nl {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffffff;
+  --word-glow: 0 0 20px #ae1c28, 0 0 48px #ff7f00;
+  --theme-tier: I;
+
+  --background: 220 35% 7%;
+  --foreground: 0 0% 95%;
+  --border: 220 80% 17%;
+  --input: 220 60% 11%;
+  --ring: 220 80% 45%;
+  --card: 220 35% 11%;
+  --card-foreground: 0 0% 95%;
+  --card-border: 220 80% 21%;
+  --popover: 220 35% 11%;
+  --popover-foreground: 0 0% 95%;
+  --popover-border: 220 80% 21%;
+  --primary: 220 80% 45%;
+  --primary-foreground: 220 35% 7%;
+  --secondary: 25 95% 55%;
+  --secondary-foreground: 220 35% 7%;
+  --muted: 220 35% 16%;
+  --muted-foreground: 0 10% 58%;
+  --accent: 220 80% 13%;
+  --accent-foreground: 220 80% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(220 35% 13%);
+  --map-land: hsl(220 29% 20%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-se {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #fecc00;
+  --word-glow: 0 0 20px #fecc00, 0 0 48px #006aa7;
+  --theme-tier: I;
+
+  --background: 215 50% 7%;
+  --foreground: 48 45% 94%;
+  --border: 215 85% 14%;
+  --input: 215 60% 8%;
+  --ring: 215 85% 42%;
+  --card: 215 50% 11%;
+  --card-foreground: 48 45% 94%;
+  --card-border: 215 85% 18%;
+  --popover: 215 50% 11%;
+  --popover-foreground: 48 45% 94%;
+  --popover-border: 215 85% 18%;
+  --primary: 215 85% 42%;
+  --primary-foreground: 215 50% 7%;
+  --secondary: 48 95% 55%;
+  --secondary-foreground: 215 50% 7%;
+  --muted: 215 50% 16%;
+  --muted-foreground: 48 10% 58%;
+  --accent: 215 85% 10%;
+  --accent-foreground: 215 85% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.625rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(215 50% 13%);
+  --map-land: hsl(215 44% 20%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-tr {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffffff;
+  --word-glow: 0 0 20px #e30a17, 0 0 48px #ffffff;
+  --theme-tier: I;
+
+  --background: 355 50% 7%;
+  --foreground: 0 0% 95%;
+  --border: 355 85% 20%;
+  --input: 355 60% 14%;
+  --ring: 355 85% 48%;
+  --card: 355 50% 11%;
+  --card-foreground: 0 0% 95%;
+  --card-border: 355 85% 24%;
+  --popover: 355 50% 11%;
+  --popover-foreground: 0 0% 95%;
+  --popover-border: 355 85% 24%;
+  --primary: 355 85% 48%;
+  --primary-foreground: 355 50% 7%;
+  --secondary: 0 0% 92%;
+  --secondary-foreground: 355 50% 7%;
+  --muted: 355 50% 16%;
+  --muted-foreground: 0 10% 58%;
+  --accent: 355 85% 16%;
+  --accent-foreground: 355 85% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(355 50% 13%);
+  --map-land: hsl(355 44% 20%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-th {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffffff;
+  --word-glow: 0 0 20px #2d2a4a, 0 0 48px #a51931;
+  --theme-tier: I;
+
+  --background: 225 45% 6%;
+  --foreground: 0 0% 95%;
+  --border: 225 80% 10%;
+  --input: 225 60% 8%;
+  --ring: 225 80% 35%;
+  --card: 225 45% 10%;
+  --card-foreground: 0 0% 95%;
+  --card-border: 225 80% 12%;
+  --popover: 225 45% 10%;
+  --popover-foreground: 0 0% 95%;
+  --popover-border: 225 80% 12%;
+  --primary: 225 80% 35%;
+  --primary-foreground: 225 45% 6%;
+  --secondary: 355 80% 50%;
+  --secondary-foreground: 225 45% 6%;
+  --muted: 225 45% 15%;
+  --muted-foreground: 0 10% 58%;
+  --accent: 225 80% 10%;
+  --accent-foreground: 225 80% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(225 45% 12%);
+  --map-land: hsl(225 39% 19%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-vn {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffff00;
+  --word-glow: 0 0 20px #da251d, 0 0 48px #ffff00;
+  --theme-tier: I;
+
+  --background: 355 55% 6%;
+  --foreground: 50 45% 94%;
+  --border: 355 85% 17%;
+  --input: 355 60% 11%;
+  --ring: 355 85% 45%;
+  --card: 355 55% 10%;
+  --card-foreground: 50 45% 94%;
+  --card-border: 355 85% 21%;
+  --popover: 355 55% 10%;
+  --popover-foreground: 50 45% 94%;
+  --popover-border: 355 85% 21%;
+  --primary: 355 85% 45%;
+  --primary-foreground: 355 55% 6%;
+  --secondary: 50 95% 55%;
+  --secondary-foreground: 355 55% 6%;
+  --muted: 355 55% 15%;
+  --muted-foreground: 50 10% 58%;
+  --accent: 355 85% 13%;
+  --accent-foreground: 355 85% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(355 55% 12%);
+  --map-land: hsl(355 49% 19%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-flag-pl {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #ffffff;
+  --word-glow: 0 0 20px #dc143c, 0 0 48px #ffffff;
+  --theme-tier: I;
+
+  --background: 0 0% 7%;
+  --foreground: 0 0% 95%;
+  --border: 355 80% 20%;
+  --input: 355 60% 14%;
+  --ring: 355 80% 48%;
+  --card: 0 0% 11%;
+  --card-foreground: 0 0% 95%;
+  --card-border: 355 80% 24%;
+  --popover: 0 0% 11%;
+  --popover-foreground: 0 0% 95%;
+  --popover-border: 355 80% 24%;
+  --primary: 355 80% 48%;
+  --primary-foreground: 0 0% 7%;
+  --secondary: 0 0% 92%;
+  --secondary-foreground: 0 0% 7%;
+  --muted: 0 0% 16%;
+  --muted-foreground: 0 10% 58%;
+  --accent: 355 80% 16%;
+  --accent-foreground: 355 80% 88%;
+  --destructive: 0 100% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.375rem;
+  --opaque-button-border-intensity: 9;
+
+  --map-ocean: hsl(0 0% 13%);
+  --map-land: hsl(0 4% 20%);
+  --map-country-border: hsl(var(--border));
+}
+
+/* ── Category J — ULTRA (animated, fully customised) ───────────────── */
+
+:root.theme-aurora-borealis {
+  --app-font-sans: 'Outfit', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Outfit', sans-serif;
+  --word-color: #7CFFCB;
+  --word-glow: 0 0 20px #7CFFCB, 0 0 48px #A97CFF;
+  --theme-tier: J;
+
+  --background: 220 55% 4%;
+  --foreground: 170 40% 94%;
+  --border: 160 90% 27%;
+  --input: 160 60% 21%;
+  --ring: 160 90% 55%;
+  --card: 220 55% 9%;
+  --card-foreground: 170 40% 94%;
+  --card-border: 160 90% 31%;
+  --popover: 220 55% 9%;
+  --popover-foreground: 170 40% 94%;
+  --popover-border: 160 90% 31%;
+  --primary: 160 90% 55%;
+  --primary-foreground: 220 55% 4%;
+  --secondary: 280 90% 65%;
+  --secondary-foreground: 220 55% 4%;
+  --muted: 220 55% 14%;
+  --muted-foreground: 170 10% 60%;
+  --accent: 160 90% 23%;
+  --accent-foreground: 160 90% 88%;
+  --destructive: 0 95% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 1rem;
+  --opaque-button-border-intensity: 10;
+
+  --map-ocean: hsl(220 55% 10%);
+  --map-land: hsl(220 49% 17%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-aurora-borealis body,
+:root.theme-aurora-borealis .bg-background {
+  background-image:
+    radial-gradient(60% 45% at 20% 0%, hsl(160 90% 45% / 0.20), transparent 70%),
+    radial-gradient(55% 40% at 80% 5%, hsl(280 90% 60% / 0.18), transparent 70%),
+    radial-gradient(70% 50% at 50% 100%, hsl(200 90% 50% / 0.12), transparent 70%);
+  background-attachment: fixed;
+}
+:root.theme-aurora-borealis .game-word {
+  background: linear-gradient(115deg, #7CFFCB, #55C2FF 40%, #A97CFF 75%, #7CFFCB);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: lok-aurora-drift 9s ease-in-out infinite;
+}
+@keyframes lok-aurora-drift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root.theme-aurora-borealis .game-word { animation: none; }
+}
+
+:root.theme-liquid-gold {
+  --app-font-sans: 'Playfair Display', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Playfair Display', serif;
+  --word-color: #F7D774;
+  --word-glow: 0 0 20px #F7D774, 0 0 48px #B8860B;
+  --theme-tier: J;
+
+  --background: 35 35% 4%;
+  --foreground: 40 35% 93%;
+  --border: 43 95% 27%;
+  --input: 43 60% 21%;
+  --ring: 43 95% 55%;
+  --card: 35 35% 9%;
+  --card-foreground: 40 35% 93%;
+  --card-border: 43 95% 31%;
+  --popover: 35 35% 9%;
+  --popover-foreground: 40 35% 93%;
+  --popover-border: 43 95% 31%;
+  --primary: 43 95% 55%;
+  --primary-foreground: 35 35% 4%;
+  --secondary: 25 85% 52%;
+  --secondary-foreground: 35 35% 4%;
+  --muted: 35 35% 14%;
+  --muted-foreground: 40 10% 60%;
+  --accent: 43 95% 23%;
+  --accent-foreground: 43 95% 88%;
+  --destructive: 0 95% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.5rem;
+  --opaque-button-border-intensity: 10;
+
+  --map-ocean: hsl(35 35% 10%);
+  --map-land: hsl(35 29% 17%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-liquid-gold .game-word {
+  background: linear-gradient(100deg, #8a6a1f 0%, #f7d774 35%, #fffbe6 48%, #f7d774 62%, #8a6a1f 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: lok-gold-sheen 6s linear infinite;
+}
+@keyframes lok-gold-sheen {
+  0% { background-position: 120% 50%; }
+  100% { background-position: -20% 50%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root.theme-liquid-gold .game-word { animation: none; background-position: 50% 50%; }
+}
+
+:root.theme-obsidian-prism {
+  --app-font-sans: 'Rajdhani', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Rajdhani', sans-serif;
+  --word-color: #FFFFFF;
+  --word-glow: 0 0 20px #B06CFF, 0 0 48px #4DE0FF;
+  --theme-tier: J;
+
+  --background: 250 20% 3%;
+  --foreground: 0 0% 95%;
+  --border: 280 90% 34%;
+  --input: 280 60% 28%;
+  --ring: 280 90% 62%;
+  --card: 250 20% 8%;
+  --card-foreground: 0 0% 95%;
+  --card-border: 280 90% 38%;
+  --popover: 250 20% 8%;
+  --popover-foreground: 0 0% 95%;
+  --popover-border: 280 90% 38%;
+  --primary: 280 90% 62%;
+  --primary-foreground: 250 20% 4%;
+  --secondary: 190 95% 58%;
+  --secondary-foreground: 250 20% 4%;
+  --muted: 250 20% 13%;
+  --muted-foreground: 0 10% 60%;
+  --accent: 280 90% 30%;
+  --accent-foreground: 280 90% 88%;
+  --destructive: 0 95% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.25rem;
+  --opaque-button-border-intensity: 10;
+
+  --map-ocean: hsl(250 20% 9%);
+  --map-land: hsl(250 14% 16%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-obsidian-prism .game-word {
+  color: #fff;
+  text-shadow:
+    -2px 0 6px hsl(320 100% 60% / 0.75),
+     2px 0 6px hsl(190 100% 60% / 0.75),
+     0 0 26px hsl(275 100% 65% / 0.5);
+}
+:root.theme-obsidian-prism .bg-card {
+  background-image: linear-gradient(160deg, hsl(275 40% 10% / 0.6), transparent 60%);
+}
+
+:root.theme-paper-lantern {
+  --app-font-sans: 'Playfair Display', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Playfair Display', serif;
+  --word-color: #FFD9A0;
+  --word-glow: 0 0 20px #FF9E4F, 0 0 48px #B4531E;
+  --theme-tier: J;
+
+  --background: 25 30% 6%;
+  --foreground: 35 40% 92%;
+  --border: 20 85% 30%;
+  --input: 20 60% 24%;
+  --ring: 20 85% 58%;
+  --card: 25 30% 11%;
+  --card-foreground: 35 40% 92%;
+  --card-border: 20 85% 34%;
+  --popover: 25 30% 11%;
+  --popover-foreground: 35 40% 92%;
+  --popover-border: 20 85% 34%;
+  --primary: 20 85% 58%;
+  --primary-foreground: 25 30% 6%;
+  --secondary: 40 80% 60%;
+  --secondary-foreground: 25 30% 6%;
+  --muted: 25 30% 16%;
+  --muted-foreground: 35 10% 60%;
+  --accent: 20 85% 26%;
+  --accent-foreground: 20 85% 88%;
+  --destructive: 0 95% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 1.5rem;
+  --opaque-button-border-intensity: 10;
+
+  --map-ocean: hsl(25 30% 12%);
+  --map-land: hsl(25 24% 19%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-paper-lantern body,
+:root.theme-paper-lantern .bg-background {
+  background-image:
+    radial-gradient(45% 35% at 50% 22%, hsl(28 90% 55% / 0.22), transparent 72%),
+    radial-gradient(80% 60% at 50% 110%, hsl(18 80% 40% / 0.16), transparent 70%);
+  background-attachment: fixed;
+}
+:root.theme-paper-lantern .game-word {
+  animation: lok-lantern-breathe 5.5s ease-in-out infinite;
+}
+@keyframes lok-lantern-breathe {
+  0%, 100% { text-shadow: 0 0 18px #FF9E4F, 0 0 44px #B4531E; }
+  50% { text-shadow: 0 0 26px #FFB878, 0 0 66px #C25E22; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root.theme-paper-lantern .game-word { animation: none; }
+}
+
+:root.theme-quantum-foam {
+  --app-font-sans: 'Space Mono', sans-serif;
+  --app-font-serif: 'Playfair Display', serif;
+  --app-font-mono: 'Space Mono', monospace;
+  --word-font: 'Space Mono', monospace;
+  --word-color: #66F0FF;
+  --word-glow: 0 0 20px #66F0FF, 0 0 48px #FF52C8;
+  --theme-tier: J;
+
+  --background: 230 50% 3%;
+  --foreground: 190 30% 92%;
+  --border: 190 100% 27%;
+  --input: 190 60% 21%;
+  --ring: 190 100% 55%;
+  --card: 230 50% 8%;
+  --card-foreground: 190 30% 92%;
+  --card-border: 190 100% 31%;
+  --popover: 230 50% 8%;
+  --popover-foreground: 190 30% 92%;
+  --popover-border: 190 100% 31%;
+  --primary: 190 100% 55%;
+  --primary-foreground: 230 50% 4%;
+  --secondary: 320 95% 62%;
+  --secondary-foreground: 230 50% 4%;
+  --muted: 230 50% 13%;
+  --muted-foreground: 190 10% 60%;
+  --accent: 190 100% 23%;
+  --accent-foreground: 190 100% 88%;
+  --destructive: 0 95% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --radius: 0.125rem;
+  --opaque-button-border-intensity: 10;
+
+  --map-ocean: hsl(230 50% 9%);
+  --map-land: hsl(230 44% 16%);
+  --map-country-border: hsl(var(--border));
+}
+
+:root.theme-quantum-foam body,
+:root.theme-quantum-foam .bg-background {
+  background-image:
+    radial-gradient(circle at 15% 25%, hsl(190 100% 55% / 0.10) 0 2px, transparent 2px),
+    radial-gradient(circle at 72% 68%, hsl(320 100% 60% / 0.10) 0 2px, transparent 2px),
+    radial-gradient(circle at 45% 85%, hsl(255 100% 65% / 0.08) 0 2px, transparent 2px);
+  background-size: 140px 140px, 190px 190px, 240px 240px;
+  background-attachment: fixed;
+}
+:root.theme-quantum-foam .game-word {
+  animation: lok-quantum-flicker 4s steps(24, end) infinite;
+}
+@keyframes lok-quantum-flicker {
+  0%, 92%, 100% { opacity: 1; }
+  93% { opacity: 0.82; }
+  95% { opacity: 1; }
+  97% { opacity: 0.9; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root.theme-quantum-foam .game-word { animation: none; }
+}
+
