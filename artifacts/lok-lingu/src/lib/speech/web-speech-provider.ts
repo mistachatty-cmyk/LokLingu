@@ -14,7 +14,25 @@ import type { ProviderInit, SpeechErrorCode, SpeechProvider } from './types';
      2. AudioWorkletProcessor (audio-keepalive) or silent gain node
         routes the stream so the AudioContext never suspends
      3. Web Speech API restarts benefit from the always-live session
+
+   ⚠️  ORDERING CONSTRAINT (iOS Safari — do NOT change without reading this):
+   r.start() MUST be called SYNCHRONOUSLY before any `await` inside
+   start(). iOS Safari's Web Speech implementation checks that the call
+   originates from a user-gesture context. Any `await` before r.start()
+   yields the call stack and severs that context — Safari then silently
+   ignores the r.start() call, producing a session that "starts" but
+   never fires onresult or onerror, only onend.
+   The fix: call r.start() first, then fire acquireKeepalive() as a
+   non-blocking background task. Keepalive only matters for subsequent
+   restarts (it holds the AudioContext open between sessions), so
+   firing it after start() is both safe and correct.
 ------------------------------------------------------------------ */
+
+/** True on iPhone, iPad, or iPod — covers Safari, Chrome-iOS, Firefox-iOS
+ *  (all use WebKit and share the same Web Speech quirks). */
+const IS_IOS = /iphone|ipad|ipod/i.test(
+  typeof navigator !== 'undefined' ? navigator.userAgent : '',
+);
 
 interface ISpeechRecognition extends EventTarget {
   continuous: boolean;
@@ -133,7 +151,11 @@ export function createWebSpeechProvider(init: ProviderInit): SpeechProvider {
 
     const r = new Ctor();
     r.continuous = false;
-    r.interimResults = true;
+    // iOS WebKit (Safari, Chrome-iOS, Firefox-iOS) never fires interim result
+    // events reliably. Leaving interimResults=true causes sessions to end via
+    // onend with no onresult, registering as "empty" sessions that eventually
+    // trigger the fallback-engine switch. Final-only results work correctly.
+    r.interimResults = !IS_IOS;
     r.maxAlternatives = 5;
     r.lang = lang;
 
@@ -166,20 +188,30 @@ export function createWebSpeechProvider(init: ProviderInit): SpeechProvider {
     async start() {
       if (destroyed) return;
 
-      // Acquire the AudioContext keepalive on the first start (user gesture).
-      // This is the permanent fix for iOS Safari and Android Chrome killing
-      // the recognition loop after the first utterance.
-      await acquireKeepalive();
-
       const r = build();
       if (!r) {
         callbacks.onError('engine-unavailable', 'SpeechRecognition constructor missing');
         throw new Error('web-speech unavailable');
       }
       r.lang = lang;
-      // Throws InvalidStateError if the previous session is still closing.
-      // The caller backs off and retries rather than treating it as fatal.
+
+      // ⚠️  ORDERING CONSTRAINT (iOS Safari): r.start() MUST come before any
+      // `await`. iOS checks that start() is called synchronously within the
+      // user-gesture context. Any await before this line severs that context
+      // and Safari silently ignores the call (no error, no result, just onend).
+      // Throws InvalidStateError if the previous session is still closing —
+      // the caller backs off and retries rather than treating it as fatal.
       r.start();
+
+      // Fire keepalive acquisition as a non-blocking background task AFTER
+      // r.start(). It only matters for *subsequent* restarts (holds the
+      // AudioContext open so the OS doesn't tear down the audio graph between
+      // sessions). Firing it here — still inside the user-gesture tick — is
+      // sufficient for getUserMedia permission on first use.
+      acquireKeepalive().catch(() => {
+        // getUserMedia denied or AudioContext failed — speech still works on
+        // desktop; mobile may lose keepalive but the session already started.
+      });
     },
 
     stop() {

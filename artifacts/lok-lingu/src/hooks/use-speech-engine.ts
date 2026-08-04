@@ -24,7 +24,13 @@ import type { EngineId, SpeechErrorCode, SpeechProvider } from '@/lib/speech/typ
         one rather than leaving a dead mic button.
 ------------------------------------------------------------------ */
 
-const RESTART_DELAY_MS = 300;
+// iOS WebKit needs ~500 ms after onend before it accepts a new r.start().
+// 300 ms is enough on desktop/Android Chrome but causes InvalidStateError
+// on iOS, which the caller retries with exponential backoff — wasting ~1s.
+const IS_IOS_ENGINE = /iphone|ipad|ipod/i.test(
+  typeof navigator !== 'undefined' ? navigator.userAgent : '',
+);
+const RESTART_DELAY_MS = IS_IOS_ENGINE ? 500 : 300;
 const MAX_RESTART_DELAY_MS = 2000;
 /**
  * How many start/end cycles with zero transcripts before we conclude the
