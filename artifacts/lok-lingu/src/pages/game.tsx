@@ -82,6 +82,11 @@ export default function Game() {
   const { responseSpeed } = useSettings();
   const timing = SPEED_TIMING[responseSpeed];
 
+  // Stable ref so handleResult can call abortSession without it being in
+  // the dependency array. abortSession is declared after useSpeechEngine,
+  // so referencing it directly in useCallback's deps causes a TDZ crash.
+  const abortSessionRef = useRef<() => void>(() => {});
+
   // Numbers are a sequence, not a list: when the language has a generator the
   // player can keep counting past the end of any table, forever.
   const infinite = category === 'numbers' && supportsInfiniteCounting(language);
@@ -153,7 +158,7 @@ export default function Game() {
       // Close the current recognition session immediately so the restart timer
       // starts in parallel with the hit animation rather than after it.
       // wantListeningRef stays true, so the loop reopens automatically.
-      abortSession();
+      abortSessionRef.current();
       setFeedback('hit');
       setStreak((s) => s + 1);
       // Feeds the lifetime pie on the stats page.
@@ -170,7 +175,7 @@ export default function Game() {
       setFeedback('miss');
       setTimeout(() => setFeedback('idle'), 500);
     }
-  }, [abortSession]);
+  }, []);
 
   // Words the player could plausibly say next. Under Vosk this becomes a hard
   // grammar, which is the single biggest accuracy win available: while counting
@@ -223,6 +228,10 @@ export default function Game() {
       expected: expectedWords,
       restartDelay: timing.restartMs,
     });
+  // Keep the ref in sync so handleResult can call abortSession without it
+  // being in the useCallback dependency array (which would cause a TDZ crash
+  // since abortSession is declared after handleResult in the component body).
+  abortSessionRef.current = abortSession;
 
   const handleMic = () => {
     if (isActive) {
