@@ -66,6 +66,10 @@ export default function Draw() {
   const [showGuide, setShowGuide] = useState(true);
   const [wordPopActive, setWordPopActive] = useState(false);
   const [shakeKey, setShakeKey] = useState(0);
+  /** True after the player presses Done — the canvas is locked and we're
+   *  waiting for voice to confirm before advancing. Dismissed on success,
+   *  failure, or a new word. */
+  const [awaitingVoice, setAwaitingVoice] = useState(false);
 
   const celebration = useCelebration();
   const sound = useCelebrationSound();
@@ -82,6 +86,7 @@ export default function Draw() {
   const handleSuccess = useCallback(() => {
     if (status !== 'idle' || gameOver) return;
     setStatus('success');
+    setAwaitingVoice(false);
     setWordPopActive(true);
 
     setCount((prevCount) => prevCount + 1);
@@ -103,6 +108,7 @@ export default function Draw() {
   const handleFailure = useCallback(() => {
     if (status !== 'idle' || gameOver) return;
     setStatus('error');
+    setAwaitingVoice(false);
     setShakeKey((k) => k + 1);
     navigator.vibrate?.([80, 40, 140]);
     const newLives = lives - 1;
@@ -141,8 +147,12 @@ export default function Draw() {
       return;
     }
 
-    handleSuccess();
-  }, [handleSuccess, handleFailure]);
+    // Require voice confirmation — prompt the player to say the word.
+    // The existing voice onResult handler already calls handleSuccess when
+    // matchWord passes with strokes ≥ 1, so arming awaitingVoice is all
+    // we need: the banner draws attention and voice does the rest.
+    setAwaitingVoice(true);
+  }, [handleFailure]);
 
   // Must be declared before the effects below — reading it from a dependency
   // array while it was still declared further down threw a TDZ ReferenceError
@@ -348,19 +358,47 @@ export default function Draw() {
                 </Button>
               </div>
 
-              <div className="flex items-center justify-center gap-2 pt-1">
-                {isListening ? (
-                  <span className="flex items-center gap-1.5 text-xs text-primary animate-pulse">
-                    <Mic className="w-3.5 h-3.5" />
-                    <span className="font-mono uppercase tracking-widest">Listening…</span>
-                  </span>
+              {/* Voice confirmation prompt — shown after Done is pressed */}
+              <AnimatePresence>
+                {awaitingVoice ? (
+                  <motion.div
+                    key="awaiting-voice"
+                    initial={{ opacity: 0, y: 6, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -4, scale: 0.97 }}
+                    transition={{ duration: 0.18 }}
+                    className="flex flex-col items-center gap-1.5 rounded-xl border border-primary/40 bg-primary/8 px-5 py-3"
+                  >
+                    <span className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-primary animate-pulse">
+                      <Mic className="w-4 h-4" />
+                      Now say the word!
+                    </span>
+                    <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
+                      Speak to confirm your drawing
+                    </span>
+                  </motion.div>
                 ) : (
-                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground/50">
-                    <MicOff className="w-3.5 h-3.5" />
-                    <span className="font-mono uppercase tracking-widest">Say the word</span>
-                  </span>
+                  <motion.div
+                    key="mic-status"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex items-center justify-center gap-2 pt-1"
+                  >
+                    {isListening ? (
+                      <span className="flex items-center gap-1.5 text-xs text-primary animate-pulse">
+                        <Mic className="w-3.5 h-3.5" />
+                        <span className="font-mono uppercase tracking-widest">Listening…</span>
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground/50">
+                        <MicOff className="w-3.5 h-3.5" />
+                        <span className="font-mono uppercase tracking-widest">Say the word</span>
+                      </span>
+                    )}
+                  </motion.div>
                 )}
-              </div>
+              </AnimatePresence>
 
               {status === 'success' && (
                 <p className="text-center text-sm text-primary font-bold animate-pulse">Correct! ✨</p>
