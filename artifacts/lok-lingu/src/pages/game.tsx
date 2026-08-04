@@ -351,7 +351,11 @@ export default function Game() {
           </span>
         )}
         {isUnsupported && (
-          <span className="text-xs opacity-50">Speech recognition needs Chrome or Edge</span>
+          <span className="text-xs opacity-50">
+            {/iphone|ipad|ipod/i.test(navigator.userAgent)
+              ? 'Speech recognition needs Safari on iPhone'
+              : 'Speech recognition needs Chrome or Edge'}
+          </span>
         )}
         {micError && <span className="text-xs text-destructive opacity-80">{micError}</span>}
       </div>
