@@ -195,6 +195,19 @@ export default function Draw() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Prevent the page from scrolling while the player is drawing.
+  // Restored on unmount so all other pages remain scrollable.
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    const prevOverscroll = document.body.style.overscrollBehavior;
+    document.body.style.overflow = 'hidden';
+    document.body.style.overscrollBehavior = 'none';
+    return () => {
+      document.body.style.overflow = prev;
+      document.body.style.overscrollBehavior = prevOverscroll;
+    };
+  }, []);
+
   useEffect(() => {
     if (!currentWord) return;
     const timer = setTimeout(() => speakWord(currentWord.word, language), 400);
@@ -202,7 +215,10 @@ export default function Draw() {
   }, [wordIndex, currentWord, language]);
 
   return (
-    <div className="relative min-h-screen w-full bg-background overflow-hidden flex flex-col select-none">
+    <div
+      className="relative min-h-screen w-full bg-background overflow-hidden flex flex-col select-none"
+      style={{ touchAction: 'none', overscrollBehavior: 'none' } as React.CSSProperties}
+    >
       {wordPopActive && (
         <WordPop onComplete={() => setWordPopActive(false)} />
       )}
