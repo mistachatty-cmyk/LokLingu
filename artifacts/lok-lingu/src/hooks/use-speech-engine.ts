@@ -69,6 +69,12 @@ export function useSpeechEngine({
   restartDelay: restartDelayProp,
 }: SpeechEngineOptions) {
   const [isListening, setIsListening] = useState(false);
+  /**
+   * True when the session has been dead for >1.5 s while the player still
+   * wants to listen — shown as "reconnecting…" so they don't think the mic
+   * silently broke. Clears as soon as a new session starts.
+   */
+  const [isReconnecting, setIsReconnecting] = useState(false);
   const [spokenText, setSpokenText] = useState('');
   const [engine, setEngine] = useState<EngineId | null>(null);
   const [engineNote, setEngineNote] = useState<string>('');
@@ -104,6 +110,14 @@ export function useSpeechEngine({
   const wantListeningRef = useRef(false);
   const pendingStartRef = useRef(false);
   const restartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /**
+   * Watchdog: arms after every session-end (and on abortSession) while
+   * wantListening is true. If a new session hasn't started within 1.5 s we
+   * force-reset pendingStart and reschedule — catching the iOS bug where
+   * onend fires but the subsequent start() call silently swallows the error,
+   * or where onend never fires at all after abort().
+   */
+  const watchdogTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const restartDelayRef = useRef(baseDelayMs);
   const unmountedRef = useRef(false);
   const triedFallbackRef = useRef(false);
@@ -112,6 +126,11 @@ export function useSpeechEngine({
   const scheduleStartRef = useRef<() => void>(() => {});
   /** Forward handle so handlers built early can swap the engine. */
   const switchEngineRef = useRef<(from: EngineId) => void>(() => {});
+  /**
+   * Forward ref so the watchdog can call scheduleStart without capturing a
+   * stale closure — defined as a ref after scheduleStartRef is declared.
+   */
+  const armWatchdogRef = useRef<() => void>(() => {});
 
   const clearTimer = useCallback(() => {
     if (restartTimerRef.current) {
@@ -158,6 +177,12 @@ export function useSpeechEngine({
           restartDelayRef.current = baseDelayRef.current;
           gotResultThisSessionRef.current = false;
           setIsListening(true);
+          // Session is live — disarm the watchdog and clear the reconnecting flag.
+          if (watchdogTimerRef.current) {
+            clearTimeout(watchdogTimerRef.current);
+            watchdogTimerRef.current = null;
+          }
+          setIsReconnecting(false);
         },
         onSessionEnd: () => {
           pendingStartRef.current = false;
@@ -178,7 +203,12 @@ export function useSpeechEngine({
             }
           }
 
-          if (wantListeningRef.current) scheduleStartRef.current();
+          if (wantListeningRef.current) {
+            scheduleStartRef.current();
+            // Arm the watchdog. If onListening doesn't fire within 1.5 s the
+            // scheduled start silently failed (common on iOS) — force a retry.
+            armWatchdogRef.current();
+          }
         },
         onError: (code: SpeechErrorCode) => {
           pendingStartRef.current = false;
@@ -297,6 +327,25 @@ export function useSpeechEngine({
 
   scheduleStartRef.current = scheduleStart;
 
+  // Arm the watchdog: if a new session hasn't started within 1.5 s of the
+  // session dying, force-reset pendingStart and reschedule. This recovers
+  // two iOS failure modes:
+  //   1. onend never fires after abort() → reschedule starts the loop again.
+  //   2. onend fires, scheduleStart runs, but start() silently fails with
+  //      no error event → pendingStart would be stuck true forever.
+  armWatchdogRef.current = () => {
+    if (watchdogTimerRef.current) clearTimeout(watchdogTimerRef.current);
+    watchdogTimerRef.current = setTimeout(() => {
+      watchdogTimerRef.current = null;
+      if (unmountedRef.current || !wantListeningRef.current) return;
+      // Unstick a potentially frozen pendingStart and fire a fresh attempt.
+      pendingStartRef.current = false;
+      restartDelayRef.current = baseDelayRef.current; // reset backoff
+      setIsReconnecting(true);
+      scheduleStartRef.current();
+    }, 1500);
+  };
+
   const startListening = useCallback(() => {
     wantListeningRef.current = true;
     restartDelayRef.current = baseDelayRef.current;
@@ -309,6 +358,9 @@ export function useSpeechEngine({
   const stopListening = useCallback(() => {
     wantListeningRef.current = false;
     clearTimer();
+    // Also disarm the watchdog so it doesn't fire after an intentional stop.
+    if (watchdogTimerRef.current) { clearTimeout(watchdogTimerRef.current); watchdogTimerRef.current = null; }
+    setIsReconnecting(false);
     providerRef.current?.stop();
     setIsListening(false);
   }, [clearTimer]);
@@ -319,9 +371,13 @@ export function useSpeechEngine({
    * the restart timer starts in parallel with the hit animation, rather than
    * waiting for the engine to close the session naturally (~200–500ms later).
    * Unlike stopListening(), wantListeningRef stays true so the loop restarts.
+   *
+   * On iOS, onend can silently disappear after abort(). The watchdog detects
+   * this and forces a restart within 1.5 s if onListening never fires.
    */
   const abortSession = useCallback(() => {
     providerRef.current?.stop();
+    armWatchdogRef.current(); // safety net in case onend never fires on iOS
   }, []);
 
   // Keep the grammar in step with the current target word.
@@ -335,7 +391,9 @@ export function useSpeechEngine({
       unmountedRef.current = true;
       wantListeningRef.current = false;
       if (restartTimerRef.current) clearTimeout(restartTimerRef.current);
+      if (watchdogTimerRef.current) clearTimeout(watchdogTimerRef.current);
       restartTimerRef.current = null;
+      watchdogTimerRef.current = null;
       providerRef.current?.destroy();
       providerRef.current = null;
     };
@@ -346,6 +404,7 @@ export function useSpeechEngine({
 
   return {
     isListening,
+    isReconnecting,
     isUnsupported,
     spokenText,
     engine,

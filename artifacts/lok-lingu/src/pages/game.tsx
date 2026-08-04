@@ -208,6 +208,7 @@ export default function Game() {
 
   const {
     isListening,
+    isReconnecting,
     isUnsupported,
     spokenText,
     engine,
@@ -353,7 +354,9 @@ export default function Game() {
           most useful diagnostic there is, so it is always visible. */}
       <div className="h-6 text-center text-xs font-mono">
         {spokenText ? (
-          <span className="opacity-70">“{spokenText}”</span>
+          <span className="opacity-70">"{spokenText}"</span>
+        ) : isReconnecting ? (
+          <span className="opacity-50 text-amber-400">reconnecting…</span>
         ) : isListening ? (
           <span className="opacity-30">listening…</span>
         ) : null}
@@ -371,7 +374,8 @@ export default function Game() {
         >
           {isActive ? (
             <>
-              <Mic size={22} /> {isListening ? 'Listening...' : 'Ready...'}
+              <Mic size={22} />{' '}
+              {isListening ? 'Listening...' : isReconnecting ? 'Reconnecting...' : 'Ready...'}
             </>
           ) : (
             <>
