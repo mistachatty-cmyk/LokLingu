@@ -21,6 +21,8 @@ Keepalive only helps *subsequent* restarts (it keeps the AudioContext alive betw
 
 ## iOS-specific quirks also implemented
 
+- **Fresh SpeechRecognition instance per session** — iOS Safari silently rejects `r.start()` when called on an instance that has already fired `onend`. The `rec` variable is set to `null` inside the `onend` handler so `build()` always creates a brand-new instance for each restart. DO NOT change `onend` to omit the `rec = null` line.
+
 - **`interimResults = false` on iOS** — iOS WebKit never fires interim result events reliably. Sessions end via `onend` with no `onresult`, registering as empty. Set `r.interimResults = !IS_IOS` in `build()`. Final-only results work correctly on iOS.
 
 - **Restart delay 500ms on iOS** — iOS needs ~500ms after `onend` before accepting a new `r.start()`. Desktop/Android Chrome works with 300ms. `RESTART_DELAY_MS` is set to `IS_IOS_ENGINE ? 500 : 300` in `use-speech-engine.ts`.

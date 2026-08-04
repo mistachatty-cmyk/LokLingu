@@ -175,7 +175,14 @@ export function createWebSpeechProvider(init: ProviderInit): SpeechProvider {
     };
 
     r.onerror = (e) => callbacks.onError(mapError(e?.error ?? 'unknown'), e?.error);
-    r.onend = () => callbacks.onSessionEnd();
+    r.onend = () => {
+      // iOS Safari requires a NEW SpeechRecognition instance for every
+      // start() call — reusing the same object after onend causes silent
+      // failures on subsequent restarts. Clearing rec here forces build()
+      // to create a fresh instance on the next start().
+      rec = null;
+      callbacks.onSessionEnd();
+    };
 
     rec = r;
     return r;
