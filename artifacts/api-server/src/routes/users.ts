@@ -33,8 +33,33 @@ router.post('/users', async (req, res) => {
     return;
   }
 
-  // Create new user
-  const [newUser] = await db.insert(usersTable).values({ username }).returning();
+  // Create new user — handle race condition where another request inserted the
+  // same username between our SELECT and INSERT (pg unique_violation = 23505).
+  let newUser;
+  try {
+    [newUser] = await db.insert(usersTable).values({ username }).returning();
+  } catch (err: unknown) {
+    const pgErr = err as { code?: string };
+    if (pgErr?.code === '23505') {
+      // Another request won the race — return the already-existing user.
+      const [raceUser] = await db
+        .select()
+        .from(usersTable)
+        .where(eq(usersTable.username, username))
+        .limit(1);
+
+      if (raceUser) {
+        res.status(200).json({
+          id: raceUser.id,
+          username: raceUser.username,
+          tokenBalance: raceUser.tokenBalance,
+          createdAt: raceUser.createdAt.toISOString(),
+        });
+        return;
+      }
+    }
+    throw err;
+  }
 
   res.status(200).json({
     id: newUser.id,
