@@ -6,6 +6,7 @@ import { FALLBACK_WORDS, saveLocalScore, incrementLifetimeWords } from '@/lib/of
 import { generateNumber, supportsInfiniteCounting } from '@/lib/number-words';
 import { useUser } from '@/hooks/use-user';
 import { useSpeechEngine } from '@/hooks/use-speech-engine';
+import { useSettings } from '@/hooks/use-settings';
 import { useDevMode } from '@/hooks/use-dev-mode';
 import { speakWord, matchWord, primeVoices, toLocale } from '@/lib/speech-utils';
 
@@ -58,6 +59,16 @@ function resolveWords(language: string, category: string): Resolved {
   return { words: [], substituted: false };
 }
 
+/** Platform-aware timing per response speed setting. */
+const IS_IOS_GAME = /iphone|ipad|ipod/i.test(
+  typeof navigator !== 'undefined' ? navigator.userAgent : '',
+);
+const SPEED_TIMING = {
+  fast:    { hitMs: 150, restartMs: IS_IOS_GAME ? 250 : 150 },
+  normal:  { hitMs: 400, restartMs: IS_IOS_GAME ? 500 : 300 },
+  relaxed: { hitMs: 700, restartMs: IS_IOS_GAME ? 800 : 500 },
+} as const;
+
 export default function Game() {
   const language = localStorage.getItem('lok-lingu-lang') || 'es';
   const category = localStorage.getItem('lok-lingu-cat') || 'numbers';
@@ -68,6 +79,8 @@ export default function Game() {
   const [isActive, setIsActive] = useState(false);
   const [micError, setMicError] = useState<string | null>(null);
   const devMode = useDevMode();
+  const { responseSpeed } = useSettings();
+  const timing = SPEED_TIMING[responseSpeed];
 
   // Numbers are a sequence, not a list: when the language has a generator the
   // player can keep counting past the end of any table, forever.
@@ -145,7 +158,7 @@ export default function Game() {
         setWordIndex((i) => i + 1);
         setFeedback('idle');
         lockedRef.current = false;
-      }, 400);
+      }, timing.hitMs);
       return;
     }
 
@@ -203,6 +216,7 @@ export default function Game() {
       },
       lang: toLocale(language),
       expected: expectedWords,
+      restartDelay: timing.restartMs,
     });
 
   const handleMic = () => {

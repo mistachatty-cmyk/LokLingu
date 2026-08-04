@@ -32,6 +32,7 @@ import { FontPicker } from '@/components/font-picker';
 import { normalizeLanguagesData } from '@/lib/offline-data';
 import { detectCapabilities } from '@/lib/speech/capabilities';
 import { isDevMode, setDevMode } from '@/lib/dev-mode';
+import { useSettings, type ResponseSpeed } from '@/hooks/use-settings';
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -61,6 +62,7 @@ export default function Home() {
   const [showFonts, setShowFonts] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [devMode, setDevModeState] = useState(isDevMode);
+  const { responseSpeed, set: setSetting } = useSettings();
   const usernameInputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -573,6 +575,28 @@ export default function Home() {
                         Not supported in this browser. Try Chrome, Edge, or Safari.
                       </p>
                     )}
+                  </div>
+
+                  {/* Response Speed */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Response Speed
+                    </label>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {(['fast', 'normal', 'relaxed'] as ResponseSpeed[]).map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => setSetting('responseSpeed', s)}
+                          className={`px-2 py-2 rounded-lg border text-xs font-bold capitalize transition-all ${
+                            responseSpeed === s
+                              ? 'border-primary bg-primary/15 text-primary'
+                              : 'border-border hover:border-primary/30 text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Dev mode */}

@@ -10,6 +10,7 @@ export type CursorId =
   | "wand";
 
 export type MatchTolerance = "strict" | "normal" | "loose";
+export type ResponseSpeed = "fast" | "normal" | "relaxed";
 
 export interface GameSettings {
   heartsMode: boolean;
@@ -18,15 +19,17 @@ export interface GameSettings {
   matchTolerance: MatchTolerance;
   ttsVolume: number; // 0–1
   ttsRate: number;   // 0.5–1.5
+  responseSpeed: ResponseSpeed;
 }
 
 const KEYS: Record<keyof GameSettings, string> = {
-  heartsMode:    "lok-lingu-hearts",
-  autoSpeak:     "lok-lingu-auto-speak",
-  cursor:        "lok-lingu-cursor",
-  matchTolerance:"lok-lingu-tolerance",
-  ttsVolume:     "lok-lingu-tts-volume",
-  ttsRate:       "lok-lingu-tts-rate",
+  heartsMode:     "lok-lingu-hearts",
+  autoSpeak:      "lok-lingu-auto-speak",
+  cursor:         "lok-lingu-cursor",
+  matchTolerance: "lok-lingu-tolerance",
+  ttsVolume:      "lok-lingu-tts-volume",
+  ttsRate:        "lok-lingu-tts-rate",
+  responseSpeed:  "lok-lingu-response-speed",
 };
 
 const DEFAULTS: GameSettings = {
@@ -36,6 +39,7 @@ const DEFAULTS: GameSettings = {
   matchTolerance:"normal",
   ttsVolume:     1,
   ttsRate:       0.85,
+  responseSpeed: "fast",
 };
 
 function read<T>(key: string, def: T, parse: (v: string) => T): T {
@@ -63,18 +67,22 @@ export function useSettings() {
   const [ttsRate, _setTtsRate] = useState(() =>
     read(KEYS.ttsRate, DEFAULTS.ttsRate, parseFloat)
   );
+  const [responseSpeed, _setResponseSpeed] = useState<ResponseSpeed>(() =>
+    read(KEYS.responseSpeed, DEFAULTS.responseSpeed, (v) => v as ResponseSpeed)
+  );
 
   function set<K extends keyof GameSettings>(key: K, val: GameSettings[K]) {
     localStorage.setItem(KEYS[key], String(val));
-    if (key === "heartsMode")    _setHeartsMode(val as boolean);
-    if (key === "autoSpeak")     _setAutoSpeak(val as boolean);
-    if (key === "cursor")        _setCursor(val as CursorId);
+    if (key === "heartsMode")     _setHeartsMode(val as boolean);
+    if (key === "autoSpeak")      _setAutoSpeak(val as boolean);
+    if (key === "cursor")         _setCursor(val as CursorId);
     if (key === "matchTolerance") _setTolerance(val as MatchTolerance);
-    if (key === "ttsVolume")     _setTtsVolume(val as number);
-    if (key === "ttsRate")       _setTtsRate(val as number);
+    if (key === "ttsVolume")      _setTtsVolume(val as number);
+    if (key === "ttsRate")        _setTtsRate(val as number);
+    if (key === "responseSpeed")  _setResponseSpeed(val as ResponseSpeed);
   }
 
-  return { heartsMode, autoSpeak, cursor, matchTolerance, ttsVolume, ttsRate, set };
+  return { heartsMode, autoSpeak, cursor, matchTolerance, ttsVolume, ttsRate, responseSpeed, set };
 }
 
 /** Read settings without a hook (for non-React code) */
@@ -86,5 +94,6 @@ export function readSettings(): GameSettings {
     matchTolerance:read(KEYS.matchTolerance,DEFAULTS.matchTolerance,(v) => v as MatchTolerance),
     ttsVolume:     read(KEYS.ttsVolume,     DEFAULTS.ttsVolume,     parseFloat),
     ttsRate:       read(KEYS.ttsRate,       DEFAULTS.ttsRate,       parseFloat),
+    responseSpeed: read(KEYS.responseSpeed, DEFAULTS.responseSpeed, (v) => v as ResponseSpeed),
   };
 }

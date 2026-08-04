@@ -53,6 +53,12 @@ export interface SpeechEngineOptions {
   /** Words the player is likely to say — becomes a hard grammar under Vosk. */
   expected?: string[];
   enabled?: boolean;
+  /**
+   * Override the base restart delay (ms between onend and the next r.start()).
+   * A safe floor of 150ms is enforced on iOS regardless of this value.
+   * When omitted, defaults to RESTART_DELAY_MS (platform-appropriate baseline).
+   */
+  restartDelay?: number;
 }
 
 export function useSpeechEngine({
@@ -60,6 +66,7 @@ export function useSpeechEngine({
   onError,
   lang,
   expected,
+  restartDelay: restartDelayProp,
 }: SpeechEngineOptions) {
   const [isListening, setIsListening] = useState(false);
   const [spokenText, setSpokenText] = useState('');
@@ -85,11 +92,19 @@ export function useSpeechEngine({
   const expectedRef = useRef<string[]>(expected ?? []);
   expectedRef.current = expected ?? [];
 
+  // Preferred base restart delay — caller can override for accessibility speed modes.
+  // iOS floor (150ms) is enforced to prevent InvalidStateError on rapid restarts.
+  const baseDelayMs = restartDelayProp !== undefined
+    ? Math.max(restartDelayProp, IS_IOS_ENGINE ? 150 : 80)
+    : RESTART_DELAY_MS;
+  const baseDelayRef = useRef(baseDelayMs);
+  baseDelayRef.current = baseDelayMs;
+
   const providerRef = useRef<SpeechProvider | null>(null);
   const wantListeningRef = useRef(false);
   const pendingStartRef = useRef(false);
   const restartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const restartDelayRef = useRef(RESTART_DELAY_MS);
+  const restartDelayRef = useRef(baseDelayMs);
   const unmountedRef = useRef(false);
   const triedFallbackRef = useRef(false);
   const gotResultThisSessionRef = useRef(false);
@@ -140,7 +155,7 @@ export function useSpeechEngine({
         },
         onListening: () => {
           pendingStartRef.current = false;
-          restartDelayRef.current = RESTART_DELAY_MS;
+          restartDelayRef.current = baseDelayRef.current;
           gotResultThisSessionRef.current = false;
           setIsListening(true);
         },
@@ -284,7 +299,7 @@ export function useSpeechEngine({
 
   const startListening = useCallback(() => {
     wantListeningRef.current = true;
-    restartDelayRef.current = RESTART_DELAY_MS;
+    restartDelayRef.current = baseDelayRef.current;
     triedFallbackRef.current = false;
     setSpokenText('');
     clearTimer();
