@@ -1,11 +1,22 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTheme } from '../hooks/use-theme';
 import { Check, Lock, Star, Zap, Sparkles, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { THEMES, type ThemeDef } from './themes-data';
 import { flagEmojiFromLanguageOrCountry } from './theme-emoji';
 import { readableOn } from '@/lib/contrast';
+
+// Pre-computed particle directions so animations are stable across renders.
+const HOVER_PARTICLES = Array.from({ length: 8 }, (_, i) => {
+  const a = (i / 8) * Math.PI * 2;
+  return { id: i, x: Math.cos(a), y: Math.sin(a) };
+});
+const EQUIP_PARTICLES = Array.from({ length: 14 }, (_, i) => {
+  const a = (i / 14) * Math.PI * 2;
+  const r = i % 2 === 0 ? 1.2 : 0.8;
+  return { id: i, x: Math.cos(a) * r, y: Math.sin(a) * r };
+});
 
 const TIERS = [
   {
@@ -100,6 +111,31 @@ function ThemePreview({
   onClick: () => void;
 }) {
   const [hovered, setHovered] = useState(false);
+  const [showHoverParticles, setShowHoverParticles] = useState(false);
+  const [showEquipParticles, setShowEquipParticles] = useState(false);
+  const [equipRing, setEquipRing] = useState(false);
+  const prevActiveRef = useRef(isActive);
+  const prefersReducedMotion = useReducedMotion();
+
+  // Detect the moment a theme becomes active → trigger equip celebration.
+  useEffect(() => {
+    if (isActive && !prevActiveRef.current && !prefersReducedMotion) {
+      setEquipRing(true);
+      setShowEquipParticles(true);
+      const ringTimer = setTimeout(() => setEquipRing(false), 700);
+      const partTimer = setTimeout(() => setShowEquipParticles(false), 650);
+      prevActiveRef.current = isActive;
+      return () => { clearTimeout(ringTimer); clearTimeout(partTimer); };
+    }
+    prevActiveRef.current = isActive;
+  }, [isActive, prefersReducedMotion]);
+
+  const handlePointerEnter = () => {
+    setHovered(true);
+    if (prefersReducedMotion) return;
+    setShowHoverParticles(true);
+    setTimeout(() => setShowHoverParticles(false), 500);
+  };
 
   // Flag themes carry their country in the id: theme-flag-ja -> 🇯🇵
   const emoji = (() => {
@@ -108,32 +144,117 @@ function ThemePreview({
     return flagEmojiFromLanguageOrCountry(m[1]);
   })();
 
-  const tierName = { A: 'General', B: 'Premium', C: 'Ultimate', D: 'Animated', E: 'Lingu', F: 'Ultimate', G: 'Feral', H: 'Culture', I: 'Flag', J: 'Ultra' }[t.tier];
+  const TIER_LABEL: Record<string, string> = { A: 'General', B: 'Premium', C: 'Ultimate', D: 'Animated', E: 'Lingu', F: 'Ultimate', G: 'Feral', H: 'Culture', I: 'Flag', J: 'Ultra' };
+  const tierName = TIER_LABEL[t.tier] ?? t.tier;
 
   return (
     <motion.div
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.97 }}
+      whileHover={{ scale: prefersReducedMotion ? 1 : 1.03 }}
+      whileTap={{ scale: prefersReducedMotion ? 1 : 0.97 }}
       onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      className={`cursor-pointer rounded-xl border-2 overflow-hidden transition-all relative ${
+      onPointerEnter={handlePointerEnter}
+      onPointerLeave={() => setHovered(false)}
+      className={`cursor-pointer rounded-xl border-2 overflow-visible transition-all relative ${
         isActive
           ? 'border-primary ring-4 ring-primary/20'
           : 'border-border opacity-70 hover:opacity-100'
       }`}
     >
+      {/* ── Equip ring flash ─────────────────────────────── */}
+      <AnimatePresence>
+        {equipRing && (
+          <motion.div
+            className="absolute rounded-xl pointer-events-none z-20"
+            style={{ inset: '-4px', border: `2px solid ${t.wordColor}` }}
+            initial={{ scale: 1, opacity: 0.9 }}
+            animate={{ scale: 1.18, opacity: 0 }}
+            exit={{}}
+            transition={{ duration: 0.55, ease: 'easeOut' }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ── Equip particle burst ─────────────────────────── */}
+      <AnimatePresence>
+        {showEquipParticles && EQUIP_PARTICLES.map((p) => (
+          <motion.div
+            key={`eq-${p.id}`}
+            className="absolute rounded-full pointer-events-none z-20"
+            style={{
+              width: p.id % 3 === 0 ? 5 : 3,
+              height: p.id % 3 === 0 ? 5 : 3,
+              background: t.wordColor,
+              boxShadow: `0 0 5px ${t.wordColor}`,
+              left: '50%',
+              top: '40%',
+              marginLeft: p.id % 3 === 0 ? '-2.5px' : '-1.5px',
+              marginTop: p.id % 3 === 0 ? '-2.5px' : '-1.5px',
+            }}
+            initial={{ x: 0, y: 0, opacity: 1, scale: 0.3 }}
+            animate={{ x: p.x * 48, y: p.y * 44, opacity: 0, scale: 1.4 }}
+            exit={{}}
+            transition={{ duration: 0.52, ease: 'easeOut' }}
+          />
+        ))}
+      </AnimatePresence>
+
       <div
-        className="h-20 flex flex-col items-center justify-center relative"
+        className="h-20 flex flex-col items-center justify-center relative overflow-hidden rounded-t-[10px]"
         style={{ background: t.bg, borderBottom: `1px solid ${t.border}` }}
       >
-        {isActive && (
-          <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-0.5 shadow-md z-10">
-            <Check className="w-3 h-3" />
-          </div>
+        {/* ── Idle shimmer sweep ───────────────────────────── */}
+        {!isActive && !hovered && !prefersReducedMotion && (
+          <motion.div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: `linear-gradient(105deg, transparent 35%, ${t.wordColor}18 50%, transparent 65%)`,
+            }}
+            initial={{ x: '-100%' }}
+            animate={{ x: '200%' }}
+            transition={{
+              duration: 1.4,
+              repeat: Infinity,
+              repeatDelay: 3.2,
+              ease: 'easeInOut',
+            }}
+          />
         )}
+
+        {/* ── Hover spark particles ────────────────────────── */}
+        <AnimatePresence>
+          {showHoverParticles && HOVER_PARTICLES.map((p) => (
+            <motion.div
+              key={`hv-${p.id}`}
+              className="absolute w-1.5 h-1.5 rounded-full pointer-events-none z-10"
+              style={{
+                background: t.wordColor,
+                boxShadow: `0 0 4px ${t.wordColor}`,
+                left: '50%',
+                top: '50%',
+                marginLeft: '-3px',
+                marginTop: '-3px',
+              }}
+              initial={{ x: 0, y: 0, opacity: 1, scale: 0.4 }}
+              animate={{ x: p.x * 32, y: p.y * 28, opacity: 0, scale: 1.2 }}
+              exit={{}}
+              transition={{ duration: 0.42, ease: 'easeOut' }}
+            />
+          ))}
+        </AnimatePresence>
+
+        {isActive && (
+          <motion.div
+            className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-0.5 shadow-md z-10"
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 18 }}
+          >
+            <Check className="w-3 h-3" />
+          </motion.div>
+        )}
+
         <div
-          className="text-xl font-black uppercase tracking-widest leading-tight"
+          className="text-xl font-black uppercase tracking-widest leading-tight relative z-10"
           style={{
             fontFamily: t.font,
             color: t.wordColor,
@@ -143,53 +264,60 @@ function ThemePreview({
           TRES
         </div>
         <div
-          className="text-[10px] mt-0.5 uppercase tracking-widest"
+          className="text-[10px] mt-0.5 uppercase tracking-widest relative z-10"
           style={{ color: readableOn(t.subColor.slice(0, 7), t.bg, 4.5), fontFamily: t.font }}
         >
           (THREE)
         </div>
 
         {/* Description overlay on hover */}
-        {hovered && (
-          <div
-            className="absolute inset-0 flex flex-col items-center justify-center px-2 py-1 transition-opacity"
-            style={{
-              backgroundColor: `${t.bg}cc`,
-              backdropFilter: 'blur(4px)',
-            }}
-          >
-            <p
-              className="text-[10px] leading-tight text-center font-medium"
-              style={{ color: t.wordColor }}
+        <AnimatePresence>
+          {hovered && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="absolute inset-0 flex flex-col items-center justify-center px-2 py-1 z-10"
+              style={{
+                backgroundColor: `${t.bg}d0`,
+                backdropFilter: 'blur(5px)',
+              }}
             >
-              {t.desc}
-            </p>
-            <div className="flex items-center gap-1.5 mt-1.5">
-              <span
-                className="text-[8px] uppercase tracking-widest font-bold px-1.5 py-0.5 rounded-sm"
-                style={{
-                  backgroundColor: t.wordColor + '22',
-                  color: t.wordColor,
-                  border: `1px solid ${t.wordColor}44`,
-                }}
+              <p
+                className="text-[10px] leading-tight text-center font-medium"
+                style={{ color: t.wordColor }}
               >
-                {tierName}
-              </span>
-              <span
-                className="text-[8px] uppercase tracking-widest font-bold px-1.5 py-0.5 rounded-sm"
-                style={{
-                  backgroundColor: t.wordColor + '22',
-                  color: t.wordColor,
-                  border: `1px solid ${t.wordColor}44`,
-                }}
-              >
-                {t.font.replace(/'/g, '').split(',')[0]}
-              </span>
-            </div>
-          </div>
-        )}
+                {t.desc}
+              </p>
+              <div className="flex items-center gap-1.5 mt-1.5">
+                <span
+                  className="text-[8px] uppercase tracking-widest font-bold px-1.5 py-0.5 rounded-sm"
+                  style={{
+                    backgroundColor: t.wordColor + '22',
+                    color: t.wordColor,
+                    border: `1px solid ${t.wordColor}44`,
+                  }}
+                >
+                  {tierName}
+                </span>
+                <span
+                  className="text-[8px] uppercase tracking-widest font-bold px-1.5 py-0.5 rounded-sm"
+                  style={{
+                    backgroundColor: t.wordColor + '22',
+                    color: t.wordColor,
+                    border: `1px solid ${t.wordColor}44`,
+                  }}
+                >
+                  {t.font.replace(/'/g, '').split(',')[0]}
+                </span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-      <div className="bg-card px-3 py-2 flex justify-between items-center">
+
+      <div className="bg-card px-3 py-2 flex justify-between items-center rounded-b-[10px]">
         <span className="font-bold text-xs uppercase tracking-wider flex items-center gap-1.5">
           {emoji && <span aria-hidden>{emoji}</span>}
           {t.label}
