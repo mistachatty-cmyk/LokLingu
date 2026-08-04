@@ -92,10 +92,15 @@
   --map-country-border: hsl(var(--border));
 }
 :root.theme-baskin .game-word {
-  background: linear-gradient(135deg, #ff6b9d, #c44dff, #4da6ff, #4dffb5);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: hsl(330 100% 65%); /* solid fallback — visible when gradient-text is unsupported */
+}
+@supports (-webkit-background-clip: text) {
+  :root.theme-baskin .game-word {
+    background: linear-gradient(135deg, #ff6b9d, #c44dff, #4da6ff, #4dffb5);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
 }
 
 :root, :root.theme-neon {
@@ -1380,10 +1385,15 @@
 
   /* Chrome metallic shimmer on the word */
   :root.theme-chrome .game-word {
-    background: linear-gradient(135deg, #e8e8e8 0%, #ffffff 30%, #a0a0a0 50%, #ffffff 70%, #c8c8c8 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: hsl(220 10% 88%); /* solid fallback — visible when gradient-text is unsupported */
+  }
+  @supports (-webkit-background-clip: text) {
+    :root.theme-chrome .game-word {
+      background: linear-gradient(135deg, #e8e8e8 0%, #ffffff 30%, #a0a0a0 50%, #ffffff 70%, #c8c8c8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
   }
 
   /* Cosmos starfield pseudo-element via box-shadow trick on body */
@@ -3813,12 +3823,17 @@
   background-attachment: fixed;
 }
 :root.theme-aurora-borealis .game-word {
-  background: linear-gradient(115deg, #7CFFCB, #55C2FF 40%, #A97CFF 75%, #7CFFCB);
-  background-size: 300% 100%;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: lok-aurora-drift 9s ease-in-out infinite;
+  color: #7CFFCB; /* solid fallback — visible when gradient-text is unsupported */
+}
+@supports (-webkit-background-clip: text) {
+  :root.theme-aurora-borealis .game-word {
+    background: linear-gradient(115deg, #7CFFCB, #55C2FF 40%, #A97CFF 75%, #7CFFCB);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: lok-aurora-drift 9s ease-in-out infinite;
+  }
 }
 @keyframes lok-aurora-drift {
   0%, 100% { background-position: 0% 50%; }
@@ -3867,12 +3882,17 @@
 }
 
 :root.theme-liquid-gold .game-word {
-  background: linear-gradient(100deg, #8a6a1f 0%, #f7d774 35%, #fffbe6 48%, #f7d774 62%, #8a6a1f 100%);
-  background-size: 250% 100%;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: lok-gold-sheen 6s linear infinite;
+  color: #F7D774; /* solid fallback — visible when gradient-text is unsupported */
+}
+@supports (-webkit-background-clip: text) {
+  :root.theme-liquid-gold .game-word {
+    background: linear-gradient(100deg, #8a6a1f 0%, #f7d774 35%, #fffbe6 48%, #f7d774 62%, #8a6a1f 100%);
+    background-size: 250% 100%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: lok-gold-sheen 6s linear infinite;
+  }
 }
 @keyframes lok-gold-sheen {
   0% { background-position: 120% 50%; }
