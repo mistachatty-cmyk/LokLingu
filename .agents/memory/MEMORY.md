@@ -1,0 +1,3 @@
+- [API server bundling](api-server-bundling.md) — pnpm workspace does not hoist; must bundle everything (no `packages: "external"`)
+- [Vosk browser stub](vosk-stub.md) — vosk-browser is firewalled; vosk-provider.ts is a stub; voskModelConfigured returns false without explicit VITE_VOSK_MODEL_BASE
+- [iOS voice keepalive](ios-voice-keepalive.md) — getUserMedia + AudioContext + AudioWorklet must be acquired before every r.start() call; audio-processor.js in public/
