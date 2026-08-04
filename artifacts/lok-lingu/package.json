@@ -90,7 +90,6 @@
     "d3-shape": "^3.2.0",
     "motion": "^12.42.2",
     "topojson-client": "^3.1.0",
-    "vosk-browser": "^0.0.8",
     "world-atlas": "^2.0.2"
   }
 }

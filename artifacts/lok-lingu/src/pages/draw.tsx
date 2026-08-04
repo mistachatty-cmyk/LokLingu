@@ -154,7 +154,7 @@ export default function Draw() {
   // Voice recognition — runs continuously while the game is active.
   // The player draws the word then speaks it to confirm; correct speech
   // triggers success, wrong speech loses a life (with shake + vibrate).
-  const { isListening } = useSpeechEngine({
+  const { isListening, startListening, stopListening } = useSpeechEngine({
     lang: language,
     expected: currentWord ? [currentWord.word] : [],
     onResult: useCallback(
@@ -176,6 +176,14 @@ export default function Draw() {
       [handleSuccess, handleFailure],
     ),
   });
+
+  // Start listening as soon as the game is active. stopListening is called
+  // in the cleanup so the mic is released when the player leaves the page.
+  useEffect(() => {
+    startListening();
+    return () => stopListening();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!userId) setLocation('/');

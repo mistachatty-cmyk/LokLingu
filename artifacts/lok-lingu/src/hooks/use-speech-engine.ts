@@ -210,8 +210,15 @@ export function useSpeechEngine({
           : caps.hasWebSpeech;
 
       if (!otherViable) {
-        setEngineNote(`${from} is not responding, and no alternative is available`);
-        onErrorRef.current?.('engine-unavailable');
+        // No fallback engine is available. Instead of going permanently
+        // silent, reset the empty-session counter and keep retrying the
+        // current engine. This keeps voice alive on devices where Vosk
+        // is not configured — the mic stays active through intermittent
+        // Chrome speech-backend blips rather than dying after 3 misses.
+        emptyStreakRef.current = 0;
+        triedFallbackRef.current = false;
+        setEngineNote(`${from} retrying — no fallback available`);
+        if (wantListeningRef.current) scheduleStartRef.current();
         return;
       }
 

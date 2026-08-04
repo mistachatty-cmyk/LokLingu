@@ -44,6 +44,13 @@ export default defineConfig({
     outDir: path.resolve(import.meta.dirname, 'dist/public'),
     emptyOutDir: true,
   },
+  optimizeDeps: {
+    // vosk-browser is an optional offline fallback that may not be installed.
+    // Excluding it prevents Vite from failing during dep pre-bundling when
+    // the package is absent; the dynamic import in vosk-provider.ts will
+    // throw at runtime and the engine manager will fall back to Web Speech.
+    exclude: ['vosk-browser'],
+  },
   server: {
     port,
     strictPort: true,

@@ -22,12 +22,11 @@ async function buildAll() {
     outdir: distDir,
     outExtension: { ".js": ".mjs" },
     logLevel: "info",
-    // Externalize ALL node_modules — Vercel's @vercel/nft tracer handles
-    // shipping only the files each serverless function actually needs.
-    // Bundling node_modules produces a 2+ MB file and is unnecessary for
-    // a Node.js backend. Native/dynamic packages are listed below as well
-    // so esbuild never even attempts to resolve them.
-    packages: "external",
+    // Bundle everything from source — this pnpm workspace does not hoist
+    // packages to root node_modules, so `packages: "external"` would cause
+    // ERR_MODULE_NOT_FOUND at runtime for every dependency. esbuild resolves
+    // all imports through the pnpm virtual store and bundles them directly.
+    // Only native add-ons and truly unresolvable packages are externalized.
     external: [
       "*.node",
       "sharp",
@@ -104,7 +103,7 @@ async function buildAll() {
     ],
     sourcemap: "linked",
     plugins: [
-      // pino relies on workers to handle logging, instead of externalizing it we use a plugin to handle it
+      // pino relies on workers to handle logging; use a plugin rather than bundling it
       esbuildPluginPino({ transports: ["pino-pretty"] })
     ],
     // CJS shim: packages that are cjs-only (e.g. express) must still work
