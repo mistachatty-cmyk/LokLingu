@@ -58,8 +58,19 @@ export function voskModelUrl(baseLanguage: string): string | null {
   return `${BASE}/${file}`;
 }
 
-/** True when an offline model is both known and reachable. */
+/**
+ * True when an offline model host is explicitly configured AND the
+ * language is in the known model list.
+ *
+ * Deliberately returns false when BASE still equals the default '/models'
+ * path because no models are actually shipped with the app — they must be
+ * hosted externally and VITE_VOSK_MODEL_BASE set to that URL. Without this
+ * guard, chooseEngine() would try Vosk on Safari/Firefox even though the
+ * model fetch would immediately 404, causing the engine to go silent.
+ */
 export function voskModelConfigured(baseLanguage: string): boolean {
+  const explicitBase = (import.meta.env?.VITE_VOSK_MODEL_BASE as string | undefined) ?? '';
+  if (!explicitBase) return false;
   return voskModelUrl(baseLanguage) !== null;
 }
 
