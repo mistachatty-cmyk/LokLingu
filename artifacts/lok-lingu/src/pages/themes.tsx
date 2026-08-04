@@ -341,15 +341,26 @@ function ThemePreview({
 // Extracts the primary font family from each theme's `font` field and groups
 // theme labels by that family, sorted alphabetically.
 const FONT_GROUPS = (() => {
-  const map = new Map<string, string[]>();
+  // Normalise the key to lowercase+trimmed so spacing/casing variations in the
+  // font string (e.g. "'Orbitron',sans-serif" vs "'Orbitron', sans-serif") never
+  // produce duplicate groups.  The first-seen display casing is kept for rendering.
+  const map = new Map<string, { name: string; labels: string[] }>();
   for (const t of THEMES) {
-    const family = t.font.replace(/'/g, '').split(',')[0].trim();
-    if (!map.has(family)) map.set(family, []);
-    map.get(family)!.push(t.label);
+    const raw = t.font.replace(/'/g, '').split(',')[0].trim();
+    const key = raw.toLowerCase();
+    if (!map.has(key)) map.set(key, { name: raw, labels: [] });
+    const entry = map.get(key)!;
+    // Deduplicate labels explicitly in case two themes share both font and label.
+    if (!entry.labels.includes(t.label)) entry.labels.push(t.label);
   }
-  return Array.from(map.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([name, labels]) => ({ name, themes: labels.join(', '), sample: name }));
+  return Array.from(map.values())
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map(({ name, labels }) => ({
+      name,
+      // Sort labels within each group alphabetically for a stable, scannable list.
+      themes: labels.sort((a, b) => a.localeCompare(b)).join(', '),
+      sample: name,
+    }));
 })();
 
 export default function Themes() {
