@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Volume2, Mic, Home, AlertTriangle } from 'lucide-react';
 import { useLocation } from 'wouter';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useSubmitScore } from '@workspace/api-client-react';
 import { FALLBACK_WORDS, saveLocalScore, incrementLifetimeWords } from '@/lib/offline-data';
 import { generateNumber, supportsInfiniteCounting } from '@/lib/number-words';
@@ -11,6 +11,9 @@ import { useSettings } from '@/hooks/use-settings';
 import { useDevMode } from '@/hooks/use-dev-mode';
 import { speakWord, matchWord, primeVoices, toLocale } from '@/lib/speech-utils';
 import { useTheme } from '@/hooks/use-theme';
+import { useCelebration } from '@/hooks/use-celebration';
+import { useCelebrationSound } from '@/hooks/use-celebration-sound';
+import { CelebrationEffect } from '@/components/celebration-effect';
 
 type NormalWord = { word: string; translation: string; pronunciation?: string };
 
@@ -94,6 +97,22 @@ export default function Game() {
   // so referencing it directly in useCallback's deps causes a TDZ crash.
   const abortSessionRef = useRef<() => void>(() => {});
 
+  // Celebration system — same hooks as draw mode.
+  const prefersReducedMotion = useReducedMotion();
+  const celebration = useCelebration();
+  const { play: playSound } = useCelebrationSound();
+  // Stable ref so handleResult (empty deps) can call incrementMatch without
+  // pulling the whole celebration object into its closure.
+  const celebrationRef = useRef(celebration);
+  celebrationRef.current = celebration;
+
+  // Play milestone sound whenever a new milestone fires.
+  useEffect(() => {
+    if (celebration.milestone) {
+      playSound(celebration.milestone.sound, celebration.milestone.intensity);
+    }
+  }, [celebration.milestone, playSound]);
+
   // Numbers are a sequence, not a list: when the language has a generator the
   // player can keep counting past the end of any table, forever.
   const infinite = category === 'numbers' && supportsInfiniteCounting(language);
@@ -168,8 +187,9 @@ export default function Game() {
       abortSessionRef.current();
       setFeedback('hit');
       setStreak((s) => s + 1);
-      // Feeds the lifetime pie on the stats page.
+      // Feeds the lifetime pie on the stats page and fires milestone logic.
       incrementLifetimeWords(languageRef.current);
+      celebrationRef.current.incrementMatch(languageRef.current);
       setTimeout(() => {
         setWordIndex((i) => i + 1);
         setFeedback('idle');
@@ -310,7 +330,7 @@ export default function Game() {
             transition={{ duration: 0.22 }}
             className="flex flex-col items-center"
           >
-            <h1
+            <motion.h1
               className={`game-word text-7xl md:text-9xl font-black tracking-tighter capitalize leading-none transition-colors duration-200 ${
                 feedback === 'hit'
                   ? 'text-primary'
@@ -319,9 +339,17 @@ export default function Game() {
                     : 'word-glow'
               }`}
               style={{ color: feedback === 'idle' ? 'var(--word-color)' : undefined }}
+              animate={
+                prefersReducedMotion
+                  ? {}
+                  : feedback === 'hit'
+                    ? { scale: [1, 1.12, 1], filter: ['brightness(1)', 'brightness(1.7)', 'brightness(1)'] }
+                    : { scale: 1, filter: 'brightness(1)' }
+              }
+              transition={{ duration: 0.22, ease: 'easeOut' }}
             >
               {currentWord.word}
-            </h1>
+            </motion.h1>
 
             <p className="text-xl md:text-3xl italic opacity-50 mt-5">
               {infinite ? `${wordIndex + 1} · ${currentWord.translation}` : currentWord.translation || '—'}
@@ -412,6 +440,15 @@ export default function Game() {
         )}
         {micError && <span className="text-xs text-destructive opacity-80">{micError}</span>}
       </div>
+
+      {/* Milestone celebration burst — suppressed when prefers-reduced-motion. */}
+      {celebration.milestone && !prefersReducedMotion && (
+        <CelebrationEffect
+          celebration={celebration.milestone.celebration}
+          intensity={celebration.milestone.intensity}
+          onComplete={() => celebration.clearMilestone()}
+        />
+      )}
     </div>
   );
 }
