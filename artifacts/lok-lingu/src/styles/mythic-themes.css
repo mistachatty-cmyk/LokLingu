@@ -1,0 +1,380 @@
+/* ═══════════════════════════════════════════════════════════
+   J-tier additions & K-tier MYTHIC — animated theme styles
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── 95 VOID CIRCUIT ──────────────────────────────────────── */
+:root.theme-void-circuit body,
+:root.theme-void-circuit .bg-background {
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0px,
+    transparent 48px,
+    rgba(0, 255, 159, 0.05) 49px,
+    rgba(0, 255, 159, 0.05) 50px
+  );
+  background-size: 100px 100px;
+  animation: lok-circuit-trace 6s linear infinite;
+}
+@keyframes lok-circuit-trace {
+  from { background-position: 0 0; }
+  to   { background-position: 100px 100px; }
+}
+:root.theme-void-circuit .game-word {
+  animation: lok-terminal-blink 1.5s steps(1, end) infinite;
+}
+@keyframes lok-terminal-blink {
+  0%, 89%, 100% { opacity: 1; }
+  90%, 95%      { opacity: 0.88; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root.theme-void-circuit body,
+  :root.theme-void-circuit .bg-background { animation: none; }
+  :root.theme-void-circuit .game-word     { animation: none; }
+}
+
+/* ── 96 SAKURA STORM ──────────────────────────────────────── */
+:root.theme-sakura-storm body,
+:root.theme-sakura-storm .bg-background {
+  background-image:
+    radial-gradient(circle, rgba(255, 126, 179, 0.18) 0, transparent 3px),
+    radial-gradient(circle, rgba(255, 184, 214, 0.12) 0, transparent 2px),
+    radial-gradient(circle, rgba(204,  61, 122, 0.10) 0, transparent 4px);
+  background-size: 120px 120px, 170px 200px, 220px 180px;
+  background-attachment: fixed;
+  animation: lok-sakura-drift 17s ease-in-out infinite;
+}
+@keyframes lok-sakura-drift {
+  0%   { background-position: 0 0,    60px 90px,  30px 150px; }
+  33%  { background-position: 40px -30px, 100px 50px,  90px 110px; }
+  66%  { background-position: -20px 50px, 20px 130px, 150px  30px; }
+  100% { background-position: 0 0,    60px 90px,  30px 150px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root.theme-sakura-storm body,
+  :root.theme-sakura-storm .bg-background { animation: none; }
+}
+
+/* ── 97 LAVA FORGE ────────────────────────────────────────── */
+:root.theme-lava-forge body,
+:root.theme-lava-forge .bg-background {
+  background-image: linear-gradient(135deg, #1a0800, #3d0f00, #0c0402, #2a0a00, #1a0800);
+  background-size: 400% 400%;
+  animation: lok-lava-shift 8s ease infinite;
+}
+@keyframes lok-lava-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+:root.theme-lava-forge .game-word {
+  animation: lok-heat-pulse 3s ease-in-out infinite;
+}
+@keyframes lok-heat-pulse {
+  0%, 100% { transform: scale(1);     filter: brightness(1); }
+  50%      { transform: scale(1.012); filter: brightness(1.15); }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root.theme-lava-forge body,
+  :root.theme-lava-forge .bg-background { animation: none; }
+  :root.theme-lava-forge .game-word     { animation: none; }
+}
+
+/* ── 98 BIOLUMINESCENCE ───────────────────────────────────── */
+:root.theme-bioluminescence body,
+:root.theme-bioluminescence .bg-background {
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(  0, 229, 255, 0.12) 0, transparent 30%),
+    radial-gradient(circle at 80% 70%, rgba(127, 255, 234, 0.09) 0, transparent 25%),
+    radial-gradient(circle at 55% 15%, rgba(  0,  95, 115, 0.14) 0, transparent 35%),
+    radial-gradient(circle at 10% 80%, rgba(  0, 200, 220, 0.08) 0, transparent 28%);
+  background-attachment: fixed;
+  animation: lok-bio-orbs 12s ease-in-out infinite;
+}
+@keyframes lok-bio-orbs {
+  0%, 100% { background-position: 0%  0%, 100% 100%, 50%  0%,  0% 100%; }
+  25%      { background-position: 5% 15%,  90%  80%, 60% 10%, 10%  90%; }
+  50%      { background-position: 10% 5%,  80%  90%, 45% 20%,  5%  80%; }
+  75%      { background-position: 3% 20%,  95%  75%, 55%  5%,  8%  95%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root.theme-bioluminescence body,
+  :root.theme-bioluminescence .bg-background { animation: none; }
+}
+
+/* ── 99 THUNDERHEAD ───────────────────────────────────────── */
+:root.theme-thunderhead body,
+:root.theme-thunderhead .bg-background {
+  animation: lok-storm-flash 5s steps(1, end) infinite;
+}
+@keyframes lok-storm-flash {
+  0%,  97%, 100% { background-color: #070809; }
+  97.5%          { background-color: #1a2a4a; }
+  98%            { background-color: #070809; }
+  98.5%          { background-color: #2a3a5a; }
+  99%            { background-color: #070809; }
+}
+:root.theme-thunderhead .game-word {
+  animation: lok-static-crackle 5s steps(4, end) infinite;
+}
+@keyframes lok-static-crackle {
+  0%,  90%, 100% { transform: translate(0, 0); }
+  91%            { transform: translate(1px, -1px); }
+  92%            { transform: translate(-1px, 1px); }
+  93%            { transform: translate(1px, 0); }
+  94%            { transform: translate(0, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root.theme-thunderhead body,
+  :root.theme-thunderhead .bg-background { animation: none; }
+  :root.theme-thunderhead .game-word     { animation: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   K — MYTHIC
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── 100 STARFALL ─────────────────────────────────────────── */
+:root.theme-starfall body,
+:root.theme-starfall .bg-background {
+  background-image:
+    radial-gradient(circle, rgba(255, 228, 160, 0.80) 0, transparent 2px),
+    radial-gradient(circle, rgba(255, 244, 220, 0.60) 0, transparent 1px),
+    radial-gradient(circle, rgba(255, 200, 100, 0.70) 0, transparent 2px),
+    radial-gradient(circle, rgba(255, 240, 180, 0.50) 0, transparent 1px),
+    radial-gradient(circle, rgba(255, 220, 140, 0.60) 0, transparent 2px);
+  background-size: 180px 180px, 240px 210px, 300px 280px, 150px 150px, 210px 190px;
+  background-attachment: fixed;
+  animation: lok-starfall 20s linear infinite;
+}
+@keyframes lok-starfall {
+  from { background-position: 0 0,   60px  40px, 120px  80px,  30px 100px,  90px 150px; }
+  to   { background-position: 0 360px, 60px 400px, 120px 440px, 30px 460px, 90px 510px; }
+}
+:root.theme-starfall .game-word {
+  animation: lok-stardust-glow 4s ease-in-out infinite;
+}
+@keyframes lok-stardust-glow {
+  0%, 100% { filter: brightness(1)   drop-shadow(0 0  8px rgba(255,228,160,0.6)); }
+  50%      { filter: brightness(1.2) drop-shadow(0 0 20px rgba(255,228,160,1)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root.theme-starfall body,
+  :root.theme-starfall .bg-background { animation: none; }
+  :root.theme-starfall .game-word     { animation: none; }
+}
+
+/* ── 101 PHANTOM SIGNAL ───────────────────────────────────── */
+:root.theme-phantom-signal body,
+:root.theme-phantom-signal .bg-background {
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 2px,
+    rgba(0, 0, 0, 0.22) 2px,
+    rgba(0, 0, 0, 0.22) 4px
+  );
+  background-size: 100% 4px;
+  animation: lok-scanlines 0.22s linear infinite;
+}
+@keyframes lok-scanlines {
+  from { background-position: 0 0; }
+  to   { background-position: 0 8px; }
+}
+:root.theme-phantom-signal .game-word {
+  animation: lok-glitch-skew 3s steps(6, end) infinite;
+}
+@keyframes lok-glitch-skew {
+  0%,  88%, 100% { transform: skewX(0deg);   opacity: 1;   clip-path: none; }
+  89%            { transform: skewX(2deg);    opacity: 0.9; clip-path: inset(10% 0 80% 0); }
+  90%            { transform: skewX(-1deg);   opacity: 1;   clip-path: inset(60% 0 10% 0); }
+  91%            { transform: skewX(0deg);    opacity: 1;   clip-path: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root.theme-phantom-signal body,
+  :root.theme-phantom-signal .bg-background { animation: none; }
+  :root.theme-phantom-signal .game-word     { animation: none; }
+}
+
+/* ── 102 DRAGON SCALES ────────────────────────────────────── */
+:root.theme-dragon-scales body,
+:root.theme-dragon-scales .bg-background {
+  background-image: linear-gradient(135deg, #050904 0%, #0a1408 50%, #060b04 100%);
+  background-size: 300% 300%;
+  animation: lok-iridescence 7s ease infinite;
+}
+@keyframes lok-iridescence {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+:root.theme-dragon-scales .game-word {
+  background: linear-gradient(90deg, #B8FF6A, #44ffb0, #aaff44, #ffcc44, #B8FF6A);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: lok-rainbow-shift 3s linear infinite;
+}
+@keyframes lok-rainbow-shift {
+  from { background-position: 0% 50%; }
+  to   { background-position: 300% 50%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root.theme-dragon-scales body,
+  :root.theme-dragon-scales .bg-background { animation: none; }
+  :root.theme-dragon-scales .game-word {
+    animation: none;
+    background: none;
+    -webkit-text-fill-color: #B8FF6A;
+    color: #B8FF6A;
+  }
+}
+
+/* ── 103 CHRONOS ──────────────────────────────────────────── */
+:root.theme-chronos body,
+:root.theme-chronos .bg-background {
+  background-image: linear-gradient(135deg, #1a1200, #2a1e00, #0a0800, #1a1200);
+  background-size: 400% 400%;
+  animation: lok-gold-shimmer 12s ease infinite;
+}
+@keyframes lok-gold-shimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+:root.theme-chronos .game-word {
+  transform-origin: top center;
+  animation: lok-pendulum 2.4s ease-in-out infinite;
+}
+@keyframes lok-pendulum {
+  0%, 100% { transform: rotate(-0.8deg); }
+  50%      { transform: rotate(0.8deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root.theme-chronos body,
+  :root.theme-chronos .bg-background { animation: none; }
+  :root.theme-chronos .game-word     { animation: none; }
+}
+
+/* ── 104 CRYSTALLINE ──────────────────────────────────────── */
+:root.theme-crystalline body,
+:root.theme-crystalline .bg-background {
+  background-image:
+    radial-gradient(ellipse at 20% 30%, rgba(136, 204, 255, 0.10) 0, transparent 40%),
+    radial-gradient(ellipse at 75% 60%, rgba(200, 232, 255, 0.07) 0, transparent 35%),
+    radial-gradient(ellipse at 50% 90%, rgba( 26,  95, 168, 0.10) 0, transparent 45%);
+  background-attachment: fixed;
+  animation: lok-frost-spread 6s ease-in-out infinite alternate;
+}
+@keyframes lok-frost-spread {
+  from { background-size: 100% 100%, 110% 110%, 90%  90%; }
+  to   { background-size: 120% 120%, 90%  90%, 115% 115%; }
+}
+:root.theme-crystalline .game-word {
+  animation: lok-refract 4s ease-in-out infinite;
+}
+@keyframes lok-refract {
+  0%, 100% { filter: hue-rotate(0deg)  brightness(1); }
+  50%      { filter: hue-rotate(15deg) brightness(1.1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root.theme-crystalline body,
+  :root.theme-crystalline .bg-background { animation: none; }
+  :root.theme-crystalline .game-word     { animation: none; }
+}
+
+/* ── 105 PRISM BREAK ──────────────────────────────────────── */
+:root.theme-prism-break body,
+:root.theme-prism-break .bg-background {
+  background-image: conic-gradient(
+    from 0deg at 50% 50%,
+    rgba(255, 85, 255, 0.06) 0deg,
+    rgba( 85,255, 255, 0.04) 90deg,
+    rgba(255,255,  85, 0.05) 180deg,
+    rgba( 85, 85, 255, 0.04) 270deg,
+    rgba(255, 85, 255, 0.06) 360deg
+  );
+  animation: lok-prism-bg 8s linear infinite;
+}
+@keyframes lok-prism-bg {
+  from { filter: hue-rotate(0deg); }
+  to   { filter: hue-rotate(360deg); }
+}
+:root.theme-prism-break .game-word {
+  animation: lok-prism-cycle 6s linear infinite;
+}
+@keyframes lok-prism-cycle {
+  0%   { color: #ffffff; text-shadow: 0 0 0 2px #ff55ff, 0 0 30px #ff00ff, 0 0 60px #0088ff; }
+  17%  { color: #ff6ec7; text-shadow: 0 0 0 2px #ff55ff, 0 0 30px #ff00ff, 0 0 60px #ff55aa; }
+  33%  { color: #ffdd66; text-shadow: 0 0 0 2px #ffaa00, 0 0 30px #ffcc00, 0 0 60px #ff6600; }
+  50%  { color: #66ffcc; text-shadow: 0 0 0 2px #00ffaa, 0 0 30px #00ffcc, 0 0 60px #0088ff; }
+  67%  { color: #66aaff; text-shadow: 0 0 0 2px #0055ff, 0 0 30px #0088ff, 0 0 60px #aa00ff; }
+  83%  { color: #cc88ff; text-shadow: 0 0 0 2px #aa00ff, 0 0 30px #8800ff, 0 0 60px #ff00aa; }
+  100% { color: #ffffff; text-shadow: 0 0 0 2px #ff55ff, 0 0 30px #ff00ff, 0 0 60px #0088ff; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root.theme-prism-break body,
+  :root.theme-prism-break .bg-background { animation: none; }
+  :root.theme-prism-break .game-word     { animation: none; }
+}
+
+/* ── 106 SHADOWREALM ──────────────────────────────────────── */
+:root.theme-shadowrealm body,
+:root.theme-shadowrealm .bg-background {
+  background-image:
+    radial-gradient(circle at 25% 25%, rgba(74,  10, 107, 0.25) 0, transparent 40%),
+    radial-gradient(circle at 75% 65%, rgba(60,   5,  88, 0.20) 0, transparent 35%),
+    radial-gradient(circle at 50% 85%, rgba(88,  15, 120, 0.18) 0, transparent 45%);
+  background-attachment: fixed;
+  animation: lok-shadow-wisp 13s ease-in-out infinite;
+}
+@keyframes lok-shadow-wisp {
+  0%, 100% { background-position: 0%   0%, 100% 100%, 50% 100%; }
+  33%      { background-position: 10%  20%, 80%  70%, 60%  80%; }
+  66%      { background-position: -10% 10%, 110% 80%, 40%  90%; }
+}
+:root.theme-shadowrealm .game-word {
+  animation: lok-wisp-pulse 3s ease-in-out infinite;
+}
+@keyframes lok-wisp-pulse {
+  0%, 100% { text-shadow: 0 0  28px #8833cc, 0 0  65px #4a0a6b, 0 0 100px #200040; }
+  50%      { text-shadow: 0 0  42px #aa44ee, 0 0  90px #6a1a8b, 0 0 140px #350060; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root.theme-shadowrealm body,
+  :root.theme-shadowrealm .bg-background { animation: none; }
+  :root.theme-shadowrealm .game-word     { animation: none; }
+}
+
+/* ── 107 NEON DEITY ───────────────────────────────────────── */
+:root.theme-neon-deity body,
+:root.theme-neon-deity .bg-background {
+  background-image:
+    repeating-linear-gradient( 45deg, transparent 0, transparent 148px, rgba(255,  0,128,0.04) 149px, rgba(255,  0,128,0.04) 150px),
+    repeating-linear-gradient(-45deg, transparent 0, transparent 148px, rgba(136,  0,170,0.04) 149px, rgba(136,  0,170,0.04) 150px);
+  background-size: 300px 300px;
+  animation: lok-neon-streak 1.2s linear infinite;
+}
+@keyframes lok-neon-streak {
+  from { background-position:   0   0,   0   0; }
+  to   { background-position: 300px 300px, -300px 300px; }
+}
+:root.theme-neon-deity .game-word {
+  animation: lok-neon-flicker 2s steps(12, end) infinite;
+}
+@keyframes lok-neon-flicker {
+  0%   { opacity: 1; }
+  8%   { opacity: 0.88; }
+  9%   { opacity: 1; }
+  19%  { opacity: 0.92; }
+  20%  { opacity: 1; }
+  42%  { opacity: 0.85; }
+  43%  { opacity: 1; }
+  58%  { opacity: 0.95; }
+  60%  { opacity: 1; }
+  75%  { opacity: 0.9; }
+  76%  { opacity: 1; }
+  100% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root.theme-neon-deity body,
+  :root.theme-neon-deity .bg-background { animation: none; }
+  :root.theme-neon-deity .game-word     { animation: none; }
+}

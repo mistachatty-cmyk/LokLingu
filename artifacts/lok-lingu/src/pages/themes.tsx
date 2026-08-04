@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTheme } from '../hooks/use-theme';
-import { Check, Lock, Star, Zap, Sparkles, Globe } from 'lucide-react';
+import { Check, Flame, Lock, Star, Zap, Sparkles, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { THEMES, type ThemeDef } from './themes-data';
@@ -99,6 +99,14 @@ const TIERS = [
     color: 'text-fuchsia-400',
     locked: false,
   },
+  {
+    tier: 'K' as const,
+    label: 'Category K — MYTHIC',
+    sublabel: 'The rarest animated collection · Obsessives only',
+    icon: Flame,
+    color: 'text-rose-600',
+    locked: false,
+  },
 ];
 
 function ThemePreview({
@@ -143,7 +151,7 @@ function ThemePreview({
     return flagEmojiFromLanguageOrCountry(m[1]);
   })();
 
-  const TIER_LABEL: Record<string, string> = { A: 'General', B: 'Premium', C: 'Ultimate', D: 'Animated', E: 'Lingu', F: 'Ultimate', G: 'Feral', H: 'Culture', I: 'Flag', J: 'Ultra' };
+  const TIER_LABEL: Record<string, string> = { A: 'General', B: 'Premium', C: 'Ultimate', D: 'Animated', E: 'Lingu', F: 'Ultimate', G: 'Feral', H: 'Culture', I: 'Flag', J: 'Ultra', K: 'Mythic' };
   const tierName = TIER_LABEL[t.tier] ?? t.tier;
 
   return (
@@ -342,7 +350,7 @@ export default function Themes() {
       <div className="space-y-1">
         <h1 className="text-3xl font-black tracking-tighter uppercase">Theme Shop</h1>
         <p className="text-muted-foreground text-sm">
-          {THEMES.length} aesthetics · 15 font styles · Your arcade, your look
+          {THEMES.length} aesthetics · 21 font styles · Your arcade, your look
         </p>
       </div>
 
@@ -473,8 +481,15 @@ export default function Themes() {
             { name: 'DM Serif Display', themes: 'Forest, Horizon', sample: 'DM Serif Display' },
             { name: 'Unbounded', themes: 'Midnight, Cyberwave', sample: 'Unbounded' },
             { name: 'Noto Sans JP', themes: 'Wabi (ja)', sample: 'Noto Sans JP' },
-            { name: 'Barlow Condensed', themes: 'Steel', sample: 'Barlow Condensed' },
+            { name: 'Barlow Condensed', themes: 'Steel, Lava Forge', sample: 'Barlow Condensed' },
             { name: 'Major Mono Display', themes: 'Ultimate', sample: 'Major Mono Display' },
+            { name: 'VT323', themes: 'Phantom Signal', sample: 'VT323' },
+            { name: 'Cormorant Garamond', themes: 'Starfall, Chronos', sample: 'Cormorant Garamond' },
+            { name: 'Cinzel', themes: 'Dragon Scales', sample: 'Cinzel' },
+            { name: 'Cinzel Decorative', themes: 'Shadowrealm', sample: 'Cinzel Decorative' },
+            { name: 'Raleway', themes: 'Crystalline', sample: 'Raleway' },
+            { name: 'Montserrat', themes: 'Prism Break', sample: 'Montserrat' },
+            { name: 'Noto Serif', themes: 'Sakura Storm', sample: 'Noto Serif' },
           ].map((f) => (
             <div key={f.name} className="bg-card border border-border rounded-lg p-2.5">
               <div

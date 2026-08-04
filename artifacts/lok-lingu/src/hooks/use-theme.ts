@@ -104,7 +104,22 @@ export type Theme =
   | 'theme-liquid-gold'
   | 'theme-obsidian-prism'
   | 'theme-paper-lantern'
-  | 'theme-quantum-foam';
+  | 'theme-quantum-foam'
+  // Category J additions
+  | 'theme-void-circuit'
+  | 'theme-sakura-storm'
+  | 'theme-lava-forge'
+  | 'theme-bioluminescence'
+  | 'theme-thunderhead'
+  // Category K – Mythic
+  | 'theme-starfall'
+  | 'theme-phantom-signal'
+  | 'theme-dragon-scales'
+  | 'theme-chronos'
+  | 'theme-crystalline'
+  | 'theme-prism-break'
+  | 'theme-shadowrealm'
+  | 'theme-neon-deity';
 
 export const ALL_THEMES = [
   'theme-baskin',
@@ -202,6 +217,19 @@ export const ALL_THEMES = [
   'theme-obsidian-prism',
   'theme-paper-lantern',
   'theme-quantum-foam',
+  'theme-void-circuit',
+  'theme-sakura-storm',
+  'theme-lava-forge',
+  'theme-bioluminescence',
+  'theme-thunderhead',
+  'theme-starfall',
+  'theme-phantom-signal',
+  'theme-dragon-scales',
+  'theme-chronos',
+  'theme-crystalline',
+  'theme-prism-break',
+  'theme-shadowrealm',
+  'theme-neon-deity',
 ] as const;
 
 export function useTheme() {
