@@ -3840,7 +3840,12 @@
   50% { background-position: 100% 50%; }
 }
 @media (prefers-reduced-motion: reduce) {
-  :root.theme-aurora-borealis .game-word { animation: none; }
+  /* Snap to a known visible state — don't rely on whatever keyframe was frozen */
+  :root.theme-aurora-borealis .game-word {
+    animation: none;
+    color: #7CFFCB;
+    -webkit-text-fill-color: currentColor;
+  }
 }
 
 :root.theme-liquid-gold {
@@ -3899,7 +3904,12 @@
   100% { background-position: -20% 50%; }
 }
 @media (prefers-reduced-motion: reduce) {
-  :root.theme-liquid-gold .game-word { animation: none; background-position: 50% 50%; }
+  /* Snap to a known visible state — don't rely on whatever keyframe was frozen */
+  :root.theme-liquid-gold .game-word {
+    animation: none;
+    color: #F7D774;
+    -webkit-text-fill-color: currentColor;
+  }
 }
 
 :root.theme-obsidian-prism {
