@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'wouter';
-import { useGetWords, useSubmitScore, useRecognizeDrawing } from '@workspace/api-client-react';
+import { useGetWords, useSubmitScore } from '@workspace/api-client-react';
+import { recognizeDrawingLocal, primeRecognizer } from '@/lib/draw-recognition-local';
 import { useUser } from '../hooks/use-user';
 import { useToast } from '../hooks/use-toast';
 import {
@@ -61,7 +62,9 @@ export default function Draw() {
     },
   });
 
-  const { mutateAsync: recognizeDrawingAsync } = useRecognizeDrawing();
+  // Pre-warm the Tesseract worker as soon as the page mounts so the first
+  // recognition call doesn't have to wait for WASM + language pack loading.
+  useEffect(() => { primeRecognizer(language); }, [language]);
 
   // ── game state ─────────────────────────────────────────────────────────────
   const [wordIndex, setWordIndex] = useState(0);
@@ -161,18 +164,15 @@ export default function Draw() {
       return;
     }
 
-    // Default: visual recognition via AI vision.
+    // Default: free local recognition via Tesseract.js (no API cost).
     const imageDataUrl = canvas.snapshot();
     const word = currentWordRef.current?.word;
     if (!word) return;
 
     setIsRecognizing(true);
     try {
-      const result = await recognizeDrawingAsync({
-        data: { imageDataUrl, word, language },
-      });
-      // handleSuccess / handleFailure guard status themselves
-      if (result.verdict === 'ACCEPT' || result.verdict === 'CLOSE') {
+      const verdict = await recognizeDrawingLocal(imageDataUrl, word, language);
+      if (verdict === 'ACCEPT' || verdict === 'CLOSE') {
         handleSuccess();
       } else {
         handleFailure();
@@ -181,12 +181,12 @@ export default function Draw() {
       setIsRecognizing(false);
       toast({
         title: 'Recognition unavailable',
-        description: "Couldn't evaluate your drawing — try again.",
+        description: "Couldn't read your drawing — try again.",
       });
     }
   }, [
     status, gameOver, isRecognizing, voiceConfirmEnabled,
-    handleFailure, handleSuccess, recognizeDrawingAsync, language, toast,
+    handleFailure, handleSuccess, language, toast,
   ]);
 
   // ── voice engine (used only when voiceConfirmEnabled) ─────────────────────
