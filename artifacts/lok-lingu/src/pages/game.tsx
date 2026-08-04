@@ -187,8 +187,8 @@ export default function Game() {
       abortSessionRef.current();
       setFeedback('hit');
       setStreak((s) => s + 1);
-      // Feeds the lifetime pie on the stats page and fires milestone logic.
-      incrementLifetimeWords(languageRef.current);
+      // incrementMatch handles lifetime tracking internally, so a separate
+      // incrementLifetimeWords call is not needed here (it would double-count).
       celebrationRef.current.incrementMatch(languageRef.current);
       setTimeout(() => {
         setWordIndex((i) => i + 1);
