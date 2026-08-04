@@ -186,16 +186,10 @@ export default function Draw() {
   }, []);
 
   useEffect(() => {
-    if (!userId) setLocation('/');
-  }, [userId, setLocation]);
-
-  useEffect(() => {
     if (!currentWord) return;
     const timer = setTimeout(() => speakWord(currentWord.word, language), 400);
     return () => clearTimeout(timer);
   }, [wordIndex, currentWord, language]);
-
-  if (!userId) return null;
 
   return (
     <div className="relative min-h-screen w-full bg-background overflow-hidden flex flex-col select-none">
@@ -393,6 +387,11 @@ export default function Draw() {
                   {count}
                 </div>
               </div>
+              {!userId && (
+                <p className="text-sm text-muted-foreground text-center">
+                  <span className="font-semibold text-foreground">Sign in</span> to save your score to the leaderboard.
+                </p>
+              )}
               <div className="space-y-3">
                 <Button
                   size="lg"
