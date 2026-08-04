@@ -150,6 +150,10 @@ export default function Game() {
 
     if (matchWord(spoken, target, alternates)) {
       lockedRef.current = true;
+      // Close the current recognition session immediately so the restart timer
+      // starts in parallel with the hit animation rather than after it.
+      // wantListeningRef stays true, so the loop reopens automatically.
+      abortSession();
       setFeedback('hit');
       setStreak((s) => s + 1);
       // Feeds the lifetime pie on the stats page.
@@ -166,7 +170,7 @@ export default function Game() {
       setFeedback('miss');
       setTimeout(() => setFeedback('idle'), 500);
     }
-  }, []);
+  }, [abortSession]);
 
   // Words the player could plausibly say next. Under Vosk this becomes a hard
   // grammar, which is the single biggest accuracy win available: while counting
@@ -200,6 +204,7 @@ export default function Game() {
     emptySessions,
     startListening,
     stopListening,
+    abortSession,
   } = useSpeechEngine({
       onResult: handleResult,
       onError: (code) => {

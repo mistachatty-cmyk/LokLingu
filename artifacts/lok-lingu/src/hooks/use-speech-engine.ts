@@ -313,6 +313,17 @@ export function useSpeechEngine({
     setIsListening(false);
   }, [clearTimer]);
 
+  /**
+   * Abort the current session early without stopping the listening loop.
+   * Call this immediately after a word match so onend fires right away and
+   * the restart timer starts in parallel with the hit animation, rather than
+   * waiting for the engine to close the session naturally (~200–500ms later).
+   * Unlike stopListening(), wantListeningRef stays true so the loop restarts.
+   */
+  const abortSession = useCallback(() => {
+    providerRef.current?.stop();
+  }, []);
+
   // Keep the grammar in step with the current target word.
   useEffect(() => {
     providerRef.current?.setExpected(expectedRef.current);
@@ -343,5 +354,6 @@ export function useSpeechEngine({
     emptySessions,
     startListening,
     stopListening,
+    abortSession,
   };
 }

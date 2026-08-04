@@ -151,11 +151,20 @@ export function createWebSpeechProvider(init: ProviderInit): SpeechProvider {
 
     const r = new Ctor();
     r.continuous = false;
-    // iOS WebKit (Safari, Chrome-iOS, Firefox-iOS) never fires interim result
-    // events reliably. Leaving interimResults=true causes sessions to end via
-    // onend with no onresult, registering as "empty" sessions that eventually
-    // trigger the fallback-engine switch. Final-only results work correctly.
-    r.interimResults = !IS_IOS;
+    // interimResults = true on all platforms, including iOS.
+    //
+    // Earlier this was set to `!IS_IOS` because interim results on iOS were
+    // thought to cause empty-session false-positives (sessions ending via onend
+    // with no onresult). That analysis was wrong: the empty-session guard in
+    // useSpeechEngine sets gotResultThisSessionRef=true on ANY onUpdate call
+    // (interim or final), so receiving an interim result correctly prevents
+    // the session from being counted as empty.
+    //
+    // Enabling interim results on iOS lets the game match mid-utterance
+    // (~300–600ms earlier than waiting for iOS silence-detection to fire the
+    // final result). The game can also call r.abort() immediately on match,
+    // starting the restart timer in parallel with the hit animation.
+    r.interimResults = true;
     r.maxAlternatives = 5;
     r.lang = lang;
 
