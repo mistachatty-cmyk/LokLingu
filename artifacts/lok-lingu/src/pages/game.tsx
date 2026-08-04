@@ -14,6 +14,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useCelebration } from '@/hooks/use-celebration';
 import { useCelebrationSound } from '@/hooks/use-celebration-sound';
 import { CelebrationEffect } from '@/components/celebration-effect';
+import { TokenEarnedLabel } from '@/components/token-earned-label';
 
 type NormalWord = { word: string; translation: string; pronunciation?: string };
 
@@ -106,6 +107,12 @@ export default function Game() {
   const celebrationRef = useRef(celebration);
   celebrationRef.current = celebration;
 
+  // Token earned label — shown briefly near the streak counter after each hit.
+  const [tokenLabel, setTokenLabel] = useState<{ key: number; text: string }>({ key: 0, text: '' });
+  // Ref so handleResult (empty deps) can read boostActive without a stale closure.
+  const boostActiveRef = useRef(celebration.boostActive);
+  boostActiveRef.current = celebration.boostActive;
+
   // Play milestone sound whenever a new milestone fires.
   useEffect(() => {
     if (celebration.milestone) {
@@ -189,7 +196,10 @@ export default function Game() {
       setStreak((s) => s + 1);
       // incrementMatch handles lifetime tracking internally, so a separate
       // incrementLifetimeWords call is not needed here (it would double-count).
-      celebrationRef.current.incrementMatch(languageRef.current);
+      const { milestoneHit, tokenBonus } = celebrationRef.current.incrementMatch(languageRef.current);
+      const rate = boostActiveRef.current ? 4 : 2;
+      const labelText = milestoneHit && tokenBonus > 0 ? `+${tokenBonus} 🎁` : `+${rate}`;
+      setTokenLabel((prev) => ({ key: prev.key + 1, text: labelText }));
       setTimeout(() => {
         setWordIndex((i) => i + 1);
         setFeedback('idle');
@@ -312,7 +322,8 @@ export default function Game() {
             </span>
           )}
         </div>
-        <div className="flex flex-col items-end">
+        <div className="relative flex flex-col items-end">
+          <TokenEarnedLabel animKey={tokenLabel.key} label={tokenLabel.text} />
           <span className="text-sm tracking-widest uppercase opacity-70">Streak</span>
           <span className="text-4xl font-bold tabular-nums" style={{ color: 'var(--word-color)' }}>
             {streak}

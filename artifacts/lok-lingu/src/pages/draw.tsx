@@ -22,6 +22,7 @@ import { CelebrationEffect } from '@/components/celebration-effect';
 import { WordPop } from '@/components/word-pop';
 import { GlitchText } from '@/components/glitch-text';
 import { useTheme } from '@/hooks/use-theme';
+import { TokenEarnedLabel } from '@/components/token-earned-label';
 import { FALLBACK_WORDS, saveLocalScore } from '@/lib/offline-data';
 import { speakWord, matchWord } from '@/lib/speech-utils';
 import { useSpeechEngine } from '@/hooks/use-speech-engine';
@@ -89,6 +90,9 @@ export default function Draw() {
   useCelebrationSound(); // keeps audio context alive
   const { theme } = useTheme();
 
+  // Token earned label — shown briefly near the streak counter after each hit.
+  const [tokenLabel, setTokenLabel] = useState<{ key: number; text: string }>({ key: 0, text: '' });
+
   const canvasRef = useRef<DrawCanvasHandle>(null);
 
   // Refs for stale-closure safety inside the speech onResult callback
@@ -112,7 +116,10 @@ export default function Draw() {
     setIsRecognizing(false);
     setWordPopActive(true);
     setCount((prev) => prev + 1);
-    celebration.incrementMatch(language);
+    const { milestoneHit, tokenBonus } = celebration.incrementMatch(language);
+    const rate = celebration.boostActive ? 4 : 2;
+    const labelText = milestoneHit && tokenBonus > 0 ? `+${tokenBonus} 🎁` : `+${rate}`;
+    setTokenLabel((prev) => ({ key: prev.key + 1, text: labelText }));
     canvasRef.current?.fadeOut(900);
     setTimeout(() => {
       if (!words) return;
@@ -314,7 +321,8 @@ export default function Draw() {
             </TooltipContent>
           </Tooltip>
 
-          <div className="text-right">
+          <div className="relative text-right">
+            <TokenEarnedLabel animKey={tokenLabel.key} label={tokenLabel.text} />
             <div className="flex items-center justify-end gap-2">
               <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Streak</span>
               {celebration.boostActive && (
