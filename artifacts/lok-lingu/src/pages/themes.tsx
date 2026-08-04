@@ -337,6 +337,21 @@ function ThemePreview({
   );
 }
 
+// Derived from THEMES at runtime — no manual maintenance needed.
+// Extracts the primary font family from each theme's `font` field and groups
+// theme labels by that family, sorted alphabetically.
+const FONT_GROUPS = (() => {
+  const map = new Map<string, string[]>();
+  for (const t of THEMES) {
+    const family = t.font.replace(/'/g, '').split(',')[0].trim();
+    if (!map.has(family)) map.set(family, []);
+    map.get(family)!.push(t.label);
+  }
+  return Array.from(map.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([name, labels]) => ({ name, themes: labels.join(', '), sample: name }));
+})();
+
 export default function Themes() {
   const { theme, setTheme } = useTheme();
 
@@ -350,7 +365,7 @@ export default function Themes() {
       <div className="space-y-1">
         <h1 className="text-3xl font-black tracking-tighter uppercase">Theme Shop</h1>
         <p className="text-muted-foreground text-sm">
-          {THEMES.length} aesthetics · 21 font styles · Your arcade, your look
+          {THEMES.length} aesthetics · {FONT_GROUPS.length} font styles · Your arcade, your look
         </p>
       </div>
 
@@ -468,29 +483,7 @@ export default function Themes() {
           Included Font Styles
         </h3>
         <div className="grid grid-cols-2 gap-2 text-xs">
-          {[
-            { name: 'Outfit', themes: 'Neon, Rose, Ember, Onyx, Aurora', sample: 'Outfit' },
-            { name: 'Rajdhani', themes: 'Void', sample: 'Rajdhani' },
-            { name: 'Space Mono', themes: 'Matrix', sample: 'Space Mono' },
-            { name: 'Josefin Sans', themes: 'Lavender, Cosmos, Phantom, Sakura, Ocean', sample: 'Josefin Sans' },
-            { name: 'Playfair Display', themes: 'Sand, Espresso, Flamenco, Embers', sample: 'Playfair Display' },
-            { name: 'Special Elite', themes: 'Typewriter', sample: 'Special Elite' },
-            { name: 'Orbitron', themes: 'Abyss, Nebula', sample: 'Orbitron' },
-            { name: 'Bebas Neue', themes: 'Crimson, Electric, Chrome', sample: 'Bebas Neue' },
-            { name: 'Inter', themes: 'E-Ink, Arctic, Chalk', sample: 'Inter' },
-            { name: 'DM Serif Display', themes: 'Forest, Horizon', sample: 'DM Serif Display' },
-            { name: 'Unbounded', themes: 'Midnight, Cyberwave', sample: 'Unbounded' },
-            { name: 'Noto Sans JP', themes: 'Wabi (ja)', sample: 'Noto Sans JP' },
-            { name: 'Barlow Condensed', themes: 'Steel, Lava Forge', sample: 'Barlow Condensed' },
-            { name: 'Major Mono Display', themes: 'Ultimate', sample: 'Major Mono Display' },
-            { name: 'VT323', themes: 'Phantom Signal', sample: 'VT323' },
-            { name: 'Cormorant Garamond', themes: 'Starfall, Chronos', sample: 'Cormorant Garamond' },
-            { name: 'Cinzel', themes: 'Dragon Scales', sample: 'Cinzel' },
-            { name: 'Cinzel Decorative', themes: 'Shadowrealm', sample: 'Cinzel Decorative' },
-            { name: 'Raleway', themes: 'Crystalline', sample: 'Raleway' },
-            { name: 'Montserrat', themes: 'Prism Break', sample: 'Montserrat' },
-            { name: 'Noto Serif', themes: 'Sakura Storm', sample: 'Noto Serif' },
-          ].map((f) => (
+          {FONT_GROUPS.map((f) => (
             <div key={f.name} className="bg-card border border-border rounded-lg p-2.5">
               <div
                 className="font-bold text-sm"
