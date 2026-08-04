@@ -125,7 +125,7 @@ export default function Draw() {
           count,
         });
         if (userId) {
-          submitScore.mutate({ data: { userId, language, category, count, tokensEarned: celebration.tokensEarnedRef.current } });
+          submitScore.mutate({ data: { userId, language, category, count } });
         }
       } else {
         if (canvasRef.current) canvasRef.current.clear();

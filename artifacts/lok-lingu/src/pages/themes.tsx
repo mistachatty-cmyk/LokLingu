@@ -119,15 +119,14 @@ function ThemePreview({
 
   // Detect the moment a theme becomes active → trigger equip celebration.
   useEffect(() => {
-    if (isActive && !prevActiveRef.current && !prefersReducedMotion) {
-      setEquipRing(true);
-      setShowEquipParticles(true);
-      const ringTimer = setTimeout(() => setEquipRing(false), 700);
-      const partTimer = setTimeout(() => setShowEquipParticles(false), 650);
-      prevActiveRef.current = isActive;
-      return () => { clearTimeout(ringTimer); clearTimeout(partTimer); };
-    }
+    const wasActive = prevActiveRef.current;
     prevActiveRef.current = isActive;
+    if (!isActive || wasActive || prefersReducedMotion) return undefined;
+    setEquipRing(true);
+    setShowEquipParticles(true);
+    const ringTimer = setTimeout(() => setEquipRing(false), 700);
+    const partTimer = setTimeout(() => setShowEquipParticles(false), 650);
+    return () => { clearTimeout(ringTimer); clearTimeout(partTimer); };
   }, [isActive, prefersReducedMotion]);
 
   const handlePointerEnter = () => {
