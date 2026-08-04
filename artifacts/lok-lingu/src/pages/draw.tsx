@@ -165,7 +165,9 @@ export default function Draw() {
     }
 
     // Default: free local recognition via Tesseract.js (no API cost).
-    const imageDataUrl = canvas.snapshot();
+    // snapshotStrokes() strips the ghost guide from the image so the OCR
+    // engine cannot read the watermark instead of the player's actual drawing.
+    const imageDataUrl = canvas.snapshotStrokes();
     const word = currentWordRef.current?.word;
     if (!word) return;
 

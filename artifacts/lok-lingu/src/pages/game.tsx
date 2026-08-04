@@ -10,6 +10,7 @@ import { useSpeechEngine } from '@/hooks/use-speech-engine';
 import { useSettings } from '@/hooks/use-settings';
 import { useDevMode } from '@/hooks/use-dev-mode';
 import { speakWord, matchWord, primeVoices, toLocale } from '@/lib/speech-utils';
+import { useTheme } from '@/hooks/use-theme';
 
 type NormalWord = { word: string; translation: string; pronunciation?: string };
 
@@ -72,6 +73,10 @@ const SPEED_TIMING = {
 
 export default function Game() {
   const [, setLocation] = useLocation();
+  // Ensure the active theme's CSS class is applied to :root when the game
+  // screen mounts — without this call the class can lag if the player
+  // navigates directly to /game without visiting a page that calls useTheme.
+  useTheme();
   const language = localStorage.getItem('lok-lingu-lang') || 'es';
   const category = localStorage.getItem('lok-lingu-cat') || 'numbers';
 

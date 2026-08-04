@@ -2,6 +2,10 @@ import { forwardRef, useRef, useImperativeHandle, useEffect, useCallback } from 
 
 export interface DrawCanvasHandle {
   snapshot(): string;
+  /** Like snapshot() but renders only the player's strokes on a plain white
+   *  background — no ghost/guide text. Use this for OCR so the watermark
+   *  can't help the recogniser. */
+  snapshotStrokes(): string;
   clear(): void;
   fadeOut(duration?: number): void;
   getStrokes(): number;
@@ -67,6 +71,36 @@ export const DrawCanvas = forwardRef<DrawCanvasHandle, DrawCanvasProps>(
           if (cRef.current) x.drawImage(cRef.current, 0, 0);
         }
         return tmp.toDataURL('image/webp', 0.72);
+      },
+      snapshotStrokes() {
+        // Produce a clean black-on-white image with only the player's strokes.
+        // The ghost guide text sits at opacity 0.08 on a dark background —
+        // its luma is ~30, well below the threshold — so it disappears entirely,
+        // preventing the OCR engine from reading the watermark instead of the drawing.
+        const tmp = document.createElement('canvas');
+        tmp.width = W;
+        tmp.height = H;
+        const x = tmp.getContext('2d');
+        if (!x) {
+          // Fallback: return the regular snapshot if 2d context is unavailable.
+          const fb = document.createElement('canvas');
+          fb.width = W; fb.height = H;
+          const fx = fb.getContext('2d');
+          if (fx) { fx.fillStyle = bg; fx.fillRect(0, 0, W, H); if (cRef.current) fx.drawImage(cRef.current, 0, 0); }
+          return fb.toDataURL('image/webp', 0.72);
+        }
+        x.fillStyle = '#ffffff';
+        x.fillRect(0, 0, W, H);
+        if (cRef.current) x.drawImage(cRef.current, 0, 0);
+        const img = x.getImageData(0, 0, W, H);
+        const d = img.data;
+        for (let i = 0; i < d.length; i += 4) {
+          const luma = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+          const v = luma > 80 ? 0 : 255; // bright = ink → black; dark = bg/ghost → white
+          d[i] = v; d[i + 1] = v; d[i + 2] = v; d[i + 3] = 255;
+        }
+        x.putImageData(img, 0, 0);
+        return tmp.toDataURL('image/png');
       },
       clear() {
         const ctx = getCtx();

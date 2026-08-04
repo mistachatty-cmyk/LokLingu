@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { db, scoresTable, usersTable } from '@workspace/db';
-import { eq, desc, sql, max } from 'drizzle-orm';
+import { eq, desc, sql, max, and } from 'drizzle-orm';
 import { GetLeaderboardQueryParams } from '@workspace/api-zod';
 
 const router = Router();
@@ -61,19 +61,15 @@ router.get('/leaderboard', async (req, res) => {
 
   const { language, category, limit = 20 } = parsed.data;
 
-  // Get the best score per user (using subquery approach)
-  const bestScoresSubquery = db
-    .select({
-      userId: scoresTable.userId,
-      language: scoresTable.language,
-      category: scoresTable.category,
-      bestCount: max(scoresTable.count).as('best_count'),
-    })
-    .from(scoresTable)
-    .$dynamic();
+  // Build WHERE conditions so filtering happens in SQL before LIMIT is applied.
+  // The previous approach fetched N rows globally then filtered in JS, which
+  // caused high scores to drop out whenever popular languages filled the page.
+  const conditions = [
+    ...(language ? [eq(scoresTable.language, language)] : []),
+    ...(category ? [eq(scoresTable.category, category)] : []),
+  ];
 
-  // Build the main query to get leaderboard
-  const rows = await db
+  const filtered = await db
     .select({
       userId: scoresTable.userId,
       username: usersTable.username,
@@ -84,18 +80,10 @@ router.get('/leaderboard', async (req, res) => {
     })
     .from(scoresTable)
     .innerJoin(usersTable, eq(scoresTable.userId, usersTable.id))
+    .where(conditions.length ? and(...conditions) : undefined)
     .groupBy(scoresTable.userId, usersTable.username, scoresTable.language, scoresTable.category)
     .orderBy(desc(max(scoresTable.count)))
     .limit(limit);
-
-  // Filter by language/category in JS after fetching (simpler than dynamic drizzle)
-  const filtered = rows
-    .filter((r) => {
-      if (language && r.language !== language) return false;
-      if (category && r.category !== category) return false;
-      return true;
-    })
-    .slice(0, limit);
 
   res.json(
     filtered.map((r, i) => ({
