@@ -679,6 +679,10 @@
   0%, 100% { background-position: 0% 50%; }
   50%      { background-position: 100% 50%; }
 }
+/* Base solid color — always present so text is never invisible if the gradient path fails */
+:root.theme-dragon-scales .game-word {
+  color: #B8FF6A;
+}
 @supports (-webkit-background-clip: text) {
   :root.theme-dragon-scales .game-word {
     background: linear-gradient(90deg, #B8FF6A, #44ffb0, #aaff44, #ffcc44, #B8FF6A);
@@ -689,7 +693,7 @@
     animation: lok-rainbow-shift 3s linear infinite;
   }
 }
-/* Fallback for browsers that don't support background-clip: text (e.g. older WebKit) */
+/* Fallback for browsers that don't support background-clip: text (e.g. older non-WebKit) */
 @supports not (-webkit-background-clip: text) {
   :root.theme-dragon-scales .game-word {
     color: #B8FF6A;
@@ -800,7 +804,12 @@
 @media (prefers-reduced-motion: reduce) {
   :root.theme-prism-break body,
   :root.theme-prism-break .bg-background { animation: none; }
-  :root.theme-prism-break .game-word     { animation: none; }
+  /* Snap to a known visible state — don't rely on whatever keyframe was frozen */
+  :root.theme-prism-break .game-word {
+    animation: none;
+    color: #FFFFFF;
+    -webkit-text-fill-color: currentColor;
+  }
 }
 
 /* ── 106 SHADOWREALM ──────────────────────────────────────── */
