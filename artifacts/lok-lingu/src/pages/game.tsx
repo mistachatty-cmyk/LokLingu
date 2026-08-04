@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Volume2, Mic } from 'lucide-react';
+import { Volume2, Mic, Home, AlertTriangle } from 'lucide-react';
+import { useLocation } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSubmitScore } from '@workspace/api-client-react';
 import { FALLBACK_WORDS, saveLocalScore, incrementLifetimeWords } from '@/lib/offline-data';
@@ -70,6 +71,7 @@ const SPEED_TIMING = {
 } as const;
 
 export default function Game() {
+  const [, setLocation] = useLocation();
   const language = localStorage.getItem('lok-lingu-lang') || 'es';
   const category = localStorage.getItem('lok-lingu-cat') || 'numbers';
 
@@ -250,8 +252,22 @@ export default function Game() {
 
   if (!currentWord) {
     return (
-      <div className="h-screen flex items-center justify-center bg-background text-muted-foreground text-sm font-mono">
-        No words loaded for {language} / {category}
+      <div className="h-screen flex flex-col items-center justify-center gap-6 bg-background px-8 text-center">
+        <AlertTriangle className="w-12 h-12 text-muted-foreground opacity-60" />
+        <div className="space-y-2">
+          <p className="text-lg font-black uppercase tracking-widest text-foreground">No words found</p>
+          <p className="text-sm text-muted-foreground font-mono">
+            No word list for <span className="text-foreground font-bold">{language}</span> /{' '}
+            <span className="text-foreground font-bold">{category}</span>.
+            <br />Try a different language or category.
+          </p>
+        </div>
+        <button
+          onClick={() => setLocation('/')}
+          className="flex items-center gap-2 rounded-full bg-primary px-8 py-3 text-sm font-black uppercase tracking-widest text-primary-foreground transition-all hover:brightness-110 active:scale-95"
+        >
+          <Home size={16} /> Home
+        </button>
       </div>
     );
   }

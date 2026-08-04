@@ -3,7 +3,7 @@ import { useGetUserStats } from '@workspace/api-client-react';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Activity, Flame, Hash, Target, Globe, Sparkles } from 'lucide-react';
+import { Activity, Flame, Hash, Target, Globe, Home } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getLocalUserStats } from '@/lib/offline-data';
 import { ProgressPie } from '@/components/progress-pie';
@@ -24,12 +24,19 @@ export default function Stats() {
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] p-6 text-center space-y-6">
         <Target className="w-16 h-16 text-muted-foreground" />
         <h2 className="text-2xl font-bold">No Data Found</h2>
-        <p className="text-muted-foreground">Play your first game to generate stats.</p>
-        <Link href="/">
-          <Button size="lg" className="mt-4 uppercase tracking-widest font-bold">
-            Set Alias
-          </Button>
-        </Link>
+        <p className="text-muted-foreground">Set an alias on the home screen to track your stats.</p>
+        <div className="flex flex-col gap-3 w-full max-w-xs">
+          <Link href="/">
+            <Button size="lg" className="w-full uppercase tracking-widest font-bold">
+              Set Alias &amp; Play
+            </Button>
+          </Link>
+          <Link href="/">
+            <Button variant="outline" size="lg" className="w-full uppercase tracking-widest font-bold gap-2">
+              <Home className="w-4 h-4" /> Home
+            </Button>
+          </Link>
+        </div>
       </div>
     );
   }
