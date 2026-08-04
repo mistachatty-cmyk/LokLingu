@@ -13,7 +13,8 @@ router.post('/scores', async (req, res) => {
     return;
   }
 
-  const { userId, language, category, count, tokensEarned } = parsed.data;
+  const { userId, language, category, count } = parsed.data;
+  const tokensEarned = (parsed.data as Record<string, unknown>)['tokensEarned'] as number | undefined;
 
   // Verify user exists
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);

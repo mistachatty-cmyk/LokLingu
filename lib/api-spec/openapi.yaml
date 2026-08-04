@@ -20,8 +20,33 @@ tags:
     description: Word lists by language and category
   - name: stats
     description: Aggregate statistics
+  - name: draw
+    description: Draw mode — AI visual word recognition
 
 paths:
+  /draw/recognize:
+    post:
+      operationId: recognizeDrawing
+      tags: [draw]
+      summary: Evaluate a canvas drawing against a target word using AI vision
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecognizeDrawingInput'
+      responses:
+        '200':
+          description: Recognition verdict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecognizeDrawingResult'
+        '400':
+          description: Invalid input
+        '500':
+          description: Recognition service error
+
   /healthz:
     get:
       operationId: healthCheck
@@ -354,6 +379,29 @@ components:
           type: array
           items:
             type: string
+
+    RecognizeDrawingInput:
+      type: object
+      required: [imageDataUrl, word, language]
+      properties:
+        imageDataUrl:
+          type: string
+          description: Base64-encoded WebP data URL of the canvas snapshot
+        word:
+          type: string
+          description: The target word the player was trying to draw
+        language:
+          type: string
+          description: BCP-47 language code (e.g. "es", "ja")
+
+    RecognizeDrawingResult:
+      type: object
+      required: [verdict]
+      properties:
+        verdict:
+          type: string
+          enum: [ACCEPT, CLOSE, REJECT]
+          description: ACCEPT = clearly correct, CLOSE = close enough, REJECT = wrong
 
     GlobalStats:
       type: object

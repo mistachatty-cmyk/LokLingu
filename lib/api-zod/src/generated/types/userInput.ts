@@ -8,8 +8,8 @@
 
 export interface UserInput {
   /**
-   * @minLength 1
-   * @maxLength 32
-   */
+     * @minLength 1
+     * @maxLength 32
+     */
   username: string;
 }

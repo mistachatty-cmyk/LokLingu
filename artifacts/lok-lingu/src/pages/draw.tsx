@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'wouter';
-import { useGetWords, useSubmitScore } from '@workspace/api-client-react';
+import { useGetWords, useSubmitScore, useRecognizeDrawing } from '@workspace/api-client-react';
 import { useUser } from '../hooks/use-user';
 import { useToast } from '../hooks/use-toast';
-import { Heart, RotateCcw, Home, Check, Eraser, Eye, EyeOff, Timer, Sparkles, Volume2, Mic, MicOff } from 'lucide-react';
+import {
+  Heart, RotateCcw, Home, Check, Eraser, Eye, EyeOff,
+  Timer, Sparkles, Volume2, Mic, MicOff, Loader2, ScanText,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
@@ -18,6 +21,9 @@ import { CelebrationEffect } from '@/components/celebration-effect';
 import { WordPop } from '@/components/word-pop';
 import { GlitchText } from '@/components/glitch-text';
 import { useTheme } from '@/hooks/use-theme';
+import { FALLBACK_WORDS, saveLocalScore } from '@/lib/offline-data';
+import { speakWord, matchWord } from '@/lib/speech-utils';
+import { useSpeechEngine } from '@/hooks/use-speech-engine';
 
 const INK_COLORS = [
   { label: 'Primary', value: 'hsl(var(--primary))' },
@@ -28,9 +34,7 @@ const INK_COLORS = [
   { label: 'Charcoal', value: 'hsl(220 10% 30%)' },
 ];
 
-import { FALLBACK_WORDS, saveLocalScore } from '@/lib/offline-data';
-import { speakWord, matchWord } from '@/lib/speech-utils';
-import { useSpeechEngine } from '@/hooks/use-speech-engine';
+const VOICE_CONFIRM_KEY = 'lok-lingu-draw-voice-confirm';
 
 export default function Draw() {
   const [, setLocation] = useLocation();
@@ -57,6 +61,9 @@ export default function Draw() {
     },
   });
 
+  const { mutateAsync: recognizeDrawingAsync } = useRecognizeDrawing();
+
+  // ── game state ─────────────────────────────────────────────────────────────
   const [wordIndex, setWordIndex] = useState(0);
   const [count, setCount] = useState(0);
   const [lives, setLives] = useState(3);
@@ -66,13 +73,17 @@ export default function Draw() {
   const [showGuide, setShowGuide] = useState(true);
   const [wordPopActive, setWordPopActive] = useState(false);
   const [shakeKey, setShakeKey] = useState(0);
-  /** True after the player presses Done — the canvas is locked and we're
-   *  waiting for voice to confirm before advancing. Dismissed on success,
-   *  failure, or a new word. */
+  /** Visual recognition in-flight */
+  const [isRecognizing, setIsRecognizing] = useState(false);
+  /** Shown only in voice-confirm mode after Done is pressed */
   const [awaitingVoice, setAwaitingVoice] = useState(false);
+  /** Whether voice confirmation is enabled (opt-in, default off) */
+  const [voiceConfirmEnabled, setVoiceConfirmEnabled] = useState(
+    () => localStorage.getItem(VOICE_CONFIRM_KEY) === 'true',
+  );
 
   const celebration = useCelebration();
-  const sound = useCelebrationSound();
+  useCelebrationSound(); // keeps audio context alive
   const { theme } = useTheme();
 
   const canvasRef = useRef<DrawCanvasHandle>(null);
@@ -82,100 +93,115 @@ export default function Draw() {
   statusRef.current = status;
   const gameOverRef = useRef(gameOver);
   gameOverRef.current = gameOver;
+  const voiceConfirmRef = useRef(voiceConfirmEnabled);
+  voiceConfirmRef.current = voiceConfirmEnabled;
 
+  // Must be declared before the effects below to avoid TDZ errors.
+  const currentWord = words?.[wordIndex];
+  const currentWordRef = useRef(currentWord);
+  currentWordRef.current = currentWord;
+
+  // ── success / failure handlers ─────────────────────────────────────────────
   const handleSuccess = useCallback(() => {
     if (status !== 'idle' || gameOver) return;
     setStatus('success');
     setAwaitingVoice(false);
+    setIsRecognizing(false);
     setWordPopActive(true);
-
-    setCount((prevCount) => prevCount + 1);
-
+    setCount((prev) => prev + 1);
     celebration.incrementMatch(language);
-
-    if (canvasRef.current) {
-      canvasRef.current.fadeOut(900);
-    }
-
+    canvasRef.current?.fadeOut(900);
     setTimeout(() => {
       if (!words) return;
-      const next = (wordIndex + 1) % words.length;
-      setWordIndex(next);
+      setWordIndex((prev) => (prev + 1) % words.length);
       setStatus('idle');
     }, 1000);
-  }, [status, gameOver, wordIndex, words, celebration, language]);
+  }, [status, gameOver, words, celebration, language]);
 
   const handleFailure = useCallback(() => {
     if (status !== 'idle' || gameOver) return;
     setStatus('error');
     setAwaitingVoice(false);
+    setIsRecognizing(false);
     setShakeKey((k) => k + 1);
     navigator.vibrate?.([80, 40, 140]);
     const newLives = lives - 1;
     setLives(newLives);
-
     setTimeout(() => {
       if (newLives <= 0) {
         setGameOver(true);
-        const currentUserId = userId || 1;
-        saveLocalScore({
-          userId: currentUserId,
-          language,
-          category,
-          count,
-        });
+        saveLocalScore({ userId: userId || 1, language, category, count });
         if (userId) {
           submitScore.mutate({ data: { userId, language, category, count } });
         }
       } else {
-        if (canvasRef.current) canvasRef.current.clear();
+        canvasRef.current?.clear();
         setStatus('idle');
       }
     }, 600);
-  }, [status, gameOver, lives, userId, language, category, count, submitScore, celebration.tokensEarnedRef]);
+  }, [status, gameOver, lives, userId, language, category, count, submitScore]);
 
   const handleClear = useCallback(() => {
-    if (canvasRef.current) canvasRef.current.clear();
+    canvasRef.current?.clear();
   }, []);
 
-  const handleDone = useCallback(() => {
+  // ── Done handler ───────────────────────────────────────────────────────────
+  const handleDone = useCallback(async () => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || status !== 'idle' || gameOver || isRecognizing) return;
 
     if (canvas.getStrokes() < 1) {
       handleFailure();
       return;
     }
 
-    // Require voice confirmation — prompt the player to say the word.
-    // The existing voice onResult handler already calls handleSuccess when
-    // matchWord passes with strokes ≥ 1, so arming awaitingVoice is all
-    // we need: the banner draws attention and voice does the rest.
-    setAwaitingVoice(true);
-  }, [handleFailure]);
+    // Voice-confirm mode: old behavior — prompt the player to speak.
+    if (voiceConfirmEnabled) {
+      setAwaitingVoice(true);
+      return;
+    }
 
-  // Must be declared before the effects below — reading it from a dependency
-  // array while it was still declared further down threw a TDZ ReferenceError
-  // on every render.
-  const currentWord = words?.[wordIndex];
-  const currentWordRef = useRef(currentWord);
-  currentWordRef.current = currentWord;
+    // Default: visual recognition via AI vision.
+    const imageDataUrl = canvas.snapshot();
+    const word = currentWordRef.current?.word;
+    if (!word) return;
 
-  // Voice recognition — runs continuously while the game is active.
-  // The player draws the word then speaks it to confirm; correct speech
-  // triggers success, wrong speech loses a life (with shake + vibrate).
+    setIsRecognizing(true);
+    try {
+      const result = await recognizeDrawingAsync({
+        data: { imageDataUrl, word, language },
+      });
+      // handleSuccess / handleFailure guard status themselves
+      if (result.verdict === 'ACCEPT' || result.verdict === 'CLOSE') {
+        handleSuccess();
+      } else {
+        handleFailure();
+      }
+    } catch {
+      setIsRecognizing(false);
+      toast({
+        title: 'Recognition unavailable',
+        description: "Couldn't evaluate your drawing — try again.",
+      });
+    }
+  }, [
+    status, gameOver, isRecognizing, voiceConfirmEnabled,
+    handleFailure, handleSuccess, recognizeDrawingAsync, language, toast,
+  ]);
+
+  // ── voice engine (used only when voiceConfirmEnabled) ─────────────────────
+  // Hooks must always be called — we just conditionally start/stop listening.
   const { isListening, startListening, stopListening } = useSpeechEngine({
     lang: language,
     expected: currentWord ? [currentWord.word] : [],
     onResult: useCallback(
       (spoken: string, isFinal: boolean) => {
         if (!isFinal) return;
+        if (!voiceConfirmRef.current) return; // voice mode off — ignore
         if (statusRef.current !== 'idle' || gameOverRef.current) return;
         const target = currentWordRef.current?.word;
         if (!target) return;
-        // Require at least one stroke before accepting voice validation.
-        const strokes = canvasRef.current?.getStrokes() ?? 0;
-        if (strokes < 1) return;
+        if ((canvasRef.current?.getStrokes() ?? 0) < 1) return;
         const pronunciation = currentWordRef.current?.pronunciation as string | undefined;
         if (matchWord(spoken, target, pronunciation ? [pronunciation] : [])) {
           handleSuccess();
@@ -187,16 +213,27 @@ export default function Draw() {
     ),
   });
 
-  // Start listening as soon as the game is active. stopListening is called
-  // in the cleanup so the mic is released when the player leaves the page.
   useEffect(() => {
+    if (!voiceConfirmEnabled) return undefined;
     startListening();
     return () => stopListening();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [voiceConfirmEnabled]);
 
-  // Prevent the page from scrolling while the player is drawing.
-  // Restored on unmount so all other pages remain scrollable.
+  // Toggle voice confirm, persist preference, start/stop mic accordingly
+  const toggleVoiceConfirm = useCallback(() => {
+    setVoiceConfirmEnabled((prev) => {
+      const next = !prev;
+      localStorage.setItem(VOICE_CONFIRM_KEY, String(next));
+      if (!next) {
+        stopListening();
+        setAwaitingVoice(false);
+      }
+      return next;
+    });
+  }, [stopListening]);
+
+  // ── body scroll lock (from Task #31) ──────────────────────────────────────
   useEffect(() => {
     const prev = document.body.style.overflow;
     const prevOverscroll = document.body.style.overscrollBehavior;
@@ -208,20 +245,20 @@ export default function Draw() {
     };
   }, []);
 
+  // ── TTS on word change ─────────────────────────────────────────────────────
   useEffect(() => {
-    if (!currentWord) return;
+    if (!currentWord) return undefined;
     const timer = setTimeout(() => speakWord(currentWord.word, language), 400);
     return () => clearTimeout(timer);
   }, [wordIndex, currentWord, language]);
 
+  // ── render ─────────────────────────────────────────────────────────────────
   return (
     <div
       className="relative min-h-screen w-full bg-background overflow-hidden flex flex-col select-none"
       style={{ touchAction: 'none', overscrollBehavior: 'none' } as React.CSSProperties}
     >
-      {wordPopActive && (
-        <WordPop onComplete={() => setWordPopActive(false)} />
-      )}
+      {wordPopActive && <WordPop onComplete={() => setWordPopActive(false)} />}
 
       {celebration.milestone && (
         <CelebrationEffect
@@ -231,6 +268,7 @@ export default function Draw() {
         />
       )}
 
+      {/* ── Header bar ───────────────────────────────────────────────────── */}
       <div className="absolute top-0 left-0 w-full px-6 pt-6 flex justify-between items-start z-10">
         <div className="flex flex-col gap-1">
           <div className="flex space-x-2">
@@ -247,7 +285,33 @@ export default function Draw() {
             {language.toUpperCase()} · {celebration.lifetimeWords(language).toLocaleString()}
           </span>
         </div>
+
         <div className="flex items-start gap-3">
+          {/* Voice confirm toggle */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={toggleVoiceConfirm}
+                className={`mt-1 flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-widest transition-all ${
+                  voiceConfirmEnabled
+                    ? 'bg-primary/15 text-primary border border-primary/40'
+                    : 'bg-muted/30 text-muted-foreground border border-border/40'
+                }`}
+                aria-label={voiceConfirmEnabled ? 'Voice confirm on — tap to disable' : 'Voice confirm off — tap to enable'}
+              >
+                {voiceConfirmEnabled ? <Mic className="w-3 h-3" /> : <ScanText className="w-3 h-3" />}
+                {voiceConfirmEnabled ? 'Voice' : 'Vision'}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="left" className="max-w-[180px] text-center">
+              <p className="text-xs">
+                {voiceConfirmEnabled
+                  ? 'Voice mode: draw then say the word. Tap to switch to AI vision.'
+                  : 'Vision mode: draw the word and tap Done — AI checks it. Tap to switch to voice.'}
+              </p>
+            </TooltipContent>
+          </Tooltip>
+
           <div className="text-right">
             <div className="flex items-center justify-end gap-2">
               <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Streak</span>
@@ -274,6 +338,7 @@ export default function Draw() {
         </div>
       </div>
 
+      {/* ── Main game area ────────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-20">
         <AnimatePresence mode="wait">
           {!gameOver ? (
@@ -284,6 +349,7 @@ export default function Draw() {
               exit={{ opacity: 0 }}
               className="w-full max-w-sm space-y-4"
             >
+              {/* Word display */}
               <div
                 className={`text-center space-y-1 transition-all duration-300 ${
                   status === 'error' ? 'animate-[shake_0.3s_ease-in-out]' : ''
@@ -311,12 +377,19 @@ export default function Draw() {
                 <p className="text-sm text-muted-foreground font-serif italic">{currentWord.translation}</p>
               </div>
 
+              {/* Canvas */}
               <motion.div
                 key={shakeKey}
                 animate={shakeKey > 0 ? { x: [-14, 14, -10, 10, -6, 6, 0] } : { x: 0 }}
                 transition={{ duration: 0.35, ease: 'easeInOut' }}
                 className={`relative rounded-xl border-2 overflow-hidden transition-colors duration-300 ${
-                  status === 'error' ? 'border-destructive' : status === 'success' ? 'border-primary' : 'border-border'
+                  status === 'error'
+                    ? 'border-destructive'
+                    : status === 'success'
+                      ? 'border-primary'
+                      : isRecognizing
+                        ? 'border-primary/60'
+                        : 'border-border'
                 }`}
               >
                 <DrawCanvas
@@ -325,7 +398,15 @@ export default function Draw() {
                   bg="hsl(var(--card))"
                   ghostText={showGuide ? currentWord.word : undefined}
                 />
-                {status === 'error' && (
+                {isRecognizing && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/60 backdrop-blur-sm pointer-events-none gap-2">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    <span className="text-xs font-black uppercase tracking-widest text-primary">
+                      Checking…
+                    </span>
+                  </div>
+                )}
+                {status === 'error' && !isRecognizing && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <span className="text-4xl font-black text-destructive uppercase tracking-widest opacity-80 drop-shadow-lg select-none">
                       WRONG!
@@ -334,6 +415,7 @@ export default function Draw() {
                 )}
               </motion.div>
 
+              {/* Ink color picker */}
               <div className="flex flex-wrap items-center justify-center gap-2">
                 {INK_COLORS.map((c) => (
                   <button
@@ -348,6 +430,7 @@ export default function Draw() {
                 ))}
               </div>
 
+              {/* Action buttons */}
               <div className="flex items-center justify-center gap-3">
                 <Button
                   variant="default"
@@ -366,17 +449,23 @@ export default function Draw() {
                 </Button>
                 <Button
                   size="sm"
-                  onClick={handleDone}
+                  onClick={() => void handleDone()}
                   className="gap-2"
-                  disabled={status === 'success' || status === 'error'}
+                  disabled={status === 'success' || status === 'error' || isRecognizing}
                 >
-                  <Check className="w-4 h-4" /> Done
+                  {isRecognizing ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Check className="w-4 h-4" />
+                  )}
+                  {isRecognizing ? 'Checking…' : 'Done'}
                 </Button>
               </div>
 
-              {/* Voice confirmation prompt — shown after Done is pressed */}
+              {/* Status area */}
               <AnimatePresence>
-                {awaitingVoice ? (
+                {/* Voice confirm banner (voice mode only) */}
+                {voiceConfirmEnabled && awaitingVoice && (
                   <motion.div
                     key="awaiting-voice"
                     initial={{ opacity: 0, y: 6, scale: 0.97 }}
@@ -393,7 +482,10 @@ export default function Draw() {
                       Speak to confirm your drawing
                     </span>
                   </motion.div>
-                ) : (
+                )}
+
+                {/* Mic status (voice mode only, when not awaiting) */}
+                {voiceConfirmEnabled && !awaitingVoice && (
                   <motion.div
                     key="mic-status"
                     initial={{ opacity: 0 }}
@@ -414,6 +506,22 @@ export default function Draw() {
                     )}
                   </motion.div>
                 )}
+
+                {/* Vision mode hint */}
+                {!voiceConfirmEnabled && !isRecognizing && status === 'idle' && (
+                  <motion.div
+                    key="vision-hint"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex items-center justify-center gap-1.5 pt-1"
+                  >
+                    <ScanText className="w-3.5 h-3.5 text-muted-foreground/40" />
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/40">
+                      AI checks your drawing
+                    </span>
+                  </motion.div>
+                )}
               </AnimatePresence>
 
               {status === 'success' && (
@@ -424,6 +532,7 @@ export default function Draw() {
               )}
             </motion.div>
           ) : (
+            /* ── Game over screen ──────────────────────────────────────── */
             <motion.div
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
@@ -457,7 +566,7 @@ export default function Draw() {
                     setWordIndex(0);
                     setStatus('idle');
                     setGameOver(false);
-                    if (canvasRef.current) canvasRef.current.clear();
+                    canvasRef.current?.clear();
                   }}
                 >
                   <RotateCcw className="w-5 h-5 mr-2" /> Play Again
@@ -476,6 +585,7 @@ export default function Draw() {
         </AnimatePresence>
       </div>
 
+      {/* ── 2x boost timer ───────────────────────────────────────────────── */}
       {celebration.boostActive && (
         <Tooltip>
           <TooltipTrigger asChild>

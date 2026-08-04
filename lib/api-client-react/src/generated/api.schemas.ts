@@ -11,9 +11,9 @@ export interface HealthStatus {
 
 export interface UserInput {
   /**
-   * @minLength 1
-   * @maxLength 32
-   */
+     * @minLength 1
+     * @maxLength 32
+     */
   username: string;
 }
 
@@ -30,7 +30,6 @@ export interface ScoreInput {
   category: string;
   /** @minimum 0 */
   count: number;
-  tokensEarned?: number;
 }
 
 export interface Score {
@@ -74,6 +73,32 @@ export interface Language {
   categories: string[];
 }
 
+export interface RecognizeDrawingInput {
+  /** Base64-encoded WebP data URL of the canvas snapshot */
+  imageDataUrl: string;
+  /** The target word the player was trying to draw */
+  word: string;
+  /** BCP-47 language code (e.g. "es", "ja") */
+  language: string;
+}
+
+/**
+ * ACCEPT = clearly correct, CLOSE = close enough, REJECT = wrong
+ */
+export type RecognizeDrawingResultVerdict = typeof RecognizeDrawingResultVerdict[keyof typeof RecognizeDrawingResultVerdict];
+
+
+export const RecognizeDrawingResultVerdict = {
+  ACCEPT: 'ACCEPT',
+  CLOSE: 'CLOSE',
+  REJECT: 'REJECT',
+} as const;
+
+export interface RecognizeDrawingResult {
+  /** ACCEPT = clearly correct, CLOSE = close enough, REJECT = wrong */
+  verdict: RecognizeDrawingResultVerdict;
+}
+
 export interface GlobalStats {
   totalPlayers: number;
   totalGames: number;
@@ -95,7 +120,8 @@ export interface UserStats {
 }
 
 export type GetLeaderboardParams = {
-  language?: string;
-  category?: string;
-  limit?: number;
+language?: string;
+category?: string;
+limit?: number;
 };
+
