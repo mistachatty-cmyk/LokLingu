@@ -109,6 +109,20 @@ export function consumeHeart(): boolean {
   return true;
 }
 
+/**
+ * Generic spend, for anything that is not a consumable stack — token
+ * skins today, and whatever cosmetics come next. Returns false and
+ * changes nothing when the player cannot afford it.
+ */
+export function spendTokens(amount: number): boolean {
+  if (amount <= 0) return true;
+  const { balance, spent } = getWallet();
+  if (balance < amount) return false;
+  write(K.spent, spent + amount);
+  announce();
+  return true;
+}
+
 /* ---------------------------- store ---------------------------- */
 
 export type StackKind = 'skip' | 'heart';

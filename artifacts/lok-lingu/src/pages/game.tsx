@@ -17,6 +17,7 @@ import { useCelebration } from '@/hooks/use-celebration';
 import { useCelebrationSound } from '@/hooks/use-celebration-sound';
 import { CelebrationEffect } from '@/components/celebration-effect';
 import { TokenEarnedLabel } from '@/components/token-earned-label';
+import { TokenVaultLayer } from '@/components/token-vault-layer';
 
 type NormalWord = { word: string; translation: string; pronunciation?: string };
 
@@ -341,6 +342,12 @@ export default function Game() {
 
   return (
     <div className="relative flex flex-col h-screen bg-background text-foreground overflow-hidden">
+      {/* The Vault skin draws across the whole screen and outlives any one
+          coin pop, so it sits at the page root behind everything (z-0)
+          rather than inside the streak counter. Renders nothing unless
+          that skin is equipped. */}
+      <TokenVaultLayer animKey={tokenLabel.key} />
+
       <div className="flex justify-between items-start p-6 w-full absolute top-0 z-10">
         <div className="flex flex-col gap-1">
           <span className="text-[10px] tracking-widest uppercase opacity-70">

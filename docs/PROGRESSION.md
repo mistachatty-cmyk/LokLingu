@@ -138,6 +138,77 @@ progress as 0, because best-streak is not persisted anywhere. Adding
 `lok-lingu-best-streak` on `commitRun()` is the smallest fix and would
 make that track live.
 
+## Token skins
+
+`src/lib/token-skins.ts`, sold in the shop, rendered by
+`components/token-earned-label.tsx` and `components/token-vault-layer.tsx`.
+
+This controls the coin that pops when you earn LOK tokens.
+
+| id | Name | Cost | What it does |
+| --- | --- | --- | --- |
+| `classic` | Classic Coin | free | Spins up from the streak counter and fades |
+| `aurora` | Aurora Glow | 40 | Soft coloured halo blooms behind it |
+| `neon` | Neon Outline | 60 | Hard glowing ring on coin and amount |
+| `jumbo` | Jumbo | 70 | Double size, slower |
+| `supernova` | Supernova | 90 | Detonates into a ring of sparks |
+| `freefall` | Freefall | 120 | Thrown up, stalls, then gravity drops it |
+| `vault` | **The Vault** | 400 | Coins fall to the floor and pile up as you play |
+
+### Bundled now, splittable later
+
+The user's intent is that appearance and effect eventually become
+separate pickers. `TokenSkin` therefore already stores them as distinct
+field groups — appearance (`glyph`, `scale`, `halo`, `outline`) and effect
+(`motion`, `particles`, `duration`) — rather than one opaque blob.
+
+Splitting is then mechanical: widen the store from one selected id to two
+(`lok-lingu-token-look` / `lok-lingu-token-motion`), and compose a
+`TokenSkin` from the two halves. **Nothing in the render path needs to
+change**, because it already consumes the fields independently. Ownership
+(`lok-lingu-owned-token-skins`) is a plain id list, so grandfathering a
+bundled purchase into both halves is a data migration, not a rewrite.
+
+### Performance rules — the part that matters
+
+An accumulating effect is the easiest way to destroy a game's frame rate,
+so the whole system is built around limits rather than hoping:
+
+1. **Transform and opacity only.** Nothing animates layout, and no filter
+   or box-shadow is applied to a moving element. Halos are static radial
+   gradients that themselves scale; outlines are `text-shadow`.
+2. **Particle counts are constants in the catalog, never derived from the
+   score.** A player on a 400 streak costs exactly what a first-word
+   player costs.
+3. **The Vault pile is capped and evicts FIFO.** `MAX_PILE = 60`. This is
+   the load-bearing rule — without it the DOM grows without bound.
+4. **A landed coin stops animating.** Each coin runs one transform
+   animation to its resting place and is then a static composited
+   element. The pile is not a simulation; there is no per-frame cost
+   proportional to its size.
+5. **The cap is adaptive.** `hooks/use-perf-budget.ts` samples real frame
+   times and drops the ceiling to `REDUCED_PILE = 20` (and halves
+   Supernova's ring) when FPS falls below 45, recovering only after three
+   consecutive good seconds so it cannot flicker.
+6. **`prefers-reduced-motion` collapses every skin to a static label**,
+   and the Vault renders nothing at all.
+
+Coins rest in 14 columns with a small integer height map, capped at
+`MAX_STACK_HEIGHT = 5` per column so a heap can never wall off the UI.
+There is no collision detection and no physics loop.
+
+**Measured** in headless Chromium: 200 rapid earn events left exactly 60
+coins in the DOM and held 60 fps throughout, with zero page errors.
+Reduced-motion rendered 0 coins.
+
+### Where the Vault mounts
+
+`TokenVaultLayer` sits at the **root of the game page at `z-0`**, not
+inside the streak counter, because it draws across the whole viewport and
+must outlive any single coin pop. `TokenEarnedLabel` returns `null` for
+the `pile` motion so the two never both render. The shop passes
+`contained` to keep previews inside their tile.
+
 ## Word coverage
 
 `src/lib/word-coverage.ts`. Completeness is **derived by counting

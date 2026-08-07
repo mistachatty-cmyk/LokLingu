@@ -2,7 +2,11 @@ import { useState, useRef, useEffect } from 'react';
 import { useTheme } from '../hooks/use-theme';
 import { Check, Flame, Lock, Star, Zap, Sparkles, Globe, Coins, Heart, SkipForward } from 'lucide-react';
 import { useEconomy } from '@/hooks/use-economy';
-import { purchaseStack, STACK_SKUS, type StackKind, type StackSku } from '@/lib/economy';
+import { purchaseStack, spendTokens, STACK_SKUS, type StackKind, type StackSku } from '@/lib/economy';
+import { useTokenSkin } from '@/hooks/use-token-skin';
+import { getOwnedSkins, grantSkin, setSelectedSkin, TOKEN_SKINS, type TokenSkin } from '@/lib/token-skins';
+import { TokenEarnedLabel } from '@/components/token-earned-label';
+import { TokenVaultLayer } from '@/components/token-vault-layer';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { THEMES, type ThemeDef } from './themes-data';
@@ -475,6 +479,152 @@ function StackShop() {
   );
 }
 
+/**
+ * Token skins — how earned LOK tokens look and behave when they pop.
+ *
+ * Each card previews the real component rather than a mock-up, so what
+ * the player buys is exactly what they saw. Previews are driven by a
+ * local counter and are contained to their tile (the Vault would
+ * otherwise draw over the whole page).
+ */
+function TokenSkinShop() {
+  const { balance } = useEconomy();
+  const { skin: equipped, refresh } = useTokenSkin();
+  const [owned, setOwned] = useState<string[]>(getOwnedSkins);
+  const [previews, setPreviews] = useState<Record<string, number>>({});
+  const [note, setNote] = useState<{ id: string; text: string; ok: boolean } | null>(null);
+
+  const bump = (id: string) => setPreviews((p) => ({ ...p, [id]: (p[id] ?? 0) + 1 }));
+
+  const handleCard = (skin: TokenSkin) => {
+    bump(skin.id);
+    if (owned.includes(skin.id)) {
+      setSelectedSkin(skin.id);
+      refresh();
+      return;
+    }
+    if (!spendTokens(skin.cost)) {
+      setNote({ id: skin.id, text: `Needs ${skin.cost} tokens — keep playing.`, ok: false });
+      window.setTimeout(() => setNote(null), 1600);
+      return;
+    }
+    grantSkin(skin.id);
+    setSelectedSkin(skin.id);
+    setOwned(getOwnedSkins());
+    refresh();
+    setNote({ id: skin.id, text: 'Unlocked and equipped.', ok: true });
+    window.setTimeout(() => setNote(null), 1600);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2 font-black text-sm uppercase tracking-widest text-amber-400">
+            <Coins className="w-4 h-4" />
+            <span>Token Skins</span>
+          </div>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-0.5">
+            Look and effect · Tap any card to preview
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="font-black text-lg tabular-nums leading-none">{balance.toLocaleString()}</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Tokens</p>
+        </div>
+      </div>
+
+      <p className="text-xs text-muted-foreground leading-snug">
+        Appearance and effect ship bundled for now. They are stored as separate fields, so they can
+        be split into independent pickers later without resetting what you own.
+      </p>
+
+      <div className="grid grid-cols-2 gap-2">
+        {TOKEN_SKINS.map((skin) => {
+          const isOwned = owned.includes(skin.id);
+          const isEquipped = equipped.id === skin.id;
+          return (
+            <button
+              key={skin.id}
+              type="button"
+              onClick={() => handleCard(skin)}
+              className={`relative overflow-hidden rounded-xl border p-3 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary active:scale-[0.98] ${
+                isEquipped
+                  ? 'border-primary bg-primary/10'
+                  : skin.ultimate
+                    ? 'border-amber-500/50 bg-gradient-to-br from-amber-500/10 to-card hover:border-amber-400'
+                    : 'border-border bg-card hover:border-primary/40'
+              }`}
+            >
+              {/* Live preview stage — the real components, contained. */}
+              <div className="relative mb-2 h-20 overflow-hidden rounded-lg bg-background/60">
+                <TokenVaultLayer
+                  animKey={previews[skin.id] ?? 0}
+                  skinOverride={skin}
+                  contained
+                />
+                <div className="absolute right-3 top-3">
+                  <TokenEarnedLabel
+                    animKey={previews[skin.id] ?? 0}
+                    label="+2"
+                    skinOverride={skin}
+                  />
+                </div>
+                {!previews[skin.id] && (
+                  <span className="absolute inset-0 flex items-center justify-center text-2xl opacity-40">
+                    {skin.glyph}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between gap-1">
+                <span className="truncate font-black text-xs uppercase tracking-wide">
+                  {skin.name}
+                </span>
+                {isEquipped ? (
+                  <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
+                ) : isOwned ? (
+                  <span className="shrink-0 text-[9px] uppercase tracking-widest text-muted-foreground">
+                    owned
+                  </span>
+                ) : (
+                  <span className="shrink-0 font-mono text-[10px] text-primary">{skin.cost}</span>
+                )}
+              </div>
+
+              <p className="mt-1 text-[10px] leading-snug text-muted-foreground line-clamp-3">
+                {skin.blurb}
+              </p>
+
+              {skin.ultimate && (
+                <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-amber-300">
+                  <Flame className="h-2.5 w-2.5" /> Ultimate
+                </span>
+              )}
+
+              {note?.id === skin.id && (
+                <p
+                  className={`mt-1.5 text-[10px] font-bold ${
+                    note.ok ? 'text-emerald-400' : 'text-destructive'
+                  }`}
+                >
+                  {note.text}
+                </p>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      <p className="rounded-lg border border-border bg-card p-3 text-[10px] leading-relaxed text-muted-foreground">
+        The Vault caps its pile and evicts the oldest coins, and every skin drops to a cheaper
+        budget automatically if the frame rate dips — so none of these cost you responsiveness
+        mid-run. All of them collapse to a static label under reduced-motion.
+      </p>
+    </div>
+  );
+}
+
 export default function Themes() {
   const { theme, setTheme } = useTheme();
 
@@ -493,6 +643,10 @@ export default function Themes() {
       </div>
 
       <StackShop />
+
+      <div className="border-t border-border pt-6">
+        <TokenSkinShop />
+      </div>
 
       <div className="border-t border-border pt-6 space-y-1">
         <h2 className="text-lg font-black uppercase tracking-tighter">Themes</h2>
