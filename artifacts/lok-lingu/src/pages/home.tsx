@@ -30,6 +30,8 @@ import { Switch } from '@/components/ui/switch';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { GlitchText } from '@/components/glitch-text';
 import { FontPicker } from '@/components/font-picker';
+import { SavePanel } from '@/components/save-panel';
+import { VaultExplainer } from '@/components/vault-explainer';
 
 import { normalizeLanguagesData } from '@/lib/offline-data';
 import { getCoverage, coverageOpacity, coverageSymbol } from '@/lib/word-coverage';
@@ -374,6 +376,12 @@ export default function Home() {
                     </span>
                   </button>
                 </div>
+
+                {/* Explains the two Vaults against the player's real level. */}
+                <VaultExplainer />
+
+                {/* Save / restore / cloud sync. */}
+                <SavePanel userId={userId ?? null} />
 
                 {/* Default language */}
                 <div className="space-y-2">
