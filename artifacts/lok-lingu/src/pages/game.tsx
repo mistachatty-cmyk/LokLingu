@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Volume2, Mic, Home, AlertTriangle } from 'lucide-react';
+import { Volume2, Mic, Home, AlertTriangle, SkipForward } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useSubmitScore } from '@workspace/api-client-react';
@@ -9,6 +9,8 @@ import { useUser } from '@/hooks/use-user';
 import { useSpeechEngine } from '@/hooks/use-speech-engine';
 import { useSettings } from '@/hooks/use-settings';
 import { useDevMode } from '@/hooks/use-dev-mode';
+import { useEconomy } from '@/hooks/use-economy';
+import { consumeSkip, FREE_SKIPS_PER_MATCH } from '@/lib/economy';
 import { speakWord, matchWord, primeVoices, toLocale } from '@/lib/speech-utils';
 import { useTheme } from '@/hooks/use-theme';
 import { useCelebration } from '@/hooks/use-celebration';
@@ -286,6 +288,35 @@ export default function Game() {
 
   const handleSlowSpeak = () => speakWord(currentWord?.word ?? '', language, { slow: true });
 
+  /* -------------------------- skips --------------------------
+     A stuck word — a mispronunciation the engine will never accept, or
+     someone talking over you — used to be a dead end: the only way past
+     it was to stop the mic, which committed the run and reset the
+     streak. Every match therefore carries one free skip, plus whatever
+     the player has banked from the shop.
+  ------------------------------------------------------------- */
+  const [freeSkipsLeft, setFreeSkipsLeft] = useState(FREE_SKIPS_PER_MATCH);
+  const [skipFlash, setSkipFlash] = useState(0);
+  const { skips: bankedSkips } = useEconomy();
+  const skipsLeft = freeSkipsLeft + bankedSkips;
+
+  const handleSkip = () => {
+    if (skipsLeft <= 0 || lockedRef.current) return;
+    // Spend the free skip first — banked ones cost tokens, so they should
+    // be the last thing consumed.
+    if (freeSkipsLeft > 0) setFreeSkipsLeft((n) => n - 1);
+    else if (!consumeSkip()) return;
+
+    lockedRef.current = true;
+    abortSessionRef.current();
+    setSkipFlash((n) => n + 1);
+    // A skip advances the word but deliberately does not touch the streak
+    // or lifetime counts — it is a way past a word, not a way to score.
+    setWordIndex((i) => i + 1);
+    setFeedback('idle');
+    lockedRef.current = false;
+  };
+
   if (!currentWord) {
     return (
       <div className="h-screen flex flex-col items-center justify-center gap-6 bg-background px-8 text-center">
@@ -450,6 +481,37 @@ export default function Game() {
           </span>
         )}
         {micError && <span className="text-xs text-destructive opacity-80">{micError}</span>}
+      </div>
+
+      {/* Skip — bottom right, deliberately out of the thumb path of the mic
+          button so it cannot be hit by accident mid-run. */}
+      <div className="absolute bottom-6 right-5 z-20 flex flex-col items-center gap-1">
+        <motion.button
+          type="button"
+          data-testid="skip-button"
+          onClick={handleSkip}
+          disabled={skipsLeft <= 0}
+          aria-label={skipsLeft > 0 ? `Skip this word, ${skipsLeft} left` : 'No skips left'}
+          title={
+            skipsLeft > 0
+              ? `Skip this word (${skipsLeft} left)`
+              : 'Out of skips — buy more in the shop'
+          }
+          animate={prefersReducedMotion ? {} : { scale: skipFlash ? [1, 0.88, 1] : 1 }}
+          transition={{ duration: 0.25, ease: 'easeOut' }}
+          className="relative flex h-14 w-14 items-center justify-center rounded-full border border-foreground/15 bg-background/70 text-foreground/70 backdrop-blur transition-all duration-300 hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary active:scale-95 disabled:pointer-events-none disabled:opacity-30"
+        >
+          <SkipForward size={20} />
+          <span
+            className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-black tabular-nums text-primary-foreground"
+            aria-hidden="true"
+          >
+            {skipsLeft}
+          </span>
+        </motion.button>
+        {/* 0.4 opacity measured 3.25:1 against the game ground — below AA
+            for 9px text. 0.75 clears it without shouting. */}
+        <span className="text-[9px] uppercase tracking-[0.2em] opacity-75">Skip</span>
       </div>
 
       {/* Milestone celebration burst — suppressed when prefers-reduced-motion. */}

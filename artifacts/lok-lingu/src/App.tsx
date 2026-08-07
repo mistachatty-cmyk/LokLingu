@@ -15,6 +15,7 @@ import Themes from './pages/themes';
 import Celebrations from './pages/celebrations';
 import Explore from './pages/explore';
 import Inventory from './pages/inventory';
+import Roadmap from './pages/roadmap';
 import { LiquidGlassCursor } from '@/components/liquid-glass-cursor';
 import { useCursorCosmetics } from '@/hooks/use-cursor-cosmetics';
 import { useTheme } from '@/hooks/use-theme';
@@ -53,6 +54,7 @@ function Router() {
         <Route path="/celebrations" component={Celebrations} />
         <Route path="/explore" component={Explore} />
         <Route path="/inventory" component={Inventory} />
+        <Route path="/roadmap" component={Roadmap} />
         <Route component={NotFound} />
       </Switch>
       <LiquidGlassCursor glassId={glassId} trailId={trailId} isActive={isActive} />

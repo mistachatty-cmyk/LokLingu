@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTheme } from '../hooks/use-theme';
-import { Check, Flame, Lock, Star, Zap, Sparkles, Globe } from 'lucide-react';
+import { Check, Flame, Lock, Star, Zap, Sparkles, Globe, Coins, Heart, SkipForward } from 'lucide-react';
+import { useEconomy } from '@/hooks/use-economy';
+import { purchaseStack, STACK_SKUS, type StackKind, type StackSku } from '@/lib/economy';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { THEMES, type ThemeDef } from './themes-data';
@@ -363,6 +365,116 @@ const FONT_GROUPS = (() => {
     }));
 })();
 
+/**
+ * Consumable stacks — skips and hearts, bought in bundles.
+ *
+ * These are priced in tokens the player actually earns in a run. The
+ * long-term intent (documented in docs/PROGRESSION.md) is for these to be
+ * *earned* at lifetime-word milestones rather than bought; the "earn at"
+ * line is shown now so the change is not a surprise later.
+ */
+function StackShop() {
+  const { balance, skips, hearts } = useEconomy();
+  const [flash, setFlash] = useState<{ id: string; ok: boolean } | null>(null);
+  const reduce = useReducedMotion();
+
+  const buy = (sku: StackSku) => {
+    const result = purchaseStack(sku.id);
+    setFlash({ id: sku.id, ok: result.ok });
+    window.setTimeout(() => setFlash(null), 1200);
+  };
+
+  const groups: { kind: StackKind; title: string; icon: typeof Zap; note: string }[] = [
+    {
+      kind: 'skip',
+      title: 'Skips',
+      icon: SkipForward,
+      note: 'Jump past a word you are stuck on. Every match already includes one free skip.',
+    },
+    {
+      kind: 'heart',
+      title: 'Hearts',
+      icon: Heart,
+      note: 'Extra lives in Draw mode. Banked hearts carry between matches.',
+    },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2 font-black text-sm uppercase tracking-widest text-emerald-400">
+            <Coins className="w-4 h-4" />
+            <span>Stacks — Consumables</span>
+          </div>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-0.5">
+            Buy in bundles · Bulk is cheaper per unit
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="font-black text-lg tabular-nums leading-none">{balance.toLocaleString()}</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Tokens</p>
+        </div>
+      </div>
+
+      {groups.map(({ kind, title, icon: Icon, note }) => (
+        <div key={kind} className="rounded-xl border border-border bg-card p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Icon className="w-4 h-4 text-primary" />
+              <span className="font-black text-sm uppercase tracking-wide">{title}</span>
+            </div>
+            <span className="font-mono text-xs text-muted-foreground">
+              owned: <span className="text-foreground font-bold">{kind === 'skip' ? skips : hearts}</span>
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground leading-snug">{note}</p>
+
+          <div className="grid grid-cols-3 gap-2">
+            {STACK_SKUS.filter((s) => s.kind === kind).map((sku) => {
+              const affordable = balance >= sku.cost;
+              const isFlashing = flash?.id === sku.id;
+              return (
+                <motion.button
+                  key={sku.id}
+                  type="button"
+                  onClick={() => buy(sku)}
+                  disabled={!affordable}
+                  animate={
+                    reduce || !isFlashing
+                      ? {}
+                      : flash?.ok
+                        ? { scale: [1, 1.06, 1] }
+                        : { x: [0, -5, 5, -3, 0] }
+                  }
+                  transition={{ duration: 0.35 }}
+                  className={`rounded-lg border p-3 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                    affordable
+                      ? 'border-border hover:border-primary hover:bg-primary/5 active:scale-95'
+                      : 'border-border/50 opacity-40 cursor-not-allowed'
+                  }`}
+                >
+                  <div className="font-black text-sm">{sku.label}</div>
+                  <div className="font-mono text-xs text-primary mt-1">{sku.cost} tokens</div>
+                  <div className="text-[9px] text-muted-foreground uppercase tracking-widest mt-1.5 leading-tight">
+                    earn free at {sku.earnedAt.toLocaleString()} words
+                  </div>
+                </motion.button>
+              );
+            })}
+          </div>
+
+          {flash && STACK_SKUS.find((s) => s.id === flash.id)?.kind === kind && (
+            <p className={`text-xs font-bold ${flash.ok ? 'text-emerald-400' : 'text-destructive'}`}>
+              {flash.ok ? 'Added to your inventory.' : 'Not enough tokens yet — keep playing.'}
+            </p>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function Themes() {
   const { theme, setTheme } = useTheme();
 
@@ -374,9 +486,18 @@ export default function Themes() {
   return (
     <div className="p-5 space-y-8 pt-10 pb-28">
       <div className="space-y-1">
-        <h1 className="text-3xl font-black tracking-tighter uppercase">Theme Shop</h1>
+        <h1 className="text-3xl font-black tracking-tighter uppercase">Shop</h1>
         <p className="text-muted-foreground text-sm">
           {THEMES.length} aesthetics · {FONT_GROUPS.length} font styles · Your arcade, your look
+        </p>
+      </div>
+
+      <StackShop />
+
+      <div className="border-t border-border pt-6 space-y-1">
+        <h2 className="text-lg font-black uppercase tracking-tighter">Themes</h2>
+        <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
+          Cosmetics · Applied everywhere in the app
         </p>
       </div>
 

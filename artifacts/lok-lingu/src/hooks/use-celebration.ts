@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { CELEBRATIONS, CELEBRATION_BY_ID, INTENSITY_CONFIG } from '@/lib/celebrations';
 import type { CelebrationDef, CelebrationIntensity, SoundProfile } from '@/lib/celebrations';
+import { earnTokens } from '@/lib/economy';
 
 const STORAGE_ACTIVE = 'lok-lingu-active-celebration';
 const STORAGE_BOOST_UNLOCKED = 'lok-lingu-boost-unlocked';
@@ -49,10 +50,9 @@ export function useCelebration() {
     return parseInt(localStorage.getItem('lok-lingu-lifetime-tokens') || '0');
   }, []);
 
-  const addLifetimeTokens = useCallback((amount: number) => {
-    const current = parseInt(localStorage.getItem('lok-lingu-lifetime-tokens') || '0');
-    localStorage.setItem('lok-lingu-lifetime-tokens', String(current + amount));
-  }, []);
+  // Routed through the economy module so the wallet HUD and the shop see
+  // the change immediately — a direct localStorage write is invisible to React.
+  const addLifetimeTokens = useCallback((amount: number) => earnTokens(amount), []);
 
   const stopBoost = useCallback(() => {
     if (boostTimerRef.current) {
@@ -94,6 +94,10 @@ export function useCelebration() {
 
     const rate = boostActiveRef.current ? 4 : 2;
     tokensEarnedRef.current += rate;
+    // The HUD shows "+2" (or "+4" under boost) on every hit, but until now
+    // only the 25-match bonus was ever banked, so the promised tokens never
+    // reached the wallet and nothing in the shop was affordable.
+    addLifetimeTokens(rate);
 
     let tokenBonus = 0;
     let boostActivated = false;

@@ -21,18 +21,83 @@ import {
   Globe,
   Backpack,
   Bug,
+  Map as MapIcon,
+  User as UserIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { GlitchText } from '@/components/glitch-text';
 import { FontPicker } from '@/components/font-picker';
 
 import { normalizeLanguagesData } from '@/lib/offline-data';
+import { getCoverage, coverageOpacity, coverageSymbol } from '@/lib/word-coverage';
 import { detectCapabilities } from '@/lib/speech/capabilities';
 import { isDevMode, setDevMode } from '@/lib/dev-mode';
 import { useSettings, type ResponseSpeed } from '@/hooks/use-settings';
+
+/**
+ * A category button that tells the truth about how complete its word list
+ * is: thin lists recede in opacity and carry a small mark, and tapping one
+ * pulses and surfaces a one-line note rather than silently dropping the
+ * player into an eight-word category.
+ */
+function CategoryChip({
+  category,
+  language,
+  selected,
+  onSelect,
+  onNote,
+}: {
+  category: string;
+  language: string;
+  selected: boolean;
+  onSelect: () => void;
+  onNote: (note: string | null) => void;
+}) {
+  const info = useMemo(() => getCoverage(language, category), [language, category]);
+  const reduce = useReducedMotion();
+  const [pulse, setPulse] = useState(0);
+  const symbol = coverageSymbol(info.coverage);
+
+  const handleClick = () => {
+    onSelect();
+    if (info.coverage === 'full') {
+      onNote(null);
+      return;
+    }
+    setPulse((n) => n + 1);
+    onNote(`${info.label} — ${info.note}`);
+  };
+
+  return (
+    <motion.button
+      type="button"
+      onClick={handleClick}
+      aria-label={`${category}${symbol ? ` — ${info.label}` : ''}`}
+      title={info.note}
+      animate={reduce || !pulse ? {} : { scale: [1, 0.94, 1.03, 1] }}
+      transition={{ duration: 0.32, ease: 'easeOut' }}
+      style={{ opacity: selected ? 1 : coverageOpacity(info.coverage) }}
+      className={`relative px-2 py-2 rounded-lg border text-xs font-bold capitalize transition-all ${
+        selected
+          ? 'border-primary bg-primary/15 text-primary'
+          : 'border-border hover:border-primary/30 text-muted-foreground hover:text-foreground'
+      }`}
+    >
+      {category}
+      {symbol && (
+        <span
+          aria-hidden="true"
+          className="absolute right-1 top-0.5 text-[9px] leading-none text-amber-400"
+        >
+          {symbol}
+        </span>
+      )}
+    </motion.button>
+  );
+}
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -56,6 +121,8 @@ export default function Home() {
   );
   const [showOptions, setShowOptions] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [coverageNote, setCoverageNote] = useState<string | null>(null);
   const [showTranslation, setShowTranslation] = useState(
     () => localStorage.getItem('lok-lingu-show-translation') !== 'false',
   );
@@ -100,11 +167,29 @@ export default function Home() {
   ];
   const isNeon = !LIGHT_THEMES.includes(theme);
 
+  /**
+   * A match needs a name — scores are meaningless on the leaderboard
+   * without one. The old behaviour just slid the settings drawer open with
+   * no explanation, which read as a bug. Now the requirement is stated up
+   * front (the button itself says what it wants), the drawer opens *and*
+   * focuses the field, and the input is marked invalid until it is filled.
+   */
+  const needsName = !localUsername.trim();
+
+  const promptForName = () => {
+    setNameError('Pick a name or alias first — it is what shows on the leaderboard.');
+    setShowProfile(true);
+    // Wait for the drawer's entrance transition before stealing focus,
+    // otherwise the caret lands on an element that is still off-screen.
+    window.setTimeout(() => usernameInputRef.current?.focus(), 320);
+  };
+
   const handleStart = () => {
-    if (!localUsername.trim()) {
-      setShowProfile(true);
+    if (needsName) {
+      promptForName();
       return;
     }
+    setNameError(null);
     localStorage.setItem('lok-lingu-lang', language);
     localStorage.setItem('lok-lingu-cat', category);
     localStorage.setItem('lok-lingu-mode', mode);
@@ -186,18 +271,30 @@ export default function Home() {
               <div className="space-y-5 flex-1 overflow-y-auto">
                 {/* Username */}
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    Username
+                  <label
+                    htmlFor="player-alias"
+                    className={`text-[10px] font-bold uppercase tracking-widest ${
+                      nameError && needsName ? 'text-destructive' : 'text-muted-foreground'
+                    }`}
+                  >
+                    Username{needsName && ' — required'}
                   </label>
                   <div className="flex space-x-2">
                     <Input
+                      id="player-alias"
                       ref={usernameInputRef}
                       value={localUsername}
-                      onChange={(e) => setLocalUsername(e.target.value)}
+                      onChange={(e) => {
+                        setLocalUsername(e.target.value);
+                        if (e.target.value.trim()) setNameError(null);
+                      }}
                       onKeyDown={(e) => e.key === 'Enter' && handleSaveProfile()}
                       placeholder="Enter your alias…"
                       maxLength={32}
-                      className="font-mono flex-1"
+                      aria-invalid={Boolean(nameError && needsName)}
+                      className={`font-mono flex-1 ${
+                        nameError && needsName ? 'border-destructive focus-visible:ring-destructive' : ''
+                      }`}
                     />
                     <Button
                       size="sm"
@@ -208,6 +305,9 @@ export default function Home() {
                       <Check className="w-4 h-4" />
                     </Button>
                   </div>
+                  {nameError && needsName && (
+                    <p className="text-[10px] leading-snug text-destructive">{nameError}</p>
+                  )}
                 </div>
 
                   {/* Inventory */}
@@ -257,6 +357,21 @@ export default function Home() {
                       <span className="text-sm font-medium">Celebrations</span>
                     </div>
                     <span className="text-xs text-muted-foreground font-mono">🎉</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowProfile(false);
+                      setLocation('/roadmap');
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg border border-border hover:border-primary/40 hover:bg-accent transition-all text-left"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <MapIcon className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">Roadmap</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground font-mono uppercase tracking-wider">
+                      milestones
+                    </span>
                   </button>
                 </div>
 
@@ -439,22 +554,41 @@ export default function Home() {
             {selectedLang?.name ?? language} · {category}
           </p>
 
-          {/* START button */}
-          <Button
-            onClick={handleStart}
-            disabled={createUser.isPending}
-            className={`w-full h-16 text-2xl font-black tracking-widest uppercase relative overflow-hidden transition-all
-              ${isNeon ? 'neon-text-glow border-primary/50 hover:border-primary hover:bg-primary/15' : ''}`}
-            size="lg"
-          >
-            {createUser.isPending ? (
-              <Loader2 className="w-6 h-6 animate-spin" />
-            ) : (
-              <>
-                <Play className="w-5 h-5 mr-3 fill-current" /> Start {mode}
-              </>
-            )}
-          </Button>
+          {/* START button — never silently disabled. When a name is missing
+              it still responds, and says what it needs. */}
+          <motion.div animate={nameError && needsName ? { x: [0, -8, 8, -5, 0] } : {}} transition={{ duration: 0.35 }}>
+            <Button
+              onClick={handleStart}
+              disabled={createUser.isPending}
+              aria-describedby={needsName ? 'name-required-hint' : undefined}
+              className={`w-full h-16 text-2xl font-black tracking-widest uppercase relative overflow-hidden transition-all
+                ${isNeon ? 'neon-text-glow border-primary/50 hover:border-primary hover:bg-primary/15' : ''}`}
+              size="lg"
+            >
+              {createUser.isPending ? (
+                <Loader2 className="w-6 h-6 animate-spin" />
+              ) : needsName ? (
+                <>
+                  <UserIcon className="w-5 h-5 mr-3" /> Name yourself
+                </>
+              ) : (
+                <>
+                  <Play className="w-5 h-5 mr-3 fill-current" /> Start {mode}
+                </>
+              )}
+            </Button>
+          </motion.div>
+
+          {needsName && (
+            <p
+              id="name-required-hint"
+              className={`text-center text-[10px] font-mono uppercase tracking-[0.15em] leading-snug ${
+                nameError ? 'text-destructive' : 'text-muted-foreground'
+              }`}
+            >
+              {nameError ?? 'A name or alias is required to play'}
+            </p>
+          )}
 
           {/* OPTIONS toggle */}
           <button
@@ -527,19 +661,32 @@ export default function Home() {
                     </label>
                     <div className="grid grid-cols-3 gap-1.5">
                       {categories.map((c) => (
-                        <button
+                        <CategoryChip
                           key={c}
-                          onClick={() => setCategory(c)}
-                          className={`px-2 py-2 rounded-lg border text-xs font-bold capitalize transition-all ${
-                            category === c
-                              ? 'border-primary bg-primary/15 text-primary'
-                              : 'border-border hover:border-primary/30 text-muted-foreground hover:text-foreground'
-                          }`}
-                        >
-                          {c}
-                        </button>
+                          category={c}
+                          language={language}
+                          selected={category === c}
+                          onSelect={() => setCategory(c)}
+                          onNote={setCoverageNote}
+                        />
                       ))}
                     </div>
+                    {/* Micro-note fired by tapping a thin category, so the
+                        mark is explained without a permanent block of text. */}
+                    <AnimatePresence mode="wait">
+                      {coverageNote && (
+                        <motion.p
+                          key={coverageNote}
+                          initial={{ opacity: 0, y: -4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -4 }}
+                          transition={{ duration: 0.2 }}
+                          className="text-[10px] leading-snug text-amber-400/90 font-mono"
+                        >
+                          {coverageNote}
+                        </motion.p>
+                      )}
+                    </AnimatePresence>
                   </div>
 
                   {/* Mode */}
