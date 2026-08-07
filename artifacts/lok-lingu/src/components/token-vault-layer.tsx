@@ -34,6 +34,15 @@ import type { TokenSkin } from '@/lib/token-skins';
 
 const MAX_PILE = 60;
 const REDUCED_PILE = 20;
+/**
+ * The Eternal Vault carries its hoard between matches. "Infinite" is the
+ * *count* — `hoardTotal` below has no ceiling and is what the player
+ * watches climb. The number of coins actually in the DOM stays capped at
+ * exactly the same budget as the base Vault, because that cap is what
+ * makes the effect free. A hoard of 40,000 renders 60 coins.
+ */
+const PERSIST_KEY = 'lok-lingu-vault-pile';
+const PERSIST_TOTAL_KEY = 'lok-lingu-vault-total';
 const COLUMNS = 14;
 /** Vertical pixels each additional coin in a column adds to the heap. */
 const STACK_STEP = 13;
@@ -47,6 +56,52 @@ interface Coin {
   depth: number;
   rotate: number;
   drift: number;
+}
+
+function loadPile(): Coin[] {
+  try {
+    const raw = JSON.parse(localStorage.getItem(PERSIST_KEY) || '[]');
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .filter(
+        (c): c is Coin =>
+          c && typeof c.key === 'number' && typeof c.column === 'number' &&
+          typeof c.depth === 'number' && typeof c.rotate === 'number' &&
+          typeof c.drift === 'number',
+      )
+      // Storage is untrusted — a hand-edited or stale key must not be able
+      // to blow the render budget.
+      .slice(-MAX_PILE);
+  } catch {
+    return [];
+  }
+}
+
+function loadTotal(): number {
+  try {
+    return Math.max(0, parseInt(localStorage.getItem(PERSIST_TOTAL_KEY) || '0', 10) || 0);
+  } catch {
+    return 0;
+  }
+}
+
+function savePile(coins: Coin[], total: number): void {
+  try {
+    localStorage.setItem(PERSIST_KEY, JSON.stringify(coins));
+    localStorage.setItem(PERSIST_TOTAL_KEY, String(total));
+  } catch {
+    /* private mode — the hoard simply does not survive a reload */
+  }
+}
+
+/** Wipes a persistent hoard. Exposed for a future "melt down" action. */
+export function clearVaultHoard(): void {
+  try {
+    localStorage.removeItem(PERSIST_KEY);
+    localStorage.removeItem(PERSIST_TOTAL_KEY);
+  } catch {
+    /* ignore */
+  }
 }
 
 interface Props {
@@ -67,13 +122,34 @@ export function TokenVaultLayer({ animKey, skinOverride, contained = false }: Pr
   const budget = usePerfBudget(active);
   const cap = budget === 'reduced' ? REDUCED_PILE : MAX_PILE;
 
-  const [coins, setCoins] = useState<Coin[]>([]);
+  // The persistent variant restores its pile on mount; the base Vault
+  // always starts empty, which is the difference the player bought
+  // versus the one they earned.
+  const persistent = Boolean(skin.persistent) && !contained;
+
+  const [coins, setCoins] = useState<Coin[]>(() =>
+    persistent ? loadPile() : [],
+  );
+  const [hoardTotal, setHoardTotal] = useState<number>(() =>
+    persistent ? loadTotal() : 0,
+  );
   const lastKeyRef = useRef(0);
+  // Coins restored from storage must not replay their fall — they were
+  // earned in an earlier match and are already at rest.
+  const restoredRef = useRef(new Set(coins.map((c) => c.key)));
+  // animKey restarts at 1 every match, so it cannot be the coin key for a
+  // pile that outlives the match. Keys continue from the restored high
+  // water mark instead.
+  const nextKeyRef = useRef(
+    coins.reduce((max, c) => Math.max(max, c.key), 0) + 1,
+  );
 
   // Add one coin per earn event.
   useEffect(() => {
     if (!active || animKey === 0 || animKey === lastKeyRef.current) return;
     lastKeyRef.current = animKey;
+
+    if (persistent) setHoardTotal((t) => t + 1);
 
     setCoins((prev) => {
       const column = Math.floor(Math.random() * COLUMNS);
@@ -82,7 +158,7 @@ export function TokenVaultLayer({ animKey, skinOverride, contained = false }: Pr
         MAX_STACK_HEIGHT,
       );
       const next: Coin = {
-        key: animKey,
+        key: nextKeyRef.current++,
         column,
         depth,
         rotate: Math.round((Math.random() - 0.5) * 60),
@@ -101,10 +177,18 @@ export function TokenVaultLayer({ animKey, skinOverride, contained = false }: Pr
   }, [cap]);
 
   // Drop the pile when the skin changes so an unequipped vault does not
-  // leave coins stranded on screen.
+  // leave coins stranded on screen. A persistent hoard is only cleared
+  // from the display — the stored copy survives so re-equipping restores it.
   useEffect(() => {
     if (!active) setCoins([]);
   }, [active]);
+
+  // Persist on change. Writing the whole (already capped) array is cheap
+  // and keeps storage and display trivially consistent.
+  useEffect(() => {
+    if (!persistent || !active) return;
+    savePile(coins, hoardTotal);
+  }, [persistent, active, coins, hoardTotal]);
 
   if (!active || coins.length === 0) return null;
 
@@ -114,9 +198,24 @@ export function TokenVaultLayer({ animKey, skinOverride, contained = false }: Pr
       style={{ pointerEvents: 'none' }}
       aria-hidden
     >
+      {/* Hoard counter — the "infinite" half of the effect. The pile in the
+          DOM is capped; this number is not. */}
+      {persistent && hoardTotal > 0 && (
+        <span
+          className="absolute bottom-1 left-1/2 -translate-x-1/2 font-mono text-[10px] font-black uppercase tracking-[0.2em] opacity-60"
+          style={{ color: 'var(--word-color)' }}
+        >
+          hoard {hoardTotal.toLocaleString()}
+        </span>
+      )}
+
       {coins.map((c) => {
         const leftPct = ((c.column + 0.5) / COLUMNS) * 100;
         const restBottom = 8 + c.depth * STACK_STEP;
+        // A coin restored from a previous match is already at rest — it
+        // must not replay its fall, or every reload would rain the whole
+        // hoard down the screen at once.
+        const settled = restoredRef.current.has(c.key);
         return (
           <motion.div
             key={c.key}
@@ -126,19 +225,31 @@ export function TokenVaultLayer({ animKey, skinOverride, contained = false }: Pr
               bottom: restBottom,
               textShadow: skin.outline,
             }}
-            initial={{ y: -window.innerHeight * 0.75, x: 0, rotate: 0, opacity: 0 }}
-            animate={{
-              // Overshoot then settle — reads as a bounce without simulating one.
-              y: [-window.innerHeight * 0.75, 0, -10, 0],
-              x: c.drift,
-              rotate: c.rotate,
-              opacity: 1,
-            }}
-            transition={{
-              duration: skin.duration,
-              times: [0, 0.72, 0.86, 1],
-              ease: ['easeIn', 'easeOut', 'easeIn'],
-            }}
+            initial={
+              settled
+                ? { y: 0, x: c.drift, rotate: c.rotate, opacity: 1 }
+                : { y: -window.innerHeight * 0.75, x: 0, rotate: 0, opacity: 0 }
+            }
+            animate={
+              settled
+                ? { y: 0, x: c.drift, rotate: c.rotate, opacity: 1 }
+                : {
+                    // Overshoot then settle — reads as a bounce without simulating one.
+                    y: [-window.innerHeight * 0.75, 0, -10, 0],
+                    x: c.drift,
+                    rotate: c.rotate,
+                    opacity: 1,
+                  }
+            }
+            transition={
+              settled
+                ? { duration: 0 }
+                : {
+                    duration: skin.duration,
+                    times: [0, 0.72, 0.86, 1],
+                    ease: ['easeIn', 'easeOut', 'easeIn'],
+                  }
+            }
           >
             {skin.glyph}
           </motion.div>

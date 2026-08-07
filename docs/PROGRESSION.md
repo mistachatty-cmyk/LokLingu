@@ -209,6 +209,109 @@ must outlive any single coin pop. `TokenEarnedLabel` returns `null` for
 the `pile` motion so the two never both render. The shop passes
 `contained` to keep previews inside their tile.
 
+## Levels
+
+`src/lib/levels.ts`. **Derived, never stored.** Level is a pure function
+of lifetime words — the counter the game already writes on every correct
+answer — so it cannot desync from actual play, cannot be lost by clearing
+a stray key, and cannot be awarded twice.
+
+Curve: words to reach level L = `round(1.2 * L^1.85)`, capped at
+`MAX_LEVEL = 100`.
+
+| Level | Words | Level | Words |
+| --- | --- | --- | --- |
+| 10 | 82 | 60 | 2,485 |
+| 20 | 295 | 84 | 4,355 |
+| 40 | 1,161 | 100 | 6,001 |
+
+Superlinear but not brutal: early levels arrive fast enough to teach the
+system, and 100 is a real commitment without being unreachable.
+
+### Level perks — earned only, never purchasable
+
+Nothing on this track has a token price. That separation is what stops
+levelling from reading as a second shop.
+
+| Level | Perk |
+| --- | --- |
+| 5 | Spark emblem |
+| 12 | Ember emblem |
+| **20** | **Second free skip every match** |
+| 25 | Prism emblem |
+| 40 | Comet emblem |
+| **50** | **Third free skip every match** |
+| 60 | Halo emblem |
+| **84** | **The Eternal Vault** |
+| 100 | Crown emblem |
+
+`freeSkipsForLevel()` is the single place the free-skip count is decided;
+`game.tsx` asks rather than hard-coding a constant.
+
+## Emblems
+
+`src/lib/emblems.ts`, animations in `index.css`.
+
+Small animated icons earned by levelling, shown beside your name and in
+the game HUD. Deliberately a *different economy* from token skins: a
+token skin is a purchase that changes an effect you see dozens of times a
+match; an emblem is earned only, cannot be bought at any price, and is a
+quiet status mark.
+
+Each emblem names a CSS animation that is transform/opacity/filter on a
+single ~16px element, so it is effectively free to display and can run
+continuously during a match without competing for frames. Every emblem
+animation is disabled under `prefers-reduced-motion`.
+
+`getSelectedEmblem()` never returns an emblem above the player's level,
+so a stale stored id cannot display something unearned. The HUD falls
+back to the highest earned emblem when none is explicitly chosen.
+
+## The Vault, base and Eternal
+
+These are **two separate things** and both exist.
+
+| | The Vault | The Eternal Vault |
+| --- | --- | --- |
+| Obtained | Bought, 400 tokens | Earned at level 84 |
+| Purchasable | yes | **never, at any price** |
+| Pile clears | every match | never |
+| Hoard counter | no | yes |
+
+`ownsSkin()` short-circuits on `unlockLevel`: for a level-gated skin the
+purchase list is ignored entirely, because reaching the level *is*
+ownership. Lifetime words only increase, so it can never be lost. The
+shop card previews and explains rather than charging.
+
+### What "infinite" means here
+
+The **count** is unbounded — `lok-lingu-vault-total` has no ceiling and
+is what the player watches climb. The number of coins actually in the DOM
+stays capped at exactly the same budget as the base Vault, because that
+cap is what makes the effect free. **A hoard of 40,000 renders 60 coins.**
+
+Persistence details:
+
+- `lok-lingu-vault-pile` stores the (already capped) coin array;
+  `lok-lingu-vault-total` stores the unbounded count.
+- `loadPile()` treats storage as untrusted and re-slices to `MAX_PILE`, so
+  a hand-edited key cannot blow the render budget.
+- Restored coins render **settled** — `initial` and `animate` are identical
+  with zero duration — otherwise every reload would rain the whole hoard
+  down the screen at once.
+- `animKey` restarts at 1 each match, so it cannot be the coin key for a
+  pile that outlives the match. Keys continue from the restored high-water
+  mark via `nextKeyRef`.
+- Unequipping clears the *display* only; the stored hoard survives, so
+  re-equipping restores it. `clearVaultHoard()` exists for a future
+  "melt down" action.
+
+**Measured** in headless Chromium: 300 words → Lv 19 with the Vault
+locked and the shop refusing the sale (0 tokens spent); 4,400 words →
+exactly Lv 84, equip succeeds for free; a 12-coin hoard survived entering
+a new match while the base Vault started empty on the same page; 500
+stored coins rendered 60. Zero page errors.
+
 ## Word coverage
 
 `src/lib/word-coverage.ts`. Completeness is **derived by counting

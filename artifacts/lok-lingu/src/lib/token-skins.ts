@@ -21,6 +21,8 @@
         expensive skins automatically on a struggling device.
 ------------------------------------------------------------------ */
 
+import { currentLevel } from './levels';
+
 export type TokenMotion =
   | 'rise'      // classic float upward
   | 'burst'     // radial particle spray, then rise
@@ -35,6 +37,13 @@ export interface TokenSkin {
   cost: number;
   /** Marks the single ultimate skin for shop presentation. */
   ultimate?: boolean;
+  /**
+   * Level required instead of tokens. A skin with this set can never be
+   * bought at any price — it is earned on the level track or not at all.
+   */
+  unlockLevel?: number;
+  /** The pile survives between matches instead of clearing on mount. */
+  persistent?: boolean;
 
   /* --- appearance half (future "look" picker) --- */
   glyph: string;
@@ -130,6 +139,23 @@ export const TOKEN_SKINS: TokenSkin[] = [
     motion: 'pile',
     duration: 1.2,
   },
+  {
+    // The base Vault above stays exactly as it is — this is a separate
+    // thing, earned rather than bought, and the two coexist.
+    id: 'vault-eternal',
+    name: 'The Eternal Vault',
+    blurb:
+      'Your hoard never clears. Coins carry over from match to match and keep stacking for as long as you keep counting. Earned at level 84 — it cannot be bought.',
+    cost: 0,
+    ultimate: true,
+    unlockLevel: 84,
+    persistent: true,
+    glyph: '🪙',
+    scale: 1.15,
+    outline: '0 0 8px var(--word-color)',
+    motion: 'pile',
+    duration: 1.2,
+  },
 ];
 
 export const DEFAULT_TOKEN_SKIN = 'classic';
@@ -149,14 +175,21 @@ export function getOwnedSkins(): string[] {
     const raw = JSON.parse(localStorage.getItem(OWNED_KEY) || '[]');
     const list = Array.isArray(raw) ? raw.filter((x): x is string => typeof x === 'string') : [];
     // Free skins are always owned, even if storage was cleared.
-    const free = TOKEN_SKINS.filter((s) => s.cost === 0).map((s) => s.id);
+    const free = TOKEN_SKINS.filter((s) => s.cost === 0 && s.unlockLevel == null).map((s) => s.id);
     return [...new Set([...free, ...list])];
   } catch {
-    return TOKEN_SKINS.filter((s) => s.cost === 0).map((s) => s.id);
+    return TOKEN_SKINS.filter((s) => s.cost === 0 && s.unlockLevel == null).map((s) => s.id);
   }
 }
 
-export function ownsSkin(id: string): boolean {
+/**
+ * Level-gated skins ignore the purchase list entirely — reaching the
+ * level *is* ownership, and dropping below it is impossible because
+ * lifetime words only ever increase.
+ */
+export function ownsSkin(id: string, level = currentLevel()): boolean {
+  const skin = TOKEN_SKINS.find((s) => s.id === id);
+  if (skin?.unlockLevel != null) return level >= skin.unlockLevel;
   return getOwnedSkins().includes(id);
 }
 

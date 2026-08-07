@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/use-theme';
 import { useEconomy } from '@/hooks/use-economy';
 import { getLifetimeWords } from '@/lib/offline-data';
+import { levelState, wordsForLevel, MAX_LEVEL } from '@/lib/levels';
+import { EMBLEMS, earnedEmblems } from '@/lib/emblems';
 import { evaluate, MATCH_MILESTONES, TOTAL_MILESTONES, type Milestone, type RewardKind } from '@/lib/roadmap';
 
 const REWARD_ICON: Record<RewardKind, typeof Coins> = {
@@ -119,6 +121,119 @@ function TrackHeader({
   );
 }
 
+/**
+ * Level perks — the third track. Unlike the other two, these are all
+ * *earned only*: nothing here has a token price, which is what keeps
+ * levelling from reading as a second shop.
+ */
+const LEVEL_PERKS: { level: number; title: string; detail: string }[] = [
+  { level: 5,  title: 'Spark emblem',      detail: 'Your first animated emblem, shown beside your name.' },
+  { level: 12, title: 'Ember emblem',      detail: 'Flickers like something still burning.' },
+  { level: 20, title: 'Second free skip',  detail: 'Every match now starts with two free skips instead of one.' },
+  { level: 25, title: 'Prism emblem',      detail: 'Cycles the spectrum, slowly.' },
+  { level: 40, title: 'Comet emblem',      detail: 'Drifts on a long elliptical path.' },
+  { level: 50, title: 'Third free skip',   detail: 'Three free skips at the start of every match.' },
+  { level: 60, title: 'Halo emblem',       detail: 'Turns steadily. Never stops.' },
+  { level: 84, title: 'The Eternal Vault', detail: 'Your coin hoard stops clearing. It carries between matches and stacks for as long as you keep counting. Cannot be bought at any price.' },
+  { level: 100, title: 'Crown emblem',     detail: 'Level one hundred. The last mark on the board.' },
+];
+
+function LevelTrack({ totalWords }: { totalWords: number }) {
+  const state = levelState(totalWords);
+  const earned = earnedEmblems(state.level);
+
+  return (
+    <section className="space-y-3">
+      <div>
+        <h2 className="text-sm font-black uppercase tracking-widest">Levels — earned only</h2>
+        <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
+          Your level is a pure function of lifetime words, so it can never desync from what you
+          actually played. Nothing on this track has a price.
+        </p>
+      </div>
+
+      <div className="space-y-2 rounded-xl border border-border bg-card p-4">
+        <div className="flex items-baseline justify-between">
+          <span className="text-3xl font-black tabular-nums">
+            Lv {state.level}
+            <span className="ml-1 text-xs font-mono text-muted-foreground">/ {MAX_LEVEL}</span>
+          </span>
+          {earned.length > 0 && (
+            <span className="flex items-center gap-1.5 text-xl leading-none">
+              {earned.slice(-4).map((e) => (
+                <span key={e.id} className={e.animation ?? ''} title={`${e.name} — Lv ${e.level}`}>
+                  {e.glyph}
+                </span>
+              ))}
+            </span>
+          )}
+        </div>
+        <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full rounded-full bg-primary transition-[width] duration-500"
+            style={{ width: `${Math.round(state.progress * 100)}%` }}
+          />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {state.nextAt != null ? (
+            <>
+              {state.into.toLocaleString()} / {state.span.toLocaleString()} words to Lv{' '}
+              <span className="font-bold text-foreground">{state.level + 1}</span>
+            </>
+          ) : (
+            'Maximum level reached.'
+          )}
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        {LEVEL_PERKS.map((p) => {
+          const unlocked = state.level >= p.level;
+          const emblem = EMBLEMS.find((e) => e.level === p.level);
+          return (
+            <div
+              key={p.level}
+              className={`flex gap-4 rounded-xl border p-4 transition-colors ${
+                unlocked ? 'border-primary/40 bg-primary/5' : 'border-border bg-card'
+              }`}
+            >
+              <div
+                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-lg ${
+                  unlocked
+                    ? 'border-primary bg-primary/15 text-primary'
+                    : 'border-border text-muted-foreground'
+                }`}
+              >
+                {unlocked && emblem ? (
+                  <span className={emblem.animation ?? ''}>{emblem.glyph}</span>
+                ) : unlocked ? (
+                  <Check className="h-5 w-5" />
+                ) : (
+                  <Lock className="h-4 w-4" />
+                )}
+              </div>
+              <div className="min-w-0 flex-1 space-y-1">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="truncate font-black uppercase tracking-wide">{p.title}</span>
+                  <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
+                    Lv {p.level}
+                  </span>
+                </div>
+                <p className="text-xs leading-snug text-muted-foreground">{p.detail}</p>
+                {!unlocked && (
+                  <p className="font-mono text-[10px] tabular-nums text-muted-foreground">
+                    {Math.max(0, wordsForLevel(p.level) - totalWords).toLocaleString()} words to go
+                  </p>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 export default function Roadmap() {
   const [, setLocation] = useLocation();
   useTheme();
@@ -176,6 +291,8 @@ export default function Roadmap() {
           ))}
         </div>
       </section>
+
+      <LevelTrack totalWords={totalWords} />
 
       <section className="space-y-3">
         <TrackHeader

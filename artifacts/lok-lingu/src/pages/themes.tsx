@@ -4,7 +4,8 @@ import { Check, Flame, Lock, Star, Zap, Sparkles, Globe, Coins, Heart, SkipForwa
 import { useEconomy } from '@/hooks/use-economy';
 import { purchaseStack, spendTokens, STACK_SKUS, type StackKind, type StackSku } from '@/lib/economy';
 import { useTokenSkin } from '@/hooks/use-token-skin';
-import { getOwnedSkins, grantSkin, setSelectedSkin, TOKEN_SKINS, type TokenSkin } from '@/lib/token-skins';
+import { getOwnedSkins, grantSkin, ownsSkin, setSelectedSkin, TOKEN_SKINS, type TokenSkin } from '@/lib/token-skins';
+import { currentLevel } from '@/lib/levels';
 import { TokenEarnedLabel } from '@/components/token-earned-label';
 import { TokenVaultLayer } from '@/components/token-vault-layer';
 import { Button } from '@/components/ui/button';
@@ -490,6 +491,7 @@ function StackShop() {
 function TokenSkinShop() {
   const { balance } = useEconomy();
   const { skin: equipped, refresh } = useTokenSkin();
+  const level = currentLevel();
   const [owned, setOwned] = useState<string[]>(getOwnedSkins);
   const [previews, setPreviews] = useState<Record<string, number>>({});
   const [note, setNote] = useState<{ id: string; text: string; ok: boolean } | null>(null);
@@ -498,7 +500,20 @@ function TokenSkinShop() {
 
   const handleCard = (skin: TokenSkin) => {
     bump(skin.id);
-    if (owned.includes(skin.id)) {
+
+    // Level-gated skins are never for sale. Reaching the level is the
+    // only route, so the card previews and explains rather than charging.
+    if (skin.unlockLevel != null && level < skin.unlockLevel) {
+      setNote({
+        id: skin.id,
+        text: `Earned at level ${skin.unlockLevel} — you are level ${level}.`,
+        ok: false,
+      });
+      window.setTimeout(() => setNote(null), 2200);
+      return;
+    }
+
+    if (ownsSkin(skin.id, level) || owned.includes(skin.id)) {
       setSelectedSkin(skin.id);
       refresh();
       return;
@@ -541,7 +556,8 @@ function TokenSkinShop() {
 
       <div className="grid grid-cols-2 gap-2">
         {TOKEN_SKINS.map((skin) => {
-          const isOwned = owned.includes(skin.id);
+          const isOwned = ownsSkin(skin.id, level) || owned.includes(skin.id);
+          const levelLocked = skin.unlockLevel != null && level < skin.unlockLevel;
           const isEquipped = equipped.id === skin.id;
           return (
             <button
@@ -586,6 +602,10 @@ function TokenSkinShop() {
                 ) : isOwned ? (
                   <span className="shrink-0 text-[9px] uppercase tracking-widest text-muted-foreground">
                     owned
+                  </span>
+                ) : levelLocked ? (
+                  <span className="shrink-0 font-mono text-[10px] text-amber-400">
+                    Lv {skin.unlockLevel}
                   </span>
                 ) : (
                   <span className="shrink-0 font-mono text-[10px] text-primary">{skin.cost}</span>

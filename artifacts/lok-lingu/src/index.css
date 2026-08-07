@@ -4079,3 +4079,59 @@
 
 @import './styles/mythic-themes.css';
 
+
+/* ------------------------------------------------------------------
+   Emblem animations — small earned status icons (src/lib/emblems.ts).
+
+   All transform/opacity/filter on a single ~16px element, so they are
+   safe to run continuously in the game HUD. Every one is disabled under
+   prefers-reduced-motion at the bottom of this block.
+------------------------------------------------------------------ */
+@keyframes emblem-pulse {
+  0%, 100% { transform: scale(1);    opacity: 0.85; }
+  50%      { transform: scale(1.18); opacity: 1; }
+}
+@keyframes emblem-flicker {
+  0%, 100% { opacity: 1;    transform: scale(1); }
+  20%      { opacity: 0.65; transform: scale(0.96); }
+  35%      { opacity: 1;    transform: scale(1.06); }
+  60%      { opacity: 0.8;  transform: scale(0.99); }
+}
+@keyframes emblem-prism {
+  0%   { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+@keyframes emblem-orbit {
+  0%   { transform: translate(0, 0) rotate(0deg); }
+  25%  { transform: translate(3px, -2px) rotate(8deg); }
+  50%  { transform: translate(0, -3px) rotate(0deg); }
+  75%  { transform: translate(-3px, -2px) rotate(-8deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+@keyframes emblem-spin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+@keyframes emblem-breathe {
+  0%, 100% { transform: scale(1);    opacity: 0.9; }
+  50%      { transform: scale(1.12); opacity: 1; }
+}
+@keyframes emblem-shimmer {
+  0%, 92%, 100% { filter: brightness(1); transform: scale(1); }
+  96%           { filter: brightness(1.8); transform: scale(1.15); }
+}
+
+.emblem-pulse   { animation: emblem-pulse   2.2s ease-in-out infinite; }
+.emblem-flicker { animation: emblem-flicker 3.1s ease-in-out infinite; }
+.emblem-prism   { animation: emblem-prism   6s   linear      infinite; }
+.emblem-orbit   { animation: emblem-orbit   4.5s ease-in-out infinite; }
+.emblem-spin    { animation: emblem-spin    7s   linear      infinite; }
+.emblem-breathe { animation: emblem-breathe 3.4s ease-in-out infinite; }
+.emblem-shimmer { animation: emblem-shimmer 5s   ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .emblem-pulse, .emblem-flicker, .emblem-prism,
+  .emblem-orbit, .emblem-spin, .emblem-breathe, .emblem-shimmer {
+    animation: none !important;
+  }
+}
