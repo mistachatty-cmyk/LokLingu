@@ -12,6 +12,7 @@ import { useDevMode } from '@/hooks/use-dev-mode';
 import { useEconomy } from '@/hooks/use-economy';
 import { consumeSkip, FREE_SKIPS_PER_MATCH } from '@/lib/economy';
 import { currentLevel, freeSkipsForLevel } from '@/lib/levels';
+import { gameWordFontSize } from '@/lib/word-sizing';
 import { getSelectedEmblem, earnedEmblems } from '@/lib/emblems';
 import { speakWord, matchWord, primeVoices, toLocale } from '@/lib/speech-utils';
 import { useTheme } from '@/hooks/use-theme';
@@ -93,6 +94,8 @@ export default function Game() {
   const [streak, setStreak] = useState(0);
   const [feedback, setFeedback] = useState<'idle' | 'hit' | 'miss'>('idle');
   const [isActive, setIsActive] = useState(false);
+  const isActiveRef = useRef(isActive);
+  isActiveRef.current = isActive;
   const [micError, setMicError] = useState<string | null>(null);
   const devMode = useDevMode();
   // Level is derived from lifetime words, which only change on a correct
@@ -150,6 +153,11 @@ export default function Game() {
     return words[wordIndex % Math.max(words.length, 1)];
   }, [infinite, wordIndex, language, words]);
 
+  const wordFontSize = useMemo(
+    () => gameWordFontSize(currentWord?.word ?? ''),
+    [currentWord],
+  );
+
   const currentWordRef = useRef(currentWord);
   currentWordRef.current = currentWord;
   const languageRef = useRef(language);
@@ -190,8 +198,13 @@ export default function Game() {
   // Commit an in-progress run if the player navigates away mid-session.
   useEffect(() => () => commitRun(), [commitRun]);
 
+  // True while "pronounce slowly" is playing back. Belt-and-braces on top
+  // of actually stopping the mic below — a transcript event already in
+  // flight when playback starts must still be dropped, not scored.
+  const speechMutedRef = useRef(false);
+
   const handleResult = useCallback((spoken: string, isFinal: boolean) => {
-    if (lockedRef.current) return;
+    if (lockedRef.current || speechMutedRef.current) return;
     const target = currentWordRef.current?.word;
     if (!target || !spoken) return;
 
@@ -297,7 +310,31 @@ export default function Game() {
     startListening();
   };
 
-  const handleSlowSpeak = () => speakWord(currentWord?.word ?? '', language, { slow: true });
+  /**
+   * "Pronounce slowly" used to fire the TTS and leave the mic hot. On any
+   * device without headphones or real echo cancellation, the speaker
+   * saying the exact target word bled straight back into the mic, the
+   * recognizer heard it, and it registered as if the player had spoken —
+   * which is exactly the "clicking the audio skips the next word" report.
+   * The fix is to actually stop listening for the duration of playback
+   * and only resume once speakWord's promise resolves — not on a timer,
+   * because that promise already accounts for real playback length.
+   */
+  const handleSlowSpeak = () => {
+    const word = currentWord?.word ?? '';
+    if (!word) return;
+    const wasActive = isActiveRef.current;
+    if (wasActive) {
+      speechMutedRef.current = true;
+      stopListening();
+    }
+    speakWord(word, language, { slow: true }).finally(() => {
+      speechMutedRef.current = false;
+      // Only resume if the player hasn't turned the mic off themselves
+      // while playback was running.
+      if (wasActive && isActiveRef.current) startListening();
+    });
+  };
 
   /* -------------------------- skips --------------------------
      A stuck word — a mispronunciation the engine will never accept, or
@@ -410,14 +447,24 @@ export default function Game() {
             className="flex flex-col items-center"
           >
             <motion.h1
-              className={`game-word text-7xl md:text-9xl font-black tracking-tighter capitalize leading-none transition-colors duration-200 ${
+              className={`game-word font-black tracking-tighter capitalize leading-none transition-colors duration-200 ${
                 feedback === 'hit'
                   ? 'text-primary'
                   : feedback === 'miss'
                     ? 'text-destructive'
                     : 'word-glow'
               }`}
-              style={{ color: feedback === 'idle' ? 'var(--word-color)' : undefined }}
+              style={{
+                color: feedback === 'idle' ? 'var(--word-color)' : undefined,
+                // A fixed text-7xl/9xl had no way to fit both "sí" and a
+                // multi-word phrase like "buenas noches" in the same box
+                // across 30+ themes at very different letter widths.
+                // These two vars scale the ceiling down for longer content;
+                // see .game-word's breakpoint rule in index.css and
+                // src/lib/word-sizing.ts for the reasoning.
+                ['--word-size-mobile' as string]: wordFontSize.mobile,
+                ['--word-size-desktop' as string]: wordFontSize.desktop,
+              }}
               animate={
                 prefersReducedMotion
                   ? {}

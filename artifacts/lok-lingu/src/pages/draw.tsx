@@ -198,6 +198,14 @@ export default function Draw() {
     handleFailure, handleSuccess, language, toast,
   ]);
 
+  // True while speakWord() is playing back. Without this, tapping "Listen"
+  // (or the word appearing while speech confirm is still armed) let the
+  // TTS saying the exact target word bleed into a hot mic on any device
+  // without headphones or real echo cancellation — the recognizer heard
+  // its own playback and registered it as the player's answer, which is
+  // "I click the audio and it lets the word pass" from the outside.
+  const speechMutedRef = useRef(false);
+
   // ── voice engine (used only when voiceConfirmEnabled) ─────────────────────
   // Hooks must always be called — we just conditionally start/stop listening.
   const { isListening, startListening, stopListening } = useSpeechEngine({
@@ -206,6 +214,7 @@ export default function Draw() {
     onResult: useCallback(
       (spoken: string, isFinal: boolean) => {
         if (!isFinal) return;
+        if (speechMutedRef.current) return;
         if (!voiceConfirmRef.current) return; // voice mode off — ignore
         if (statusRef.current !== 'idle' || gameOverRef.current) return;
         const target = currentWordRef.current?.word;
@@ -254,11 +263,22 @@ export default function Draw() {
     };
   }, []);
 
+  // Plays a word and mutes voice-confirm matching for the real duration of
+  // playback — speakWord's promise already accounts for actual playback
+  // length, so this is not a guessed timer.
+  const speakMuted = useCallback((word: string) => {
+    speechMutedRef.current = true;
+    speakWord(word, language).finally(() => {
+      speechMutedRef.current = false;
+    });
+  }, [language]);
+
   // ── TTS on word change ─────────────────────────────────────────────────────
   useEffect(() => {
     if (!currentWord) return undefined;
-    const timer = setTimeout(() => speakWord(currentWord.word, language), 400);
+    const timer = setTimeout(() => speakMuted(currentWord.word), 400);
     return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wordIndex, currentWord, language]);
 
   // ── render ─────────────────────────────────────────────────────────────────
@@ -445,7 +465,7 @@ export default function Draw() {
                 <Button
                   variant="default"
                   size="sm"
-                  onClick={() => currentWord && speakWord(currentWord.word, language)}
+                  onClick={() => currentWord && speakMuted(currentWord.word)}
                   className="gap-2"
                 >
                   <Volume2 className="w-4 h-4" /> Listen

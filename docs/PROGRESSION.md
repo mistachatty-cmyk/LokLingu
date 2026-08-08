@@ -128,6 +128,8 @@ on the game screen, which is the natural replacement for the floating "L".
 | 2,500 | Tiger | Flag Tier singles |
 | 5,000 | Whale | the full Flag Pack |
 | 10,000 | Dragon | Mythic tier |
+| 20,000 | Phoenix | Legacy Archive cycle (see "New concepts" below) |
+| 50,000 | Leviathan | Permanent nameplate flourish — the last tier |
 
 Everything on this track is marked **planned** in the UI: the tiers are
 designed and displayed, but nothing grants them automatically yet. The
@@ -137,6 +139,41 @@ page says so rather than pretending otherwise.
 progress as 0, because best-streak is not persisted anywhere. Adding
 `lok-lingu-best-streak` on `commitRun()` is the smallest fix and would
 make that track live.
+
+### The graphic page
+
+`/roadmap` opens on a **Gallery** view by default — a trophy-case grid of
+every companion and emblem, art-first, with a **Detail** tab next to it
+for the full text breakdown (the original list view). Kept as a tab on
+the existing page rather than a new nav entry, so the bottom nav does not
+grow for it.
+
+There is no illustration pipeline in this project, so `COMPANION_GLYPH` in
+`roadmap.tsx` represents each companion with one large emoji — the same
+placeholder-art approach already used for emblems and flag themes
+elsewhere in the app. Swap that map for real artwork paths whenever an
+illustration pipeline exists; nothing else about the gallery needs to
+change, since `GalleryCard` only cares about the glyph string it is given.
+
+### New concepts
+
+`CONCEPT_MILESTONES` in `roadmap.ts`, shown in the gallery's "In Concept"
+section. Proposed, not yet wired to a reward — a concrete next-steps list
+rather than a blank page. All deliberately derived from counters that
+already exist, for the same reason the rest of this track is: a new
+tracker is a new economy to keep in sync, and the whole point here is
+that nothing can desync from what was actually played.
+
+- **Polyglot** — earned by playing 3+ different languages, not by words in
+  any one of them. Rewards breadth instead of grinding a single language.
+- **Streak Keeper** — 7 different calendar days played. A comeback track,
+  not a punishing daily-streak that resets on one missed day.
+- **Archivist** — equip a Legacy theme or celebration at least once. A
+  nudge toward the archived styles from earlier updates.
+- **Legacy Archive cycle** (referenced by the Phoenix companion) — a
+  proposed rotating unlock: once a player passes the current ceiling,
+  older "legacy" cosmetics that were retired from the main shop become
+  available again through this track instead of being gone for good.
 
 ## Token skins
 
@@ -311,6 +348,72 @@ locked and the shop refusing the sale (0 tokens spent); 4,400 words →
 exactly Lv 84, equip succeeds for free; a 12-coin hoard survived entering
 a new match while the base Vault started empty on the same page; 500
 stored coins rendered 60. Zero page errors.
+
+## Custom fonts — and why they used to do nothing
+
+`src/components/font-picker.tsx`, `src/hooks/use-custom-fonts.ts`.
+Reached via home screen → Options → Advanced → Font Overrides.
+
+### Two real bugs, both invisible as "the picker doesn't do anything"
+
+1. **The "Display Font" / "Serif Font" rows wrote to `--app-font-display`,
+   a CSS variable nothing in the stylesheet ever read.** Picking one of
+   those changed nothing, anywhere — the control existed but was
+   permanently disconnected. Fixed by removing that dead variable and
+   pointing the picker at `--word-font` instead (see next point).
+
+2. **Even a working override could not reach the game word**, because
+   every theme sets `--word-font` directly on `:root.theme-x`, e.g.
+   `:root.theme-baskin { --word-font: 'Outfit', sans-serif; }`, and a
+   selector carrying a class always beats a bare `:root` rule regardless
+   of source order. A second stylesheet rule could never win that fight.
+   The fix is that `FontPicker` sets `--word-font` as an **inline style**
+   on `document.documentElement` — inline style beats every author
+   stylesheet selector, full stop, which is also why clearing the
+   selection (removing the inline property) correctly lets the theme's
+   own font show through again.
+
+3. **The override only re-applied while `FontPicker` happened to be
+   mounted.** It lives several taps deep in the home screen's Options
+   panel, and nothing else ever re-read the saved choice — so a hard
+   refresh, or opening `/game` directly, silently reverted to the
+   theme's default font with no indication anything had changed.
+   `use-custom-fonts.ts` fixes this the same way theming itself is kept
+   consistent: `useCustomFonts()` is called once in `App.tsx`'s `Router()`
+   right alongside `useTheme()`, so the override re-applies on every route.
+
+### Gated behind a one-time "Lock Pass" unlock
+
+Per the product ask that this come with the Lock Pass: unlocking spends
+50 tokens once through the same economy the shop's stacks and skins
+already use (`spendTokens()`), rather than a second, fake subscription
+flow. `lok-lingu-custom-fonts-unlocked` records it; the picker shows a
+locked card with an Unlock button until that flag is set.
+
+## Responsive game-word sizing
+
+`src/lib/word-sizing.ts`. `.game-word` used a fixed `text-7xl md:text-9xl`
+regardless of what was actually being displayed — fine for "dos", but
+every theme applies its own font at very different letter widths
+(Unbounded and Major Mono Display run far wider per character than Outfit
+or Barlow Condensed), and several categories — greetings especially,
+after this session's word-data expansion — now include real multi-word
+phrases like "buenas noches" and "guten Nachmittag". A fixed size had no
+way to fit both a two-letter word and a compound phrase in the same box.
+
+`gameWordFontSize(word)` shrinks the ceiling as the word gets longer
+(easing so the first extra characters cost more size than the last, which
+matches how cramped a box actually feels) and returns two values —
+`mobile` and `desktop` — because the original sizing was a hard 768px
+breakpoint swap, not a fluid clamp, and preserving that step is what
+keeps short words looking identical to before this change. `game.tsx`
+writes these as `--word-size-mobile`/`--word-size-desktop`; the matching
+CSS rule in `index.css` is what actually swaps between them.
+
+`overflow-wrap: anywhere` on `.game-word` is a hard backstop, not the
+primary fix — if a decorative font's real metrics still run wider than
+the size calculation assumed, the phrase wraps onto a second line instead
+of clipping or bleeding off the edge of the screen.
 
 ## Word coverage
 

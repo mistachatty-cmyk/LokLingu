@@ -1,14 +1,29 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useLocation } from 'wouter';
-import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, Check, Lock, Sparkles, Coins, SkipForward, Heart, PawPrint, Award, Palette } from 'lucide-react';
+import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, Check, Lock, Sparkles, Coins, SkipForward, Heart, PawPrint, Award, Palette, LayoutGrid, List as ListIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/use-theme';
 import { useEconomy } from '@/hooks/use-economy';
 import { getLifetimeWords } from '@/lib/offline-data';
 import { levelState, wordsForLevel, MAX_LEVEL } from '@/lib/levels';
 import { EMBLEMS, earnedEmblems } from '@/lib/emblems';
-import { evaluate, MATCH_MILESTONES, TOTAL_MILESTONES, type Milestone, type RewardKind } from '@/lib/roadmap';
+import {
+  evaluate, MATCH_MILESTONES, TOTAL_MILESTONES, CONCEPT_MILESTONES,
+  type Milestone, type RewardKind,
+} from '@/lib/roadmap';
+
+/**
+ * Placeholder art for the Menagerie gallery. There is no illustration
+ * pipeline in this project, so each companion is represented the same
+ * way emblems and flag themes already are elsewhere in the app: one
+ * large glyph. Swap this map for real artwork paths whenever that
+ * pipeline exists — nothing else about the gallery needs to change.
+ */
+const COMPANION_GLYPH: Record<string, string> = {
+  Sparrow: '🐦', Centurion: '💯', Fox: '🦊', Crane: '🦢', Wolf: '🐺',
+  Tiger: '🐯', Whale: '🐋', Dragon: '🐉', Phoenix: '🐦‍🔥', Leviathan: '🐙',
+};
 
 const REWARD_ICON: Record<RewardKind, typeof Coins> = {
   tokens: Coins,
@@ -234,16 +249,129 @@ function LevelTrack({ totalWords }: { totalWords: number }) {
   );
 }
 
+function GalleryCard({
+  glyph, title, at, unit, unlocked, distance, animation,
+}: {
+  glyph: string;
+  title: string;
+  at: number;
+  unit: string;
+  unlocked: boolean;
+  distance: number;
+  animation?: string | null;
+}) {
+  const reduce = useReducedMotion();
+  return (
+    <motion.div
+      initial={reduce ? false : { opacity: 0, scale: 0.92 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.25 }}
+      className={`relative flex aspect-square flex-col items-center justify-center gap-1.5 rounded-2xl border p-3 text-center ${
+        unlocked ? 'border-primary/40 bg-gradient-to-br from-primary/10 to-card' : 'border-border bg-card'
+      }`}
+    >
+      <span
+        className={`text-4xl leading-none ${unlocked ? (animation ?? '') : 'grayscale opacity-30'}`}
+        aria-hidden
+      >
+        {glyph}
+      </span>
+      <span className="line-clamp-1 text-[11px] font-black uppercase tracking-wide">{title}</span>
+      {unlocked ? (
+        <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-primary">
+          <Check className="h-2.5 w-2.5" /> earned
+        </span>
+      ) : (
+        <span className="font-mono text-[9px] tabular-nums text-muted-foreground">
+          {distance.toLocaleString()} {unit} to go
+        </span>
+      )}
+      {!unlocked && (
+        <Lock className="absolute right-2 top-2 h-3 w-3 text-muted-foreground/50" aria-hidden />
+      )}
+    </motion.div>
+  );
+}
+
+/** The graphic page: a trophy-case grid of every earnable, art-first. */
+function Gallery({ totalWords, level }: { totalWords: number; level: number }) {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-sm font-black uppercase tracking-widest">The Menagerie</h2>
+        <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
+          Every companion, earned by lifetime words across every language.
+        </p>
+        <div className="mt-3 grid grid-cols-3 gap-2.5 sm:grid-cols-4">
+          {TOTAL_MILESTONES.filter((m) => m.reward === 'companion').map((m) => (
+            <GalleryCard
+              key={m.title}
+              glyph={COMPANION_GLYPH[m.title] ?? '❔'}
+              title={m.title}
+              at={m.at}
+              unit="words"
+              unlocked={totalWords >= m.at}
+              distance={Math.max(0, m.at - totalWords)}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h2 className="text-sm font-black uppercase tracking-widest">Emblems</h2>
+        <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
+          Earned by level. Shown beside your name in the game HUD.
+        </p>
+        <div className="mt-3 grid grid-cols-3 gap-2.5 sm:grid-cols-4">
+          {EMBLEMS.map((e) => (
+            <GalleryCard
+              key={e.id}
+              glyph={e.glyph}
+              title={e.name}
+              at={e.level}
+              unit="levels"
+              unlocked={level >= e.level}
+              distance={Math.max(0, e.level - level)}
+              animation={e.animation}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h2 className="text-sm font-black uppercase tracking-widest">In Concept</h2>
+        <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
+          Proposed, not yet wired to a reward — the next things worth building.
+        </p>
+        <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+          {CONCEPT_MILESTONES.map((m) => (
+            <div
+              key={m.title}
+              className="rounded-2xl border border-dashed border-border bg-card/50 p-3 text-center"
+            >
+              <span className="text-2xl opacity-50" aria-hidden>💡</span>
+              <p className="mt-1 text-[11px] font-black uppercase tracking-wide">{m.title}</p>
+              <p className="mt-1 text-[10px] leading-snug text-muted-foreground">{m.detail}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Roadmap() {
   const [, setLocation] = useLocation();
   useTheme();
   const { earned } = useEconomy();
+  const [view, setView] = useState<'gallery' | 'list'>('gallery');
 
   // Lifetime words across every language — the counter the long track uses.
   const totalWords = useMemo(
     () => Object.values(getLifetimeWords()).reduce((a, b) => a + b, 0),
     [],
   );
+  const level = useMemo(() => levelState(totalWords).level, [totalWords]);
 
   // The in-run counter resets every match, so on this screen the honest
   // thing to show is the player's best evidence of a long run: we do not
@@ -276,39 +404,73 @@ export default function Roadmap() {
         </div>
       </div>
 
-      <section className="space-y-3">
-        <TrackHeader
-          title="The Hundred — inside a single run"
-          blurb="Hit words back to back without stopping the mic. Resets when the run ends."
-          value={0}
-          unit="this run"
-          next={state.match.next}
-          progress={0}
-        />
-        <div className="space-y-2">
-          {MATCH_MILESTONES.map((m) => (
-            <Row key={`m-${m.at}`} m={m} unlocked={false} current={0} />
-          ))}
-        </div>
-      </section>
+      {/* Graphic page vs. the detailed list — the ask was specifically for
+          a visual view of the earnables, kept as a tab here rather than a
+          second nav entry so the nav bar does not grow for it. */}
+      <div className="flex gap-1.5 rounded-lg border border-border bg-card p-1">
+        <button
+          type="button"
+          onClick={() => setView('gallery')}
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-2 text-xs font-bold uppercase tracking-widest transition-colors ${
+            view === 'gallery' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <LayoutGrid className="h-3.5 w-3.5" /> Gallery
+        </button>
+        <button
+          type="button"
+          onClick={() => setView('list')}
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-2 text-xs font-bold uppercase tracking-widest transition-colors ${
+            view === 'list' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <ListIcon className="h-3.5 w-3.5" /> Detail
+        </button>
+      </div>
 
-      <LevelTrack totalWords={totalWords} />
+      <AnimatePresence mode="wait">
+        {view === 'gallery' ? (
+          <motion.div key="gallery" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+            <Gallery totalWords={totalWords} level={level} />
+          </motion.div>
+        ) : (
+          <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="space-y-8">
+            <section className="space-y-3">
+              <TrackHeader
+                title="The Hundred — inside a single run"
+                blurb="Hit words back to back without stopping the mic. Resets when the run ends."
+                value={0}
+                unit="this run"
+                next={state.match.next}
+                progress={0}
+              />
+              <div className="space-y-2">
+                {MATCH_MILESTONES.map((m) => (
+                  <Row key={`m-${m.at}`} m={m} unlocked={false} current={0} />
+                ))}
+              </div>
+            </section>
 
-      <section className="space-y-3">
-        <TrackHeader
-          title="The Menagerie — lifetime collection"
-          blurb="Animals are companions: one per tier, earned by total words spoken across every language. They are collection pieces first, and later a cosmetic that rides along on the game screen."
-          value={totalWords}
-          unit="words banked"
-          next={state.total.next}
-          progress={state.total.progress}
-        />
-        <div className="space-y-2">
-          {TOTAL_MILESTONES.map((m) => (
-            <Row key={`t-${m.at}`} m={m} unlocked={totalWords >= m.at} current={totalWords} />
-          ))}
-        </div>
-      </section>
+            <LevelTrack totalWords={totalWords} />
+
+            <section className="space-y-3">
+              <TrackHeader
+                title="The Menagerie — lifetime collection"
+                blurb="Animals are companions: one per tier, earned by total words spoken across every language. They are collection pieces first, and later a cosmetic that rides along on the game screen."
+                value={totalWords}
+                unit="words banked"
+                next={state.total.next}
+                progress={state.total.progress}
+              />
+              <div className="space-y-2">
+                {TOTAL_MILESTONES.map((m) => (
+                  <Row key={`t-${m.at}`} m={m} unlocked={totalWords >= m.at} current={totalWords} />
+                ))}
+              </div>
+            </section>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <p className="rounded-xl border border-border bg-card p-4 text-xs leading-relaxed text-muted-foreground">
         Rewards marked <span className="font-bold text-foreground">planned</span> are designed but

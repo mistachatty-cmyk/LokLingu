@@ -112,6 +112,33 @@ Two mechanisms, deliberately layered:
 Web Speech ignores grammar lists — every shipping browser treats
 `SpeechGrammarList` as a no-op — so layer 2 does all the work there.
 
+## The TTS echo bug — mic must mute during playback
+
+**Symptom:** tapping "pronounce slowly" (or, in Draw mode, "Listen") would
+sometimes advance the word or count as a correct answer with no real
+speech — as if the click itself "let it pass."
+
+**Cause:** `speakWord()` used to be fire-and-forget while the mic stayed
+hot. On any device without headphones or real echo cancellation, the
+speaker audio saying the exact target word bled straight back into the
+mic. The recognizer heard its own playback and matched it against
+`currentWord.word` — which it obviously matches perfectly, since it *is*
+that word — and registered it as if the player had spoken.
+
+**Fix:** `speakWord()` now returns a `Promise<void>` that resolves on the
+utterance's real `onend` (with a length-derived timeout backstop in case
+that event is swallowed, which happens if `cancel()` fires mid-utterance
+from spamming the button). Both `game.tsx` and `draw.tsx` stop listening
+before playback and only resume once that promise settles — not on a
+guessed timer. `game.tsx` additionally sets a `speechMutedRef` as a
+second line of defense, so a transcript event already in flight when
+playback starts is still dropped rather than scored.
+
+**If you add a new place that calls `speakWord()`:** it must be wrapped
+the same way. An unguarded call while the mic is listening reintroduces
+this exact bug. Search for `speechMutedRef` in `game.tsx` / `draw.tsx`
+for the pattern to copy.
+
 ## Invariants — do not break these
 
 - **One provider instance per mount.** Rebuilding while the mic is still

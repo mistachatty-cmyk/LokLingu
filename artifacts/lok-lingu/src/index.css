@@ -1596,6 +1596,34 @@
   /* Word font override in game */
   .game-word { font-family: var(--word-font); }
 
+  /*
+   * Responsive game-word sizing (src/lib/word-sizing.ts).
+   *
+   * A fixed text-7xl/text-9xl had no way to fit both a two-letter word
+   * and a multi-word phrase like "buenas noches" or "guten Nachmittag"
+   * across 30+ themes running fonts at very different letter widths.
+   * game.tsx sets --word-size-mobile/--word-size-desktop per word
+   * (already scaled down for longer content); this is what actually
+   * swaps between them at the same 768px breakpoint text-7xl/md:text-9xl
+   * used before.
+   *
+   * overflow-wrap is a hard backstop, not the primary fix — if a
+   * decorative font's real metrics still run wider than the size calc
+   * assumed, the phrase wraps onto a second line instead of clipping or
+   * bleeding off the edge of the screen.
+   */
+  .game-word {
+    font-size: var(--word-size-mobile, 4.5rem);
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    max-width: 100%;
+  }
+  @media (min-width: 768px) {
+    .game-word {
+      font-size: var(--word-size-desktop, 8rem);
+    }
+  }
+
   input[type='search']::-webkit-search-cancel-button { @apply hidden; }
   [contenteditable][data-placeholder]:empty::before {
     content: attr(data-placeholder);

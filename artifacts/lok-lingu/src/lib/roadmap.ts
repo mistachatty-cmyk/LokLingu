@@ -61,6 +61,38 @@ export const TOTAL_MILESTONES: Milestone[] = [
   { at: 2500,  track: 'total', title: 'Tiger',     detail: 'Companion. Flag Tier singles unlock.',               reward: 'companion', rewardLabel: 'Tiger + flag tier',  live: false },
   { at: 5000,  track: 'total', title: 'Whale',     detail: 'Companion. The whole Flag Pack, no purchase.',       reward: 'companion', rewardLabel: 'Whale + flag pack',  live: false },
   { at: 10000, track: 'total', title: 'Dragon',    detail: 'Companion. Mythic tier, animated, one per account.', reward: 'companion', rewardLabel: 'Dragon + Mythic',    live: false },
+  /*
+   * New concepts past the original ceiling. Kept on the same total-words
+   * counter deliberately — a companion tier that needed its own tracker
+   * would be a second economy to keep in sync, and the whole point of
+   * this track is that it cannot desync from what was actually played.
+   */
+  { at: 20000, track: 'total', title: 'Phoenix',  detail: 'Companion. Reborn each Legacy Archive cycle — see docs/PROGRESSION.md.', reward: 'companion', rewardLabel: 'Phoenix + Legacy Archive', live: false },
+  { at: 50000, track: 'total', title: 'Leviathan', detail: 'Companion. The last tier. A permanent nameplate flourish, not just an icon.', reward: 'companion', rewardLabel: 'Leviathan + nameplate', live: false },
+];
+
+/**
+ * New earnable *concepts*, not yet wired to a reward payout — proposed
+ * here so the roadmap page has somewhere to show them and the next
+ * implementation pass has a concrete list instead of a blank page.
+ * Deliberately all derived from counters that already exist.
+ */
+export const CONCEPT_MILESTONES: Milestone[] = [
+  {
+    at: 3, track: 'total', title: 'Polyglot',
+    detail: 'Earned by playing 3+ different languages, not by words in any one of them — rewards breadth instead of grinding a single language.',
+    reward: 'badge', rewardLabel: 'Polyglot badge', live: false,
+  },
+  {
+    at: 7, track: 'total', title: 'Streak Keeper',
+    detail: 'Play on 7 different calendar days. A comeback track, not a punishing daily-streak that resets on one missed day.',
+    reward: 'badge', rewardLabel: 'Streak Keeper badge', live: false,
+  },
+  {
+    at: 1, track: 'total', title: 'Archivist',
+    detail: 'Equip a Legacy theme or celebration at least once — a nudge toward the archived styles from earlier updates, not just the newest ones.',
+    reward: 'badge', rewardLabel: 'Archivist badge', live: false,
+  },
 ];
 
 export const ALL_MILESTONES = [...MATCH_MILESTONES, ...TOTAL_MILESTONES];

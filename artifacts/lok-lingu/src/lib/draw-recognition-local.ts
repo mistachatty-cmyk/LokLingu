@@ -31,14 +31,45 @@ function getTesseractLang(language: string): string {
   return TESSERACT_LANG[language] ?? 'eng';
 }
 
+/**
+ * The languages `scripts/vendor-tesseract.mjs` *attempts* to mirror
+ * locally. Its own download step can fail (no network at build time) and
+ * is deliberately non-fatal there, so this is confirmed with a real
+ * HEAD request rather than assumed — a stale assumption would silently
+ * 404 langPath instead of falling back to the CDN.
+ */
+const VENDORED_LANGS = new Set(['eng']);
+const vendoredPresence = new Map<string, Promise<boolean>>();
+
+function isVendored(lang: string, base: string): Promise<boolean> {
+  if (!VENDORED_LANGS.has(lang)) return Promise.resolve(false);
+  const cached = vendoredPresence.get(lang);
+  if (cached) return cached;
+  const check = fetch(`${base}/${lang}.traineddata.gz`, { method: 'HEAD' })
+    .then((res) => res.ok)
+    .catch(() => false);
+  vendoredPresence.set(lang, check);
+  return check;
+}
+
+/**
+ * Vendored under /vendor/tesseract (see scripts/vendor-tesseract.mjs).
+ * Before this, `createWorker()` used its library defaults — the worker
+ * script from cdn.jsdelivr.net and the WASM core from the same host —
+ * so any network that blocked jsdelivr (a locked-down environment, or
+ * this project's own sandbox) threw `Failed to execute 'importScripts'`
+ * and killed Draw mode outright, with no fallback path.
+ */
+const VENDOR_BASE = `${import.meta.env.BASE_URL ?? '/'}vendor/tesseract`.replace(/\/+/g, '/');
+
 // ── Worker cache ─────────────────────────────────────────────────────────────
 let cachedWorker: Worker | null = null;
 let cachedLang = '';
 let workerReady: Promise<Worker> | null = null;
 
-function getWorker(lang: string): Promise<Worker> {
+async function getWorker(lang: string): Promise<Worker> {
   if (cachedWorker && cachedLang === lang) {
-    return Promise.resolve(cachedWorker);
+    return cachedWorker;
   }
   // New language — reset
   if (workerReady && cachedLang !== lang) {
@@ -47,11 +78,18 @@ function getWorker(lang: string): Promise<Worker> {
     cachedWorker = null;
   }
   if (!workerReady) {
-    workerReady = createWorker(lang, 1, {
-      // Load language data from the official Tesseract CDN
-      langPath: 'https://tessdata.projectnaptha.com/4.0.0_best',
-      logger: () => undefined, // silence progress logs
-    }).then((w) => {
+    workerReady = isVendored(lang, VENDOR_BASE).then((vendored) =>
+      createWorker(lang, 1, {
+        workerPath: `${VENDOR_BASE}/worker.min.js`,
+        corePath: VENDOR_BASE,
+        // The trained-data pack is the one piece too large to vendor for
+        // every script. English (which covers every Latin-script language
+        // we ship) is mirrored locally when the fetch step succeeded;
+        // everything else asks the CDN for its own pack on first use.
+        langPath: vendored ? VENDOR_BASE : 'https://tessdata.projectnaptha.com/4.0.0_best',
+        logger: () => undefined, // silence progress logs
+      }),
+    ).then((w) => {
       cachedWorker = w;
       cachedLang = lang;
       return w;

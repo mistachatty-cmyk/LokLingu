@@ -71,23 +71,56 @@ export interface SpeakOptions {
   slow?: boolean;
 }
 
-export function speakWord(word: string, language: string, opts: SpeakOptions = {}): void {
-  if (typeof window === 'undefined' || !window.speechSynthesis) return;
-  if (!word) return;
+/**
+ * Resolves once playback has genuinely finished, so a caller can safely
+ * re-arm the microphone afterwards.
+ *
+ * Without this, "pronounce slowly" was fire-and-forget while the mic
+ * stayed hot: on any device without headphones or echo cancellation, the
+ * speaker audio saying the exact target word bled back into the mic and
+ * the recognizer heard it, registering as if the player had spoken —
+ * looking exactly like the word being skipped for no reason. Playback
+ * end, not click time, is the only correct moment to resume listening.
+ *
+ * The 'end' event can be swallowed on some engines when `cancel()` is
+ * called mid-utterance (e.g. spamming the pronounce button), so a
+ * timeout derived from the utterance length is a hard backstop —
+ * otherwise the mic could stay paused forever on that one dropped event.
+ */
+export function speakWord(word: string, language: string, opts: SpeakOptions = {}): Promise<void> {
+  if (typeof window === 'undefined' || !window.speechSynthesis || !word) {
+    return Promise.resolve();
+  }
 
   const locale = toLocale(language);
   window.speechSynthesis.cancel();
 
-  const u = new SpeechSynthesisUtterance(word);
-  u.lang = locale;
-  u.rate = opts.slow ? 0.5 : 0.9;
-  u.pitch = 1;
-  u.volume = 1;
+  return new Promise((resolve) => {
+    const u = new SpeechSynthesisUtterance(word);
+    u.lang = locale;
+    u.rate = opts.slow ? 0.5 : 0.9;
+    u.pitch = 1;
+    u.volume = 1;
 
-  const voice = pickVoice(locale);
-  if (voice) u.voice = voice;
+    const voice = pickVoice(locale);
+    if (voice) u.voice = voice;
 
-  window.speechSynthesis.speak(u);
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(backstop);
+      resolve();
+    };
+    u.onend = finish;
+    u.onerror = finish;
+
+    // ~150ms/char at the slowest rate is a generous overestimate; the
+    // point is only to guarantee the mic is never stuck muted.
+    const backstop = setTimeout(finish, Math.max(1500, word.length * 150));
+
+    window.speechSynthesis.speak(u);
+  });
 }
 
 export function stripAccents(str: string): string {

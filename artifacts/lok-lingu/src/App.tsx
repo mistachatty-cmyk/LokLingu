@@ -19,6 +19,7 @@ import Roadmap from './pages/roadmap';
 import { LiquidGlassCursor } from '@/components/liquid-glass-cursor';
 import { useCursorCosmetics } from '@/hooks/use-cursor-cosmetics';
 import { useTheme } from '@/hooks/use-theme';
+import { useCustomFonts } from '@/hooks/use-custom-fonts';
 import { DevOverlay } from '@/components/dev-overlay';
 import { installDevCapture } from '@/lib/dev-mode';
 
@@ -41,6 +42,12 @@ function Router() {
   // pages that happened to call useTheme did this, so /game and /draw — the
   // two screens you actually play on — always rendered in the default theme.
   useTheme();
+  // Re-applies any saved custom font override on every route. Without
+  // this, the override only took effect while the Font Overrides panel
+  // (several taps deep on the home screen) happened to be mounted — a
+  // hard refresh, or opening /game directly, silently dropped back to
+  // the theme's default font with no indication anything had reverted.
+  useCustomFonts();
   const { glassId, trailId, isActive } = useCursorCosmetics();
   return (
     <Layout>
