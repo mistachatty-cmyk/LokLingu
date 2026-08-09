@@ -8,6 +8,8 @@ const STORAGE_BOOST_UNLOCKED = 'lok-lingu-boost-unlocked';
 const STORAGE_BEST_STREAK = 'lok-lingu-best-streak';
 const STORAGE_COMPANION_PREFIX = 'lok-lingu-companion-';
 const STORAGE_BADGE_PREFIX = 'lok-lingu-badge-';
+const STORAGE_SESSION_BEST = 'lok-lingu-session-best-words';
+const STORAGE_ACHIEVEMENT_PREFIX = 'lok-lingu-achievement-';
 
 /**
  * High-water mark for the in-run "Hundred" ladder. Without this, the
@@ -19,6 +21,17 @@ const STORAGE_BADGE_PREFIX = 'lok-lingu-badge-';
  */
 export function currentBestStreak(): number {
   return parseInt(localStorage.getItem(STORAGE_BEST_STREAK) || '0');
+}
+
+/**
+ * High-water mark for words counted within a single run (game.tsx/draw.tsx
+ * commit a run via resetMatch when the mic stops or the player navigates
+ * away). There is no wall-clock "session" concept anywhere in the app —
+ * this piggybacks on the existing in-run counter, the closest available
+ * proxy, same pattern as currentBestStreak().
+ */
+export function currentSessionBestWords(): number {
+  return parseInt(localStorage.getItem(STORAGE_SESSION_BEST) || '0');
 }
 
 export function getCompanionUnlocked(companionId: string): boolean {
@@ -61,8 +74,26 @@ export function setBadgeUnlocked(badgeId: string): void {
   localStorage.setItem(STORAGE_BADGE_PREFIX + badgeId, 'true');
 }
 
+export function getUnlockedAchievements(): string[] {
+  const result: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key?.startsWith(STORAGE_ACHIEVEMENT_PREFIX)) {
+      const achievementId = key.replace(STORAGE_ACHIEVEMENT_PREFIX, '');
+      if (localStorage.getItem(key) === 'true') {
+        result.push(achievementId);
+      }
+    }
+  }
+  return result;
+}
+
+export function setAchievementUnlocked(achievementId: string): void {
+  localStorage.setItem(STORAGE_ACHIEVEMENT_PREFIX + achievementId, 'true');
+}
+
 // Companion milestones: at-threshold pairs (sorted by words)
-const COMPANION_MILESTONES: { at: number; id: string }[] = [
+export const COMPANION_MILESTONES: { at: number; id: string }[] = [
   { at: 10, id: 'wren' },
   { at: 25, id: 'sparrow' },
   { at: 50, id: 'otter' },
@@ -81,6 +112,33 @@ export function updateCompanionUnlocks(totalWords: number): void {
     if (totalWords >= at && !getCompanionUnlocked(id)) {
       setCompanionUnlocked(id);
     }
+  }
+}
+
+const STORAGE_REEARN_PREFIX = 'lok-lingu-reearned-';
+
+/**
+ * After prestiging, re-crossing a threshold whose companion is already
+ * unlocked used to be a silent no-op. This pays the escalating re-earn
+ * bonus once per (prestige cycle, companion) pair — idempotent via a
+ * dedicated flag so remounts/re-renders never double-pay. Takes
+ * `cycleWords` (prestige.ts's wordsInCurrentCycle) and `prestige` as
+ * params rather than importing prestige.ts directly, to avoid a circular
+ * import (prestige.ts already imports getAllLifetimeWords from here).
+ */
+export function payReearnBonuses(
+  cycleWords: number,
+  prestige: number,
+  payBonus: () => void,
+): void {
+  if (prestige <= 0) return;
+  for (const { at, id } of COMPANION_MILESTONES) {
+    if (cycleWords < at) continue;
+    if (!getCompanionUnlocked(id)) continue; // first-time unlock, not a re-earn
+    const flagKey = `${STORAGE_REEARN_PREFIX}${prestige}-${id}`;
+    if (localStorage.getItem(flagKey) === 'true') continue;
+    localStorage.setItem(flagKey, 'true');
+    payBonus();
   }
 }
 
@@ -103,6 +161,29 @@ export function checkPolyglotBadge(): void {
       setBadgeUnlocked('polyglot');
     }
   }
+}
+
+// Deliberately NOT prefixed lok-lingu-lifetime- — every lok-lingu-lifetime-*
+// key is scanned elsewhere (getAllLifetimeWords/getLifetimeWords/stats.tsx
+// pie chart) and treated as "the rest of the key is a language code."
+// A lok-lingu-lifetime-fr-food key would be misread as language "fr-food".
+const CATEGORY_PREFIX = 'lok-lingu-category-';
+
+/**
+ * Per-language, per-category lifetime counter — sibling to the flat
+ * lok-lingu-lifetime-{lang} counter, needed for category-flavor
+ * achievements (e.g. "50 French food words"). Category is already a
+ * first-class concept for picking word lists (offline-data.ts); this
+ * just also tallies correct answers by it.
+ */
+export function incrementCategoryLifetime(lang: string, category: string): void {
+  const key = `${CATEGORY_PREFIX}${lang}-${category}`;
+  const current = parseInt(localStorage.getItem(key) || '0');
+  localStorage.setItem(key, String(current + 1));
+}
+
+export function categoryWordCount(lang: string, category: string): number {
+  return parseInt(localStorage.getItem(`${CATEGORY_PREFIX}${lang}-${category}`) || '0');
 }
 
 export function useCelebration() {
@@ -191,6 +272,10 @@ export function useCelebration() {
 
     if (newCount > currentBestStreak()) {
       localStorage.setItem(STORAGE_BEST_STREAK, String(newCount));
+    }
+
+    if (newCount > currentSessionBestWords()) {
+      localStorage.setItem(STORAGE_SESSION_BEST, String(newCount));
     }
 
     incrementLifetime(lang);

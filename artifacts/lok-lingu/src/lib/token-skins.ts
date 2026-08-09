@@ -22,6 +22,9 @@
 ------------------------------------------------------------------ */
 
 import { currentLevel } from './levels';
+import { getUnlockedAchievements } from '../hooks/use-celebration';
+import { isRetired } from './prestige';
+import { spendTokens } from './economy';
 
 export type TokenMotion =
   | 'rise'      // classic float upward
@@ -44,6 +47,13 @@ export interface TokenSkin {
   unlockLevel?: number;
   /** The pile survives between matches instead of clearing on mount. */
   persistent?: boolean;
+  /**
+   * Achievement id required instead of tokens/level — earned by meeting
+   * an achievements.ts predicate (e.g. category word counts). Same
+   * "cannot be bought" semantics as unlockLevel, just gated on a
+   * different earned condition.
+   */
+  unlockAchievement?: string;
 
   /* --- appearance half (future "look" picker) --- */
   glyph: string;
@@ -156,6 +166,18 @@ export const TOKEN_SKINS: TokenSkin[] = [
     motion: 'pile',
     duration: 1.2,
   },
+  {
+    id: 'baguette',
+    name: 'Baguette',
+    blurb:
+      'A tiny golden baguette instead of a coin. Earned by mastering 50 French food words — it cannot be bought.',
+    cost: 0,
+    unlockAchievement: 'fr-food-baguette',
+    glyph: '🥖',
+    scale: 1.1,
+    motion: 'rise',
+    duration: 0.7,
+  },
 ];
 
 export const DEFAULT_TOKEN_SKIN = 'classic';
@@ -175,22 +197,45 @@ export function getOwnedSkins(): string[] {
     const raw = JSON.parse(localStorage.getItem(OWNED_KEY) || '[]');
     const list = Array.isArray(raw) ? raw.filter((x): x is string => typeof x === 'string') : [];
     // Free skins are always owned, even if storage was cleared.
-    const free = TOKEN_SKINS.filter((s) => s.cost === 0 && s.unlockLevel == null).map((s) => s.id);
+    const free = TOKEN_SKINS.filter((s) => s.cost === 0 && s.unlockLevel == null && s.unlockAchievement == null).map((s) => s.id);
     return [...new Set([...free, ...list])];
   } catch {
-    return TOKEN_SKINS.filter((s) => s.cost === 0 && s.unlockLevel == null).map((s) => s.id);
+    return TOKEN_SKINS.filter((s) => s.cost === 0 && s.unlockLevel == null && s.unlockAchievement == null).map((s) => s.id);
   }
 }
 
 /**
- * Level-gated skins ignore the purchase list entirely — reaching the
- * level *is* ownership, and dropping below it is impossible because
- * lifetime words only ever increase.
+ * Level-gated and achievement-gated skins ignore the purchase list
+ * entirely — reaching the level/achievement *is* ownership, and both are
+ * monotonic (lifetime words only increase; achievements never un-earn).
+ * Once retired (Prestige 10 buyout path), every remaining locked skin
+ * also becomes purchasable with tokens regardless of its normal gate —
+ * layered on top, not replacing, the existing checks.
  */
 export function ownsSkin(id: string, level = currentLevel()): boolean {
   const skin = TOKEN_SKINS.find((s) => s.id === id);
-  if (skin?.unlockLevel != null) return level >= skin.unlockLevel;
-  return getOwnedSkins().includes(id);
+  if (!skin) return false;
+  if (skin.unlockLevel != null && level >= skin.unlockLevel) return true;
+  if (skin.unlockAchievement != null && getUnlockedAchievements().includes(skin.unlockAchievement)) return true;
+  if (getOwnedSkins().includes(id)) return true;
+  return false;
+}
+
+/**
+ * The Prestige-10 "Master Collector" buyout: spend tokens to unlock a
+ * skin regardless of its normal level/achievement gate. Only available
+ * once retired — grants ownership through the normal owned-list so it
+ * persists the same way a purchase would.
+ */
+export function buyoutSkin(id: string): boolean {
+  if (!isRetired()) return false;
+  if (ownsSkin(id)) return true;
+  const skin = TOKEN_SKINS.find((s) => s.id === id);
+  if (!skin) return false;
+  const cost = skin.cost > 0 ? skin.cost : 100; // flat buyout price for cost:0 gated skins
+  if (!spendTokens(cost)) return false;
+  grantSkin(id);
+  return true;
 }
 
 export function grantSkin(id: string): void {

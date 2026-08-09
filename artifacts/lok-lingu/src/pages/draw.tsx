@@ -18,7 +18,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { DrawCanvas, type DrawCanvasHandle } from '@/components/draw-canvas';
-import { useCelebration } from '@/hooks/use-celebration';
+import { useCelebration, incrementCategoryLifetime } from '@/hooks/use-celebration';
 import { useCelebrationSound } from '@/hooks/use-celebration-sound';
 import { CelebrationEffect } from '@/components/celebration-effect';
 import { WordPop } from '@/components/word-pop';
@@ -131,6 +131,7 @@ export default function Draw() {
     setWordPopActive(true);
     setCount((prev) => prev + 1);
     const { milestoneHit, tokenBonus } = celebration.incrementMatch(language);
+    incrementCategoryLifetime(language, category);
     const rate = celebration.boostActive ? 4 : 2;
     const labelText = milestoneHit && tokenBonus > 0 ? `+${tokenBonus} 🎁` : `+${rate}`;
     setTokenLabel((prev) => ({ key: prev.key + 1, text: labelText }));
@@ -140,7 +141,7 @@ export default function Draw() {
       setWordIndex((prev) => (prev + 1) % words.length);
       setStatus('idle');
     }, 1000);
-  }, [status, gameOver, words, celebration, language]);
+  }, [status, gameOver, words, celebration, language, category]);
 
   const handleFailure = useCallback(() => {
     if (status !== 'idle' || gameOver) return;

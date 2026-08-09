@@ -11,12 +11,13 @@ import { useSettings } from '@/hooks/use-settings';
 import { useDevMode } from '@/hooks/use-dev-mode';
 import { useEconomy } from '@/hooks/use-economy';
 import { consumeSkip, FREE_SKIPS_PER_MATCH } from '@/lib/economy';
-import { currentLevel, freeSkipsForLevel } from '@/lib/levels';
+import { currentWords, freeSkipsForLevel } from '@/lib/levels';
+import { effectiveLevelState, currentPrestige, prestigeIcon } from '@/lib/prestige';
 import { gameWordFontSize } from '@/lib/word-sizing';
 import { getSelectedEmblem, earnedEmblems } from '@/lib/emblems';
 import { speakWord, matchWord, primeVoices, toLocale } from '@/lib/speech-utils';
 import { useTheme } from '@/hooks/use-theme';
-import { useCelebration } from '@/hooks/use-celebration';
+import { useCelebration, incrementCategoryLifetime } from '@/hooks/use-celebration';
 import { useCelebrationSound } from '@/hooks/use-celebration-sound';
 import { CelebrationEffect } from '@/components/celebration-effect';
 import { TokenEarnedLabel } from '@/components/token-earned-label';
@@ -102,7 +103,11 @@ export default function Game() {
   const devMode = useDevMode();
   // Level is derived from lifetime words, which only change on a correct
   // answer, so recomputing it per word is exact and costs nothing.
-  const playerLevel = useMemo(() => currentLevel(), [wordIndex]);
+  // effectiveLevelState composes the prestige offset — post-prestige, the
+  // HUD level is the in-cycle level, not the raw lifetime-words level.
+  const playerLevel = useMemo(() => effectiveLevelState(currentWords()).level, [wordIndex]);
+  const playerPrestige = useMemo(() => currentPrestige(), [wordIndex]);
+  const playerPrestigeIcon = useMemo(() => prestigeIcon(playerPrestige), [playerPrestige]);
   // Falls back to the highest emblem earned when none is explicitly picked.
   const playerEmblem = useMemo(
     () => getSelectedEmblem(playerLevel) ?? earnedEmblems(playerLevel).slice(-1)[0] ?? null,
@@ -164,6 +169,8 @@ export default function Game() {
   currentWordRef.current = currentWord;
   const languageRef = useRef(language);
   languageRef.current = language;
+  const categoryRef = useRef(category);
+  categoryRef.current = category;
   const lockedRef = useRef(false);
 
   const { userId } = useUser();
@@ -233,6 +240,7 @@ export default function Game() {
       // incrementMatch handles lifetime tracking internally, so a separate
       // incrementLifetimeWords call is not needed here (it would double-count).
       const { milestoneHit, tokenBonus } = celebrationRef.current.incrementMatch(languageRef.current);
+      incrementCategoryLifetime(languageRef.current, categoryRef.current);
       const rate = boostActiveRef.current ? 4 : 2;
       const labelText = milestoneHit && tokenBonus > 0 ? `+${tokenBonus} 🎁` : `+${rate}`;
       setTokenLabel((prev) => ({ key: prev.key + 1, text: labelText }));
@@ -374,7 +382,7 @@ export default function Game() {
   // Free skips scale with level (1 → 2 at L20 → 3 at L50), so the number
   // is decided in levels.ts rather than hard-coded here.
   const [freeSkipsLeft, setFreeSkipsLeft] = useState(() =>
-    Math.max(FREE_SKIPS_PER_MATCH, freeSkipsForLevel(currentLevel())),
+    Math.max(FREE_SKIPS_PER_MATCH, freeSkipsForLevel(effectiveLevelState(currentWords()).level)),
   );
   const [skipFlash, setSkipFlash] = useState(0);
   const { skips: bankedSkips } = useEconomy();
@@ -432,6 +440,11 @@ export default function Game() {
           <span className="flex items-center gap-1.5 text-[10px] tracking-widest uppercase opacity-70">
             {/* Emblems are a single small element running a transform-only
                 CSS animation, so they are safe to leave on during a match. */}
+            {playerPrestigeIcon && (
+              <span className="text-sm leading-none" title={playerPrestigeIcon.name}>
+                {playerPrestigeIcon.glyph}
+              </span>
+            )}
             {playerEmblem && (
               <span
                 className={`${playerEmblem.animation ?? ''} text-sm leading-none`}

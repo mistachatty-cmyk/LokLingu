@@ -1,18 +1,24 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Check, Lock, Sparkles, Coins, SkipForward, Heart, PawPrint, Award, Palette, LayoutGrid, List as ListIcon } from 'lucide-react';
+import { ArrowLeft, Check, Lock, Sparkles, Coins, SkipForward, Heart, PawPrint, Award, Palette, LayoutGrid, List as ListIcon, Trophy, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/use-theme';
 import { useEconomy } from '@/hooks/use-economy';
 import { getLifetimeWords } from '@/lib/offline-data';
-import { levelState, wordsForLevel, MAX_LEVEL, LEVEL_PERKS, rankTitle } from '@/lib/levels';
-import { currentBestStreak, updateCompanionUnlocks, getUnlockedCompanions, getUnlockedBadges, checkPolyglotBadge } from '@/hooks/use-celebration';
+import { wordsForLevel, MAX_LEVEL, LEVEL_PERKS, rankTitle } from '@/lib/levels';
+import { currentBestStreak, updateCompanionUnlocks, getUnlockedCompanions, getUnlockedBadges, checkPolyglotBadge, getUnlockedAchievements, payReearnBonuses } from '@/hooks/use-celebration';
 import { EMBLEMS, earnedEmblems } from '@/lib/emblems';
 import {
-  evaluate, MATCH_MILESTONES, TOTAL_MILESTONES, CONCEPT_MILESTONES, TIER_ANIMATION,
+  evaluate, MATCH_MILESTONES, TOTAL_MILESTONES, CONCEPT_MILESTONES, SPECIAL_COMPANIONS, TIER_ANIMATION,
   type Milestone, type RewardKind,
 } from '@/lib/roadmap';
+import {
+  effectiveLevelState, currentPrestige, canPrestige, doPrestige, PRESTIGE_ICONS, prestigeIcon,
+  MAX_PRESTIGE, isMasterPrestige, MASTER_MAX_LEVEL, MASTER_TIERS, masterTierTitle, enterMasterPrestige,
+  retire, isRetired, prestigeTokenReward, payReearnBonus, wordsInCurrentCycle,
+} from '@/lib/prestige';
+import { ALL_ACHIEVEMENTS, updateAchievementUnlocks } from '@/lib/achievements';
 
 const REWARD_ICON: Record<RewardKind, typeof Coins> = {
   tokens: Coins,
@@ -125,27 +131,43 @@ function TrackHeader({
   );
 }
 
-function LevelTrack({ totalWords }: { totalWords: number }) {
-  const state = levelState(totalWords);
-  const earned = earnedEmblems(state.level);
+function LevelTrack({
+  totalWords, prestige, master, onPrestige, onFork,
+}: {
+  totalWords: number;
+  prestige: number;
+  master: boolean;
+  onPrestige: () => void;
+  onFork: (path: 'retire' | 'master') => void;
+}) {
+  const state = effectiveLevelState(totalWords);
+  const earned = master ? [] : earnedEmblems(state.level);
+  const icon = prestigeIcon(prestige);
+  const eligible = canPrestige(totalWords);
+  const atFork = prestige >= MAX_PRESTIGE && !master && !isRetired() && eligible;
+  const maxLevel = master ? MASTER_MAX_LEVEL : MAX_LEVEL;
 
   return (
     <section className="space-y-3">
       <div>
-        <h2 className="text-sm font-black uppercase tracking-widest">Levels — earned only</h2>
+        <h2 className="text-sm font-black uppercase tracking-widest">
+          {master ? 'Master Prestige — the final ladder' : 'Levels — earned only'}
+        </h2>
         <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
-          Your level is a pure function of lifetime words, so it can never desync from what you
-          actually played. Nothing on this track has a price.
+          {master
+            ? 'A much longer climb, 1 to 1,000. No further resets — this is the last track.'
+            : 'Your level is a pure function of lifetime words, so it can never desync from what you actually played. Nothing on this track has a price.'}
         </p>
       </div>
 
       <div className="space-y-2 rounded-xl border border-border bg-card p-4">
         <div className="flex items-baseline justify-between">
           <span className="text-3xl font-black tabular-nums">
+            {icon && <span className="mr-1.5 align-middle text-2xl" title={icon.name}>{icon.glyph}</span>}
             Lv {state.level}
-            <span className="ml-1 text-xs font-mono text-muted-foreground">/ {MAX_LEVEL}</span>
+            <span className="ml-1 text-xs font-mono text-muted-foreground">/ {maxLevel}</span>
             <span className="ml-2 align-middle text-[10px] font-bold uppercase tracking-widest text-primary">
-              {rankTitle(state.level)}
+              {master ? masterTierTitle(state.level) : rankTitle(state.level)}
             </span>
           </span>
           {earned.length > 0 && (
@@ -176,51 +198,160 @@ function LevelTrack({ totalWords }: { totalWords: number }) {
         </p>
       </div>
 
-      <div className="space-y-2">
-        {LEVEL_PERKS.map((p) => {
-          const unlocked = state.level >= p.level;
-          const emblem = EMBLEMS.find((e) => e.level === p.level);
-          return (
-            <div
-              key={p.level}
-              className={`flex gap-4 rounded-xl border p-4 transition-colors ${
-                unlocked ? 'border-primary/40 bg-primary/5' : 'border-border bg-card'
-              }`}
-            >
+      {!master && atFork && (
+        <div className="space-y-2 rounded-xl border border-primary/40 bg-primary/5 p-4">
+          <div className="flex items-center gap-2">
+            <Crown className="h-4 w-4 text-primary" />
+            <span className="text-xs font-black uppercase tracking-widest text-primary">
+              Prestige 10 reached — choose your path
+            </span>
+          </div>
+          <p className="text-xs leading-snug text-muted-foreground">
+            This choice is permanent. Retire to unlock every remaining cosmetic with tokens, or
+            begin the Master Prestige grind — a much longer 1,000-level ladder with its own rewards.
+          </p>
+          <div className="flex gap-2 pt-1">
+            <Button size="sm" variant="outline" className="flex-1" onClick={() => onFork('retire')}>
+              Retire — Master Collector
+            </Button>
+            <Button size="sm" className="flex-1" onClick={() => onFork('master')}>
+              Begin Master Prestige
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {!master && !atFork && eligible && (
+        <div className="space-y-2 rounded-xl border border-primary/40 bg-primary/5 p-4">
+          <div className="flex items-center gap-2">
+            <Trophy className="h-4 w-4 text-primary" />
+            <span className="text-xs font-black uppercase tracking-widest text-primary">
+              Prestige available
+            </span>
+          </div>
+          <p className="text-xs leading-snug text-muted-foreground">
+            Reset to level 1 and become Prestige {prestige + 1}. Your in-cycle level resets, but
+            every companion, badge, and achievement you've earned stays earned — nothing is lost.
+            You'll also receive {prestigeTokenReward(prestige + 1).toLocaleString()} tokens.
+          </p>
+          <Button size="sm" className="w-full" onClick={onPrestige}>
+            Prestige to {prestige + 1}
+          </Button>
+        </div>
+      )}
+
+      {!master && (
+        <div className="space-y-2">
+          {LEVEL_PERKS.map((p) => {
+            const unlocked = state.level >= p.level;
+            const emblem = EMBLEMS.find((e) => e.level === p.level);
+            return (
               <div
-                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-lg ${
-                  unlocked
-                    ? 'border-primary bg-primary/15 text-primary'
-                    : 'border-border text-muted-foreground'
+                key={p.level}
+                className={`flex gap-4 rounded-xl border p-4 transition-colors ${
+                  unlocked ? 'border-primary/40 bg-primary/5' : 'border-border bg-card'
                 }`}
               >
-                {unlocked && emblem ? (
-                  <span className={emblem.animation ?? ''}>{emblem.glyph}</span>
-                ) : unlocked ? (
-                  <Check className="h-5 w-5" />
-                ) : (
-                  <Lock className="h-4 w-4" />
-                )}
-              </div>
-              <div className="min-w-0 flex-1 space-y-1">
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className="truncate font-black uppercase tracking-wide">{p.title}</span>
-                  <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
-                    Lv {p.level}
-                  </span>
+                <div
+                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-lg ${
+                    unlocked
+                      ? 'border-primary bg-primary/15 text-primary'
+                      : 'border-border text-muted-foreground'
+                  }`}
+                >
+                  {unlocked && emblem ? (
+                    <span className={emblem.animation ?? ''}>{emblem.glyph}</span>
+                  ) : unlocked ? (
+                    <Check className="h-5 w-5" />
+                  ) : (
+                    <Lock className="h-4 w-4" />
+                  )}
                 </div>
-                <p className="text-xs leading-snug text-muted-foreground">{p.detail}</p>
-                {!unlocked && (
-                  <p className="font-mono text-[10px] tabular-nums text-muted-foreground">
-                    {Math.max(0, wordsForLevel(p.level) - totalWords).toLocaleString()} words to go
-                  </p>
-                )}
+                <div className="min-w-0 flex-1 space-y-1">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="truncate font-black uppercase tracking-wide">{p.title}</span>
+                    <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
+                      Lv {p.level}
+                    </span>
+                  </div>
+                  <p className="text-xs leading-snug text-muted-foreground">{p.detail}</p>
+                  {!unlocked && (
+                    <p className="font-mono text-[10px] tabular-nums text-muted-foreground">
+                      {Math.max(0, wordsForLevel(p.level) - state.words).toLocaleString()} words to go
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
+
+      {master && (
+        <div className="space-y-2">
+          {MASTER_TIERS.map((t) => {
+            const unlocked = state.level >= t.level;
+            return (
+              <div
+                key={t.level}
+                className={`flex gap-4 rounded-xl border p-4 transition-colors ${
+                  unlocked ? 'border-primary/40 bg-primary/5' : 'border-border bg-card'
+                }`}
+              >
+                <div
+                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-lg ${
+                    unlocked
+                      ? 'border-primary bg-primary/15 text-primary'
+                      : 'border-border text-muted-foreground'
+                  }`}
+                >
+                  {unlocked ? <span>{t.glyph}</span> : <Lock className="h-4 w-4" />}
+                </div>
+                <div className="min-w-0 flex-1 space-y-1">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="truncate font-black uppercase tracking-wide">{t.title}</span>
+                    <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
+                      Lv {t.level}
+                    </span>
+                  </div>
+                  <p className="text-xs leading-snug text-muted-foreground">
+                    Reward details to be fleshed out — placeholder tier callout.
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </section>
+  );
+}
+
+/** Ten locked-until-earned prestige cards, same visual language as the Menagerie. */
+function PrestigeLadder({ prestige }: { prestige: number }) {
+  return (
+    <div>
+      <h2 className="text-sm font-black uppercase tracking-widest">Prestige Ladder</h2>
+      <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
+        Reset your level up to ten times. Each reset costs more words than the last — but nothing
+        you've already earned is ever lost.
+      </p>
+      <div className="mt-3 grid grid-cols-3 gap-2.5 sm:grid-cols-4">
+        {PRESTIGE_ICONS.map((p) => (
+          <GalleryCard
+            key={p.prestige}
+            glyph={p.glyph}
+            title={p.name}
+            at={p.prestige}
+            unit="prestige"
+            unlocked={prestige >= p.prestige}
+            distance={Math.max(0, p.prestige - prestige)}
+            animation={prestige >= p.prestige ? TIER_ANIMATION.legendary : null}
+            tier="legendary"
+          />
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -283,12 +414,13 @@ function GalleryCard({
 
 /** The graphic page: a trophy-case grid of every earnable, art-first. */
 function Gallery({
-  totalWords, level, unlockedCompanions, unlockedBadges,
+  totalWords, level, unlockedCompanions, unlockedBadges, unlockedAchievements,
 }: {
   totalWords: number;
   level: number;
   unlockedCompanions: string[];
   unlockedBadges: string[];
+  unlockedAchievements: string[];
 }) {
   return (
     <div className="space-y-6">
@@ -383,6 +515,49 @@ function Gallery({
       </div>
 
       <div>
+        <h2 className="text-sm font-black uppercase tracking-widest">Special</h2>
+        <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
+          Achievement-gated companions and challenges — one language example today, more to
+          follow.
+        </p>
+        <div className="mt-3 grid grid-cols-3 gap-2.5 sm:grid-cols-4">
+          {SPECIAL_COMPANIONS.map((m) => {
+            const companionId = m.title.toLowerCase().replace(/\s+/g, '-');
+            const isUnlocked = unlockedCompanions.includes(companionId);
+            return (
+              <GalleryCard
+                key={m.title}
+                glyph={m.glyph ?? '❔'}
+                title={m.title}
+                at={1}
+                unit="achievement"
+                unlocked={isUnlocked}
+                distance={isUnlocked ? 0 : 1}
+                animation={isUnlocked && m.tier ? TIER_ANIMATION[m.tier] : null}
+                tier={m.tier}
+              />
+            );
+          })}
+          {ALL_ACHIEVEMENTS.map((a) => {
+            const isUnlocked = unlockedAchievements.includes(a.id);
+            return (
+              <GalleryCard
+                key={a.id}
+                glyph={a.glyph}
+                title={a.title}
+                at={1}
+                unit="achievement"
+                unlocked={isUnlocked}
+                distance={isUnlocked ? 0 : 1}
+                animation={isUnlocked ? TIER_ANIMATION[a.tier] : null}
+                tier={a.tier}
+              />
+            );
+          })}
+        </div>
+      </div>
+
+      <div>
         <h2 className="text-sm font-black uppercase tracking-widest">In Concept</h2>
         <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
           Proposed, not yet wired to a reward — the next things worth building.
@@ -411,13 +586,17 @@ export default function Roadmap() {
   const [view, setView] = useState<'gallery' | 'list'>('gallery');
   const [unlockedCompanions, setUnlockedCompanions] = useState<string[]>([]);
   const [unlockedBadges, setUnlockedBadges] = useState<string[]>([]);
+  const [unlockedAchievements, setUnlockedAchievements] = useState<string[]>([]);
+  const [prestige, setPrestige] = useState(0);
+  const [master, setMaster] = useState(false);
 
   // Lifetime words across every language — the counter the long track uses.
+  // Never mutated by prestige; prestige.ts layers an offset on top instead.
   const totalWords = useMemo(
     () => Object.values(getLifetimeWords()).reduce((a, b) => a + b, 0),
     [],
   );
-  const level = useMemo(() => levelState(totalWords).level, [totalWords]);
+  const level = useMemo(() => effectiveLevelState(totalWords).level, [totalWords, prestige, master]);
 
   // The in-run counter itself resets every match, but use-celebration
   // persists a high-water mark on every new best, so this track can show
@@ -425,13 +604,35 @@ export default function Roadmap() {
   const bestStreak = useMemo(() => currentBestStreak(), []);
   const state = evaluate(bestStreak, totalWords);
 
-  // Update companion unlocks and read current state
+  // Update companion/badge/achievement unlocks and read current state.
   useEffect(() => {
     updateCompanionUnlocks(totalWords);
     checkPolyglotBadge();
+    updateAchievementUnlocks();
+    payReearnBonuses(wordsInCurrentCycle(totalWords), currentPrestige(), payReearnBonus);
     setUnlockedCompanions(getUnlockedCompanions());
     setUnlockedBadges(getUnlockedBadges());
+    setUnlockedAchievements(getUnlockedAchievements());
+    setPrestige(currentPrestige());
+    setMaster(isMasterPrestige());
   }, [totalWords]);
+
+  const handlePrestige = () => {
+    const result = doPrestige(totalWords);
+    if (result != null) {
+      setPrestige(result);
+    }
+  };
+
+  const handleFork = (path: 'retire' | 'master') => {
+    if (path === 'retire') {
+      retire();
+      setPrestige(currentPrestige());
+    } else {
+      enterMasterPrestige(totalWords);
+      setMaster(true);
+    }
+  };
 
   return (
     <div className="space-y-8 p-5 pb-28 pt-10">
@@ -485,7 +686,16 @@ export default function Roadmap() {
       <AnimatePresence mode="wait">
         {view === 'gallery' ? (
           <motion.div key="gallery" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
-            <Gallery totalWords={totalWords} level={level} unlockedCompanions={unlockedCompanions} unlockedBadges={unlockedBadges} />
+            <div className="space-y-6">
+              <PrestigeLadder prestige={prestige} />
+              <Gallery
+                totalWords={totalWords}
+                level={level}
+                unlockedCompanions={unlockedCompanions}
+                unlockedBadges={unlockedBadges}
+                unlockedAchievements={unlockedAchievements}
+              />
+            </div>
           </motion.div>
         ) : (
           <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="space-y-8">
@@ -505,7 +715,13 @@ export default function Roadmap() {
               </div>
             </section>
 
-            <LevelTrack totalWords={totalWords} />
+            <LevelTrack
+              totalWords={totalWords}
+              prestige={prestige}
+              master={master}
+              onPrestige={handlePrestige}
+              onFork={handleFork}
+            />
 
             <section className="space-y-3">
               <TrackHeader

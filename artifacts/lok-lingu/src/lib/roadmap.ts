@@ -118,6 +118,23 @@ export const CONCEPT_MILESTONES: Milestone[] = [
   },
 ];
 
+/**
+ * Achievement-gated companions — unlocked by an achievement id
+ * (achievements.ts), not a words threshold, so they don't fit
+ * TOTAL_MILESTONES' `at`-based projection. Reuses the exact
+ * Milestone/GalleryCard/TIER_ANIMATION plumbing; `at` is unused for these
+ * (kept 0 to satisfy the shared type) since unlock is a boolean achievement
+ * flag rather than a counter comparison.
+ */
+export const SPECIAL_COMPANIONS: Milestone[] = [
+  {
+    at: 0, track: 'total', title: 'Sir Baguette',
+    detail: 'A baguette in a beret with a magnificent mustache. Earned, not found — awarded for mastering 50 French food words.',
+    reward: 'companion', rewardLabel: 'Sir Baguette companion', live: true,
+    glyph: '🥖', tier: 'legendary',
+  },
+];
+
 export const ALL_MILESTONES = [...MATCH_MILESTONES, ...TOTAL_MILESTONES];
 
 export interface TrackState {

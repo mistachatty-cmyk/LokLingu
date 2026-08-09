@@ -14,6 +14,8 @@ export interface CelebrationDef {
   type: CelebrationAnimType;
   soundProfile: SoundProfile;
   bgColor: string;
+  /** Gated behind a prestige tier — undefined means always available. */
+  unlockPrestige?: number;
 }
 
 export const INTENSITY_CONFIG = {
@@ -165,6 +167,45 @@ export const CELEBRATIONS: CelebrationDef[] = [
     type: 'glass',
     soundProfile: 'complete',
     bgColor: '#0f3460',
+  },
+  // Prestige-exclusive celebrations — gated by unlockPrestige, checked in
+  // the celebrations.tsx picker. Reuses existing animation types/sounds;
+  // no new effect machinery, just prestige-tier flavor entries.
+  {
+    id: 'prestige-circuit',
+    name: 'CIRCUIT SURGE',
+    label: 'Circuit Surge',
+    desc: 'Bronze-to-gold current arcs across the screen. Prestige exclusive.',
+    tier: 'F',
+    emojiList: ['⚡', '🥉', '🥈', '🥇', '💠'],
+    type: 'burst',
+    soundProfile: 'ascend',
+    bgColor: '#3a2a1a',
+    unlockPrestige: 3,
+  },
+  {
+    id: 'prestige-lattice',
+    name: 'DIAMOND LATTICE',
+    label: 'Diamond Lattice',
+    desc: 'A crystalline shockwave, faceted light everywhere. Prestige exclusive.',
+    tier: 'F',
+    emojiList: ['💎', '🔷', '🔶', '✨', '🌠'],
+    type: 'glass',
+    soundProfile: 'gong',
+    bgColor: '#1a2a3a',
+    unlockPrestige: 6,
+  },
+  {
+    id: 'prestige-nova',
+    name: 'NOVA',
+    label: 'Nova',
+    desc: 'The screen goes supernova — the last and brightest celebration. Prestige 10 exclusive.',
+    tier: 'F',
+    emojiList: ['🌌', '🌠', '💫', '⭐', '✨'],
+    type: 'wave',
+    soundProfile: 'ascend',
+    bgColor: '#0a0a2a',
+    unlockPrestige: 10,
   },
 ];
 

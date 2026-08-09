@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useLocation } from 'wouter';
 import { CELEBRATIONS, INTENSITY_CONFIG } from '@/lib/celebrations';
 import { useCelebration } from '@/hooks/use-celebration';
@@ -8,6 +8,7 @@ import { Check, Home, Play, Lock, Star, Zap, Sparkles, Globe } from 'lucide-reac
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import type { CelebrationDef, CelebrationIntensity } from '@/lib/celebrations';
+import { currentPrestige } from '@/lib/prestige';
 
 const TIERS = [
   { tier: 'A' as const, label: 'Category A — General', icon: null, color: 'text-primary' },
@@ -27,11 +28,13 @@ const MILESTONE_LABELS: Record<CelebrationIntensity, { name: string; target: num
 function CelebrationCard({
   c,
   isActive,
+  locked,
   onSelect,
   onPreview,
 }: {
   c: CelebrationDef;
   isActive: boolean;
+  locked: boolean;
   onSelect: () => void;
   onPreview: (intensity: CelebrationIntensity) => void;
 }) {
@@ -41,22 +44,29 @@ function CelebrationCard({
     <motion.div
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.97 }}
-      onClick={onSelect}
+      onClick={locked ? undefined : onSelect}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className={`cursor-pointer rounded-xl border-2 overflow-hidden transition-all relative ${
-        isActive
-          ? 'border-primary ring-4 ring-primary/20'
-          : 'border-border opacity-70 hover:opacity-100'
+      className={`rounded-xl border-2 overflow-hidden transition-all relative ${
+        locked
+          ? 'cursor-not-allowed border-border opacity-50'
+          : isActive
+            ? 'cursor-pointer border-primary ring-4 ring-primary/20'
+            : 'cursor-pointer border-border opacity-70 hover:opacity-100'
       }`}
     >
       <div
         className="h-20 flex flex-col items-center justify-center relative"
         style={{ background: `linear-gradient(135deg, ${c.bgColor}, ${c.bgColor}88)` }}
       >
-        {isActive && (
+        {isActive && !locked && (
           <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-0.5 shadow-md z-10">
             <Check className="w-3 h-3" />
+          </div>
+        )}
+        {locked && (
+          <div className="absolute top-2 right-2 rounded-full bg-black/50 p-1 shadow-md z-10">
+            <Lock className="w-3 h-3 text-white" />
           </div>
         )}
         <div className="text-2xl tracking-widest select-none">
@@ -72,7 +82,7 @@ function CelebrationCard({
             style={{ backgroundColor: `${c.bgColor}cc`, backdropFilter: 'blur(4px)' }}
           >
             <p className="text-[10px] leading-tight text-center font-medium text-white/90">
-              {c.desc}
+              {locked ? `Requires Prestige ${c.unlockPrestige}` : c.desc}
             </p>
           </div>
         )}
@@ -83,8 +93,9 @@ function CelebrationCard({
           {(['mini', 'big', 'suBang'] as CelebrationIntensity[]).map((intensity) => (
             <button
               key={intensity}
+              disabled={locked}
               onClick={(e) => { e.stopPropagation(); onPreview(intensity); }}
-              className="flex-1 text-[8px] uppercase tracking-widest font-bold py-1 rounded border border-border hover:border-primary/40 hover:bg-accent transition-all"
+              className="flex-1 text-[8px] uppercase tracking-widest font-bold py-1 rounded border border-border hover:border-primary/40 hover:bg-accent transition-all disabled:pointer-events-none"
             >
               <Play className="w-2.5 h-2.5 mx-auto" />
             </button>
@@ -100,6 +111,7 @@ export default function Celebrations() {
   const { activeCelebrationId, setActiveCelebration, matchCount, boostUnlocked } = useCelebration();
   const { play } = useCelebrationSound();
   const [preview, setPreview] = useState<{ celebration: CelebrationDef; intensity: CelebrationIntensity } | null>(null);
+  const prestige = useMemo(() => currentPrestige(), []);
 
   const handlePreview = (c: CelebrationDef, intensity: CelebrationIntensity) => {
     setPreview({ celebration: c, intensity });
@@ -183,15 +195,19 @@ export default function Celebrations() {
               <span>{label}</span>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              {tierCelebrations.map((c) => (
-                <CelebrationCard
-                  key={c.id}
-                  c={c}
-                  isActive={activeCelebrationId === c.id}
-                  onSelect={() => setActiveCelebration(c.id)}
-                  onPreview={(intensity) => handlePreview(c, intensity)}
-                />
-              ))}
+              {tierCelebrations.map((c) => {
+                const locked = !!c.unlockPrestige && prestige < c.unlockPrestige;
+                return (
+                  <CelebrationCard
+                    key={c.id}
+                    c={c}
+                    isActive={activeCelebrationId === c.id}
+                    locked={locked}
+                    onSelect={() => setActiveCelebration(c.id)}
+                    onPreview={(intensity) => handlePreview(c, intensity)}
+                  />
+                );
+              })}
             </div>
           </div>
         );
