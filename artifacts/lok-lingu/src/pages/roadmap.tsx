@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Check, Lock, Sparkles, Coins, SkipForward, Heart, PawPrint, Award, Palette, LayoutGrid, List as ListIcon } from 'lucide-react';
@@ -7,7 +7,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useEconomy } from '@/hooks/use-economy';
 import { getLifetimeWords } from '@/lib/offline-data';
 import { levelState, wordsForLevel, MAX_LEVEL, LEVEL_PERKS, rankTitle } from '@/lib/levels';
-import { currentBestStreak } from '@/hooks/use-celebration';
+import { currentBestStreak, updateCompanionUnlocks, getUnlockedCompanions, getUnlockedBadges, checkPolyglotBadge } from '@/hooks/use-celebration';
 import { EMBLEMS, earnedEmblems } from '@/lib/emblems';
 import {
   evaluate, MATCH_MILESTONES, TOTAL_MILESTONES, CONCEPT_MILESTONES, TIER_ANIMATION,
@@ -282,7 +282,14 @@ function GalleryCard({
 }
 
 /** The graphic page: a trophy-case grid of every earnable, art-first. */
-function Gallery({ totalWords, level }: { totalWords: number; level: number }) {
+function Gallery({
+  totalWords, level, unlockedCompanions, unlockedBadges,
+}: {
+  totalWords: number;
+  level: number;
+  unlockedCompanions: string[];
+  unlockedBadges: string[];
+}) {
   return (
     <div className="space-y-6">
       <div>
@@ -291,19 +298,23 @@ function Gallery({ totalWords, level }: { totalWords: number; level: number }) {
           Every companion, earned by lifetime words across every language.
         </p>
         <div className="mt-3 grid grid-cols-3 gap-2.5 sm:grid-cols-4">
-          {TOTAL_MILESTONES.filter((m) => m.reward === 'companion').map((m) => (
-            <GalleryCard
-              key={m.title}
-              glyph={m.glyph ?? '❔'}
-              title={m.title}
-              at={m.at}
-              unit="words"
-              unlocked={totalWords >= m.at}
-              distance={Math.max(0, m.at - totalWords)}
-              animation={m.tier ? TIER_ANIMATION[m.tier] : null}
-              tier={m.tier}
-            />
-          ))}
+          {TOTAL_MILESTONES.filter((m) => m.reward === 'companion').map((m) => {
+            const companionId = m.title.toLowerCase();
+            const isUnlocked = unlockedCompanions.includes(companionId);
+            return (
+              <GalleryCard
+                key={m.title}
+                glyph={m.glyph ?? '❔'}
+                title={m.title}
+                at={m.at}
+                unit="words"
+                unlocked={isUnlocked}
+                distance={Math.max(0, m.at - totalWords)}
+                animation={isUnlocked && m.tier ? TIER_ANIMATION[m.tier] : null}
+                tier={m.tier}
+              />
+            );
+          })}
         </div>
       </div>
 
@@ -329,12 +340,55 @@ function Gallery({ totalWords, level }: { totalWords: number; level: number }) {
       </div>
 
       <div>
+        <h2 className="text-sm font-black uppercase tracking-widest">Badges</h2>
+        <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
+          Earned by hitting milestones in runs and playing across languages.
+        </p>
+        <div className="mt-3 grid grid-cols-3 gap-2.5 sm:grid-cols-4">
+          {MATCH_MILESTONES.filter((m) => m.reward === 'badge').map((m) => {
+            const badgeId = m.title.toLowerCase().replace(/\s+/g, '-');
+            const isUnlocked = unlockedBadges.includes(badgeId);
+            return (
+              <GalleryCard
+                key={m.title}
+                glyph="🏅"
+                title={m.title}
+                at={m.at}
+                unit="matches"
+                unlocked={isUnlocked}
+                distance={Math.max(0, m.at - 0)}
+                animation={null}
+                tier="common"
+              />
+            );
+          })}
+          {CONCEPT_MILESTONES.filter((m) => m.reward === 'badge').map((m) => {
+            const badgeId = m.title.toLowerCase().replace(/\s+/g, '-');
+            const isUnlocked = unlockedBadges.includes(badgeId);
+            return (
+              <GalleryCard
+                key={m.title}
+                glyph="🏅"
+                title={m.title}
+                at={m.at}
+                unit="languages"
+                unlocked={isUnlocked}
+                distance={Math.max(0, m.at - 0)}
+                animation={null}
+                tier="uncommon"
+              />
+            );
+          })}
+        </div>
+      </div>
+
+      <div>
         <h2 className="text-sm font-black uppercase tracking-widest">In Concept</h2>
         <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
           Proposed, not yet wired to a reward — the next things worth building.
         </p>
         <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-          {CONCEPT_MILESTONES.map((m) => (
+          {CONCEPT_MILESTONES.filter((m) => m.reward !== 'badge').map((m) => (
             <div
               key={m.title}
               className="rounded-2xl border border-dashed border-border bg-card/50 p-3 text-center"
@@ -355,6 +409,8 @@ export default function Roadmap() {
   useTheme();
   const { earned } = useEconomy();
   const [view, setView] = useState<'gallery' | 'list'>('gallery');
+  const [unlockedCompanions, setUnlockedCompanions] = useState<string[]>([]);
+  const [unlockedBadges, setUnlockedBadges] = useState<string[]>([]);
 
   // Lifetime words across every language — the counter the long track uses.
   const totalWords = useMemo(
@@ -368,6 +424,14 @@ export default function Roadmap() {
   // real progress instead of a permanently-empty preview.
   const bestStreak = useMemo(() => currentBestStreak(), []);
   const state = evaluate(bestStreak, totalWords);
+
+  // Update companion unlocks and read current state
+  useEffect(() => {
+    updateCompanionUnlocks(totalWords);
+    checkPolyglotBadge();
+    setUnlockedCompanions(getUnlockedCompanions());
+    setUnlockedBadges(getUnlockedBadges());
+  }, [totalWords]);
 
   return (
     <div className="space-y-8 p-5 pb-28 pt-10">
@@ -421,7 +485,7 @@ export default function Roadmap() {
       <AnimatePresence mode="wait">
         {view === 'gallery' ? (
           <motion.div key="gallery" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
-            <Gallery totalWords={totalWords} level={level} />
+            <Gallery totalWords={totalWords} level={level} unlockedCompanions={unlockedCompanions} unlockedBadges={unlockedBadges} />
           </motion.div>
         ) : (
           <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="space-y-8">

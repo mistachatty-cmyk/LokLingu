@@ -58,11 +58,11 @@ export const TIER_ANIMATION: Record<Tier, string | null> = {
  * unlocks boost), suBang every 100 (which activates boost).
  */
 export const MATCH_MILESTONES: Milestone[] = [
-  { at: 5,   track: 'match', title: 'Warm',          detail: 'Five in a row without stopping.',                   reward: 'badge',       rewardLabel: 'Warm badge',        live: false },
-  { at: 10,  track: 'match', title: 'Rolling',       detail: 'Ten straight — the loop is holding.',               reward: 'badge',       rewardLabel: 'Rolling badge',     live: false },
+  { at: 5,   track: 'match', title: 'Warm',          detail: 'Five in a row without stopping.',                   reward: 'badge',       rewardLabel: 'Warm badge',        live: true },
+  { at: 10,  track: 'match', title: 'Rolling',       detail: 'Ten straight — the loop is holding.',               reward: 'badge',       rewardLabel: 'Rolling badge',     live: true },
   { at: 25,  track: 'match', title: 'First Burst',   detail: 'Your equipped celebration fires at mini intensity.', reward: 'tokens',      rewardLabel: '+25 tokens',        live: true  },
   { at: 50,  track: 'match', title: 'Boost Unlocked',detail: 'Big celebration, and Token Boost becomes available.', reward: 'celebration', rewardLabel: 'Boost unlocked',    live: true  },
-  { at: 75,  track: 'match', title: 'Deep Run',      detail: 'Three quarters of the way to a century.',            reward: 'skip',        rewardLabel: '+1 skip',           live: false },
+  { at: 75,  track: 'match', title: 'Deep Run',      detail: 'Three quarters of the way to a century.',            reward: 'badge',       rewardLabel: '+1 skip',           live: true },
   { at: 100, track: 'match', title: 'Century',       detail: 'suBang celebration, and Token Boost activates.',     reward: 'celebration', rewardLabel: 'Boost activated',   live: true  },
 ];
 
@@ -74,24 +74,24 @@ export const MATCH_MILESTONES: Milestone[] = [
  * along on the game screen where the floating "L" sits today.
  */
 export const TOTAL_MILESTONES: Milestone[] = [
-  { at: 10,    track: 'total', title: 'Wren',      detail: 'Companion. The very first — arrives fast so the system introduces itself early.', reward: 'companion', rewardLabel: 'Wren companion', live: false, glyph: '🐤', tier: 'common' },
-  { at: 25,    track: 'total', title: 'Sparrow',   detail: 'Companion. Small, quick, first to arrive.',          reward: 'companion', rewardLabel: 'Sparrow companion',  live: false, glyph: '🐦', tier: 'common' },
-  { at: 50,    track: 'total', title: 'Otter',     detail: 'Companion. Playful — keeps the early stretch from feeling empty before Centurion.', reward: 'companion', rewardLabel: 'Otter companion', live: false, glyph: '🦦', tier: 'common' },
+  { at: 10,    track: 'total', title: 'Wren',      detail: 'Companion. The very first — arrives fast so the system introduces itself early.', reward: 'companion', rewardLabel: 'Wren companion', live: true, glyph: '🐤', tier: 'common' },
+  { at: 25,    track: 'total', title: 'Sparrow',   detail: 'Companion. Small, quick, first to arrive.',          reward: 'companion', rewardLabel: 'Sparrow companion',  live: true, glyph: '🐦', tier: 'common' },
+  { at: 50,    track: 'total', title: 'Otter',     detail: 'Companion. Playful — keeps the early stretch from feeling empty before Centurion.', reward: 'companion', rewardLabel: 'Otter companion', live: true, glyph: '🦦', tier: 'common' },
   { at: 100,   track: 'total', title: 'Centurion', detail: 'One hundred words banked across all languages.',     reward: 'tokens',    rewardLabel: '+100 tokens',        live: false, glyph: '💯' },
-  { at: 250,   track: 'total', title: 'Fox',       detail: 'Companion. Arrives with a free skip stack.',         reward: 'companion', rewardLabel: 'Fox + 1 skip',       live: false, glyph: '🦊', tier: 'uncommon' },
-  { at: 500,   track: 'total', title: 'Crane',     detail: 'Companion. Unlocks the Lingu Culture theme tier.',   reward: 'companion', rewardLabel: 'Crane + theme tier', live: false, glyph: '🦢', tier: 'uncommon' },
-  { at: 1000,  track: 'total', title: 'Wolf',      detail: 'Companion. Pack animal — hearts start stacking.',    reward: 'companion', rewardLabel: 'Wolf + 3 hearts',    live: false, glyph: '🐺', tier: 'rare' },
-  { at: 2500,  track: 'total', title: 'Tiger',     detail: 'Companion. Flag Tier singles unlock.',               reward: 'companion', rewardLabel: 'Tiger + flag tier',  live: false, glyph: '🐯', tier: 'rare' },
-  { at: 5000,  track: 'total', title: 'Whale',     detail: 'Companion. The whole Flag Pack, no purchase.',       reward: 'companion', rewardLabel: 'Whale + flag pack',  live: false, glyph: '🐋', tier: 'epic' },
-  { at: 10000, track: 'total', title: 'Dragon',    detail: 'Companion. Mythic tier, animated, one per account.', reward: 'companion', rewardLabel: 'Dragon + Mythic',    live: false, glyph: '🐉', tier: 'legendary' },
+  { at: 250,   track: 'total', title: 'Fox',       detail: 'Companion. Arrives with a free skip stack.',         reward: 'companion', rewardLabel: 'Fox + 1 skip',       live: true, glyph: '🦊', tier: 'uncommon' },
+  { at: 500,   track: 'total', title: 'Crane',     detail: 'Companion. Unlocks the Lingu Culture theme tier.',   reward: 'companion', rewardLabel: 'Crane + theme tier', live: true, glyph: '🦢', tier: 'uncommon' },
+  { at: 1000,  track: 'total', title: 'Wolf',      detail: 'Companion. Pack animal — hearts start stacking.',    reward: 'companion', rewardLabel: 'Wolf + 3 hearts',    live: true, glyph: '🐺', tier: 'rare' },
+  { at: 2500,  track: 'total', title: 'Tiger',     detail: 'Companion. Flag Tier singles unlock.',               reward: 'companion', rewardLabel: 'Tiger + flag tier',  live: true, glyph: '🐯', tier: 'rare' },
+  { at: 5000,  track: 'total', title: 'Whale',     detail: 'Companion. The whole Flag Pack, no purchase.',       reward: 'companion', rewardLabel: 'Whale + flag pack',  live: true, glyph: '🐋', tier: 'epic' },
+  { at: 10000, track: 'total', title: 'Dragon',    detail: 'Companion. Mythic tier, animated, one per account.', reward: 'companion', rewardLabel: 'Dragon + Mythic',    live: true, glyph: '🐉', tier: 'legendary' },
   /*
    * New concepts past the original ceiling. Kept on the same total-words
    * counter deliberately — a companion tier that needed its own tracker
    * would be a second economy to keep in sync, and the whole point of
    * this track is that it cannot desync from what was actually played.
    */
-  { at: 20000, track: 'total', title: 'Phoenix',  detail: 'Companion. Reborn each Legacy Archive cycle — see docs/PROGRESSION.md.', reward: 'companion', rewardLabel: 'Phoenix + Legacy Archive', live: false, glyph: '🐦‍🔥', tier: 'mythic' },
-  { at: 50000, track: 'total', title: 'Leviathan', detail: 'Companion. The last tier. A permanent nameplate flourish, not just an icon.', reward: 'companion', rewardLabel: 'Leviathan + nameplate', live: false, glyph: '🐙', tier: 'mythic' },
+  { at: 20000, track: 'total', title: 'Phoenix',  detail: 'Companion. Reborn each Legacy Archive cycle — see docs/PROGRESSION.md.', reward: 'companion', rewardLabel: 'Phoenix + Legacy Archive', live: true, glyph: '🐦‍🔥', tier: 'mythic' },
+  { at: 50000, track: 'total', title: 'Leviathan', detail: 'Companion. The last tier. A permanent nameplate flourish, not just an icon.', reward: 'companion', rewardLabel: 'Leviathan + nameplate', live: true, glyph: '🐙', tier: 'mythic' },
 ];
 
 /**
@@ -104,17 +104,17 @@ export const CONCEPT_MILESTONES: Milestone[] = [
   {
     at: 3, track: 'total', title: 'Polyglot',
     detail: 'Earned by playing 3+ different languages, not by words in any one of them — rewards breadth instead of grinding a single language.',
-    reward: 'badge', rewardLabel: 'Polyglot badge', live: false,
+    reward: 'badge', rewardLabel: 'Polyglot badge', live: true,
   },
   {
     at: 7, track: 'total', title: 'Streak Keeper',
     detail: 'Play on 7 different calendar days. A comeback track, not a punishing daily-streak that resets on one missed day.',
-    reward: 'badge', rewardLabel: 'Streak Keeper badge', live: false,
+    reward: 'badge', rewardLabel: 'Streak Keeper badge', live: true,
   },
   {
     at: 1, track: 'total', title: 'Archivist',
     detail: 'Equip a Legacy theme or celebration at least once — a nudge toward the archived styles from earlier updates, not just the newest ones.',
-    reward: 'badge', rewardLabel: 'Archivist badge', live: false,
+    reward: 'badge', rewardLabel: 'Archivist badge', live: true,
   },
 ];
 

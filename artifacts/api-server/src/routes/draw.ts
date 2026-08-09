@@ -23,7 +23,7 @@ router.post('/draw/recognize', async (req, res) => {
 
   try {
     const response = await openai.chat.completions.create({
-      model: 'gpt-5-nano',
+      model: 'gpt-4o',
       max_completion_tokens: 10,
       messages: [
         {
