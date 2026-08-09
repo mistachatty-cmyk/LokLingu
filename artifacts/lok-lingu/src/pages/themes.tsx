@@ -489,6 +489,12 @@ function StackShop() {
  * local counter and are contained to their tile (the Vault would
  * otherwise draw over the whole page).
  */
+interface CategoryGroup {
+  label: string;
+  key: string;
+  subcategories: { label: string; key: string }[];
+}
+
 function TokenSkinShop() {
   const { balance } = useEconomy();
   const { skin: equipped, refresh } = useTokenSkin();
@@ -496,16 +502,42 @@ function TokenSkinShop() {
   const [owned, setOwned] = useState<string[]>(getOwnedSkins);
   const [previews, setPreviews] = useState<Record<string, number>>({});
   const [note, setNote] = useState<{ id: string; text: string; ok: boolean } | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
+    coins: true,
+    emoji: true,
+  });
 
-  // Get unique categories from all skins
-  const categories = Array.from(
-    new Set(TOKEN_SKINS.map((s) => s.category).filter((c): c is string => c != null))
-  ).sort();
+  // Organize skins into groups
+  const categorizeGroups: CategoryGroup[] = [
+    {
+      label: 'Classic Coins',
+      key: 'coins',
+      subcategories: [{ label: 'Coins', key: 'classic' }],
+    },
+    {
+      label: 'Emoji Tokens',
+      key: 'emoji',
+      subcategories: [
+        { label: 'Food', key: 'food' },
+        { label: 'Symbolic', key: 'symbolic' },
+      ],
+    },
+    {
+      label: 'Collaborations',
+      key: 'collab',
+      subcategories: [{ label: 'Partners', key: 'collab' }],
+    },
+  ];
 
-  const filteredSkins = selectedCategory
-    ? TOKEN_SKINS.filter((s) => s.category === selectedCategory)
-    : TOKEN_SKINS;
+  const toggleGroup = (key: string) => {
+    setExpandedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const getSkinsForGroup = (group: CategoryGroup): TokenSkin[] => {
+    return TOKEN_SKINS.filter((s) =>
+      group.subcategories.some((sub) => s.category === sub.key)
+    );
+  };
 
   const bump = (id: string) => setPreviews((p) => ({ ...p, [id]: (p[id] ?? 0) + 1 }));
 
@@ -560,111 +592,119 @@ function TokenSkinShop() {
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <label htmlFor="category-filter" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-          Category:
-        </label>
-        <select
-          id="category-filter"
-          value={selectedCategory || ''}
-          onChange={(e) => setSelectedCategory(e.target.value || null)}
-          className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-all hover:border-primary/40"
-        >
-          <option value="">All Skins</option>
-          {categories.map((category) => (
-            <option key={category} value={category}>
-              {category.charAt(0).toUpperCase() + category.slice(1)}
-            </option>
-          ))}
-        </select>
-      </div>
-
       <p className="text-xs text-muted-foreground leading-snug">
         Appearance and effect ship bundled for now. They are stored as separate fields, so they can
         be split into independent pickers later without resetting what you own.
       </p>
 
-      <div className="grid grid-cols-2 gap-2">
-        {filteredSkins.map((skin) => {
+      {categorizeGroups.map((group) => {
+        const groupSkins = getSkinsForGroup(group);
+        if (groupSkins.length === 0) return null;
+        const isExpanded = expandedGroups[group.key];
+
+        return (
+          <div key={group.key} className="space-y-2">
+            <button
+              type="button"
+              onClick={() => toggleGroup(group.key)}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-border bg-card/50 hover:bg-card transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              <span className="font-black text-sm uppercase tracking-wide text-foreground">
+                {group.label}
+              </span>
+              <span
+                className={`text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+              >
+                ▼
+              </span>
+            </button>
+
+            {isExpanded && (
+              <div className="grid grid-cols-2 gap-2 pl-2">
+                {groupSkins.map((skin) => {
           const isOwned = ownsSkin(skin.id, level) || owned.includes(skin.id);
           const levelLocked = skin.unlockLevel != null && level < skin.unlockLevel;
           const isEquipped = equipped.id === skin.id;
           return (
-            <button
-              key={skin.id}
-              type="button"
-              onClick={() => handleCard(skin)}
-              className={`relative overflow-hidden rounded-xl border p-3 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary active:scale-[0.98] ${
-                isEquipped
-                  ? 'border-primary bg-primary/10'
-                  : skin.ultimate
-                    ? 'border-amber-500/50 bg-gradient-to-br from-amber-500/10 to-card hover:border-amber-400'
-                    : 'border-border bg-card hover:border-primary/40'
-              }`}
-            >
-              {/* Live preview stage — the real components, contained. */}
-              <div className="relative mb-2 h-20 overflow-hidden rounded-lg bg-background/60">
-                <TokenVaultLayer
-                  animKey={previews[skin.id] ?? 0}
-                  skinOverride={skin}
-                  contained
-                />
-                <div className="absolute right-3 top-3">
-                  <TokenEarnedLabel
-                    animKey={previews[skin.id] ?? 0}
-                    label="+2"
-                    skinOverride={skin}
-                  />
-                </div>
-                {!previews[skin.id] && (
-                  <span className="absolute inset-0 flex items-center justify-center text-2xl opacity-40">
-                    {skin.glyph}
-                  </span>
-                )}
+                  <button
+                    key={skin.id}
+                    type="button"
+                    onClick={() => handleCard(skin)}
+                    className={`relative overflow-hidden rounded-xl border p-3 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary active:scale-[0.98] ${
+                      isEquipped
+                        ? 'border-primary bg-primary/10'
+                        : skin.ultimate
+                          ? 'border-amber-500/50 bg-gradient-to-br from-amber-500/10 to-card hover:border-amber-400'
+                          : 'border-border bg-card hover:border-primary/40'
+                    }`}
+                  >
+                    {/* Live preview stage — the real components, contained. */}
+                    <div className="relative mb-2 h-20 overflow-hidden rounded-lg bg-background/60">
+                      <TokenVaultLayer
+                        animKey={previews[skin.id] ?? 0}
+                        skinOverride={skin}
+                        contained
+                      />
+                      <div className="absolute right-3 top-3">
+                        <TokenEarnedLabel
+                          animKey={previews[skin.id] ?? 0}
+                          label="+2"
+                          skinOverride={skin}
+                        />
+                      </div>
+                      {!previews[skin.id] && (
+                        <span className="absolute inset-0 flex items-center justify-center text-2xl opacity-40">
+                          {skin.glyph}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="truncate font-black text-xs uppercase tracking-wide">
+                        {skin.name}
+                      </span>
+                      {isEquipped ? (
+                        <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
+                      ) : isOwned ? (
+                        <span className="shrink-0 text-[9px] uppercase tracking-widest text-muted-foreground">
+                          owned
+                        </span>
+                      ) : levelLocked ? (
+                        <span className="shrink-0 font-mono text-[10px] text-amber-400">
+                          Lv {skin.unlockLevel}
+                        </span>
+                      ) : (
+                        <span className="shrink-0 font-mono text-[10px] text-primary">{skin.cost}</span>
+                      )}
+                    </div>
+
+                    <p className="mt-1 text-[10px] leading-snug text-muted-foreground break-words whitespace-normal">
+                      {skin.blurb}
+                    </p>
+
+                    {skin.ultimate && (
+                      <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-amber-300">
+                        <Flame className="h-2.5 w-2.5" /> Ultimate
+                      </span>
+                    )}
+
+                    {note?.id === skin.id && (
+                      <p
+                        className={`mt-1.5 text-[10px] font-bold ${
+                          note.ok ? 'text-emerald-400' : 'text-destructive'
+                        }`}
+                      >
+                        {note.text}
+                      </p>
+                    )}
+                  </button>
+                );
+              })}
               </div>
-
-              <div className="flex items-center justify-between gap-1">
-                <span className="truncate font-black text-xs uppercase tracking-wide">
-                  {skin.name}
-                </span>
-                {isEquipped ? (
-                  <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
-                ) : isOwned ? (
-                  <span className="shrink-0 text-[9px] uppercase tracking-widest text-muted-foreground">
-                    owned
-                  </span>
-                ) : levelLocked ? (
-                  <span className="shrink-0 font-mono text-[10px] text-amber-400">
-                    Lv {skin.unlockLevel}
-                  </span>
-                ) : (
-                  <span className="shrink-0 font-mono text-[10px] text-primary">{skin.cost}</span>
-                )}
-              </div>
-
-              <p className="mt-1 text-[10px] leading-snug text-muted-foreground line-clamp-3">
-                {skin.blurb}
-              </p>
-
-              {skin.ultimate && (
-                <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-amber-300">
-                  <Flame className="h-2.5 w-2.5" /> Ultimate
-                </span>
-              )}
-
-              {note?.id === skin.id && (
-                <p
-                  className={`mt-1.5 text-[10px] font-bold ${
-                    note.ok ? 'text-emerald-400' : 'text-destructive'
-                  }`}
-                >
-                  {note.text}
-                </p>
-              )}
-            </button>
-          );
-        })}
-      </div>
+            )}
+          </div>
+        );
+      })}
 
       <p className="rounded-lg border border-border bg-card p-3 text-[10px] leading-relaxed text-muted-foreground">
         The Vault caps its pile and evicts the oldest coins, and every skin drops to a cheaper

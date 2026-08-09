@@ -192,6 +192,27 @@ export default function Explore() {
   const selected = selectedLang ? getLanguageCountry(selectedLang) : null;
   const displayLanguages = showAll ? availableLanguages : availableLanguages.slice(0, 6);
 
+  // Calculate responsive map dimensions
+  const [mapWidth, setMapWidth] = useState(700);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const updateMapWidth = () => {
+      if (mapContainerRef.current) {
+        const containerWidth = mapContainerRef.current.clientWidth;
+        setMapWidth(Math.max(containerWidth - 16, 300)); // 16px for padding, min 300
+      }
+    };
+
+    updateMapWidth();
+    const resizeObserver = new ResizeObserver(updateMapWidth);
+    if (mapContainerRef.current) {
+      resizeObserver.observe(mapContainerRef.current);
+    }
+
+    return () => resizeObserver.disconnect();
+  }, []);
+
   const handleSelectLanguage = (code: string) => {
     if (compareMode) {
       setCompareLangs((prev) =>
@@ -306,17 +327,20 @@ export default function Explore() {
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
             className="px-3"
+            ref={mapContainerRef}
           >
-            <div className="bg-card border border-border rounded-xl overflow-hidden p-2">
-              <ChoroplethMap
-                onSelectLanguage={handleSelectLanguage}
-                onHoverLanguage={(lang, country) => setHover({ lang, country })}
-                selectedLanguage={selectedLang}
-                supportedLanguages={supportedCodes}
-                projection="equirectangular"
-                width={700}
-                height={380}
-              />
+            <div className="bg-card border border-border rounded-xl overflow-hidden p-2 w-full">
+              <div className="flex justify-center overflow-x-auto">
+                <ChoroplethMap
+                  onSelectLanguage={handleSelectLanguage}
+                  onHoverLanguage={(lang, country) => setHover({ lang, country })}
+                  selectedLanguage={selectedLang}
+                  supportedLanguages={supportedCodes}
+                  projection="equirectangular"
+                  width={mapWidth}
+                  height={Math.max(300, (mapWidth / 700) * 380)}
+                />
+              </div>
 
               {/* Reacts to the country under the cursor. Holds the last
                   hovered country when the cursor leaves so the numbers do
