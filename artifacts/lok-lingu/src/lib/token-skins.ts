@@ -25,6 +25,7 @@ import { currentLevel } from './levels';
 import { getUnlockedAchievements } from '../hooks/use-celebration';
 import { isRetired } from './prestige';
 import { spendTokens } from './economy';
+import { isDevMode } from './dev-mode';
 
 export type TokenMotion =
   | 'rise'      // classic float upward
@@ -213,6 +214,7 @@ export function getOwnedSkins(): string[] {
  * layered on top, not replacing, the existing checks.
  */
 export function ownsSkin(id: string, level = currentLevel()): boolean {
+  if (isDevMode()) return TOKEN_SKINS.some((s) => s.id === id);
   const skin = TOKEN_SKINS.find((s) => s.id === id);
   if (!skin) return false;
   if (skin.unlockLevel != null && level >= skin.unlockLevel) return true;

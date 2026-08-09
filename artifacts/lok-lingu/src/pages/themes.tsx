@@ -6,6 +6,7 @@ import { purchaseStack, spendTokens, STACK_SKUS, type StackKind, type StackSku }
 import { useTokenSkin } from '@/hooks/use-token-skin';
 import { getOwnedSkins, grantSkin, ownsSkin, setSelectedSkin, TOKEN_SKINS, type TokenSkin } from '@/lib/token-skins';
 import { currentLevel } from '@/lib/levels';
+import { isDevMode } from '@/lib/dev-mode';
 import { TokenEarnedLabel } from '@/components/token-earned-label';
 import { TokenVaultLayer } from '@/components/token-vault-layer';
 import { Button } from '@/components/ui/button';
@@ -331,12 +332,12 @@ function ThemePreview({
         </AnimatePresence>
       </div>
 
-      <div className="bg-card px-3 py-2 flex justify-between items-center rounded-b-[10px]">
-        <span className="font-bold text-xs uppercase tracking-wider flex items-center gap-1.5">
-          {emoji && <span aria-hidden>{emoji}</span>}
-          {t.label}
+      <div className="bg-card px-3 py-2 flex justify-between items-center gap-2 rounded-b-[10px] min-h-[2.5rem]">
+        <span className="font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 min-w-0">
+          {emoji && <span aria-hidden className="shrink-0">{emoji}</span>}
+          <span className="truncate">{t.label}</span>
         </span>
-        <span className="text-[10px] text-muted-foreground font-mono">
+        <span className="text-[10px] text-muted-foreground font-mono shrink-0">
           {t.animated && <span className="mr-1" title="Animated">✦</span>}#{t.num}
         </span>
       </div>
@@ -676,6 +677,7 @@ export default function Themes() {
       </div>
 
       {TIERS.map(({ tier, label, sublabel, icon: Icon, color, locked }) => {
+        const tierLocked = locked && !isDevMode();
         const tierThemes = THEMES.filter((t) => t.tier === tier);
         return (
           <div key={tier} className="space-y-3">
@@ -686,7 +688,7 @@ export default function Themes() {
                 >
                   {Icon && <Icon className="w-4 h-4" />}
                   <span>{label}</span>
-                  {locked && <Lock className="w-3.5 h-3.5 ml-1 text-muted-foreground" />}
+                  {tierLocked && <Lock className="w-3.5 h-3.5 ml-1 text-muted-foreground" />}
                 </div>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-0.5">
                   {sublabel}
@@ -694,7 +696,7 @@ export default function Themes() {
               </div>
             </div>
 
-            {locked ? (
+            {tierLocked ? (
               <div className="relative">
                 <div className="grid grid-cols-3 gap-2 opacity-40 pointer-events-none select-none">
                   {tierThemes.map((t) => (
@@ -714,7 +716,7 @@ export default function Themes() {
                     key={t.id}
                     t={t}
                     isActive={theme === t.id}
-                    onClick={() => handleSelect(t, locked)}
+                    onClick={() => handleSelect(t, tierLocked)}
                   />
                 ))}
               </div>

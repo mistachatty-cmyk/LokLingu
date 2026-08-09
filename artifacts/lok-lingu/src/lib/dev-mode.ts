@@ -1,9 +1,15 @@
 /* ------------------------------------------------------------------
    Dev mode — an in-app diagnostics layer you can switch on from Settings.
+   Also unlocks all cosmetics for testing purposes.
 
    Everything here is inert until enabled, and the capture hooks install
    exactly once. The point is that a problem in the wild is visible on the
    device where it happened, rather than only in a console nobody has open.
+
+   When dev mode is on:
+   - Console errors/warnings and uncaught exceptions appear in the overlay
+   - All cosmetics (themes, token skins, companions, etc.) are unlocked
+   - Can be toggled via Shift+D keyboard shortcut
 ------------------------------------------------------------------ */
 
 export type LogLevel = 'error' | 'warn' | 'info';
@@ -112,5 +118,13 @@ export function installDevCapture(): void {
 
   window.addEventListener('unhandledrejection', (e) => {
     pushLog('error', 'Unhandled promise rejection', stringify(e.reason));
+  });
+
+  // Install keyboard shortcut: Shift+D to toggle dev mode
+  window.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.shiftKey && e.key === 'D') {
+      e.preventDefault();
+      setDevMode(!isDevMode());
+    }
   });
 }
