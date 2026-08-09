@@ -69,13 +69,18 @@ export function ChoroplethMap({
   }, [projType, width, height]);
 
   const getCountryColor = useCallback((countryCode: string): string => {
-    const lang = getLanguageForCountry(countryCode);
-    if (!lang) return 'var(--map-land, hsl(var(--muted)))';
-    if (supportedLanguages && !supportedLanguages.includes(lang)) return 'var(--map-land, hsl(var(--muted)))';
-    const lc = getLanguageCountry(lang);
-    if (lc && lc.code === selectedLanguage) return 'hsl(var(--primary))';
-    if (lc) return lc.color;
-    return 'hsl(var(--muted))';
+    try {
+      const lang = getLanguageForCountry(countryCode);
+      if (!lang) return 'var(--map-land, hsl(var(--muted)))';
+      if (supportedLanguages && !supportedLanguages.includes(lang)) return 'var(--map-land, hsl(var(--muted)))';
+      const lc = getLanguageCountry(lang);
+      if (lc && lc.code === selectedLanguage) return 'hsl(var(--primary))';
+      if (lc) return lc.color;
+      return 'hsl(var(--muted))';
+    } catch (e) {
+      console.warn('Error getting country color for', countryCode, e);
+      return 'hsl(var(--muted))';
+    }
   }, [selectedLanguage, supportedLanguages]);
 
   if (loading) {
@@ -139,8 +144,12 @@ export function ChoroplethMap({
                 onHoverLanguage?.(null, null);
               }}
               onClick={() => {
-                if (lang && onSelectLanguage) {
-                  onSelectLanguage(lang);
+                try {
+                  if (lang && onSelectLanguage) {
+                    onSelectLanguage(lang);
+                  }
+                } catch (e) {
+                  console.error('Error selecting language', e);
                 }
               }}
             />
