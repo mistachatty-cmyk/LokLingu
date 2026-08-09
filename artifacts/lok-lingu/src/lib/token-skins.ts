@@ -153,7 +153,7 @@ export const TOKEN_SKINS: TokenSkin[] = [
     blurb:
       'Every coin you earn falls to the floor of the screen and stays there, piling up as you play. Clears when the run ends.',
     cost: 400,
-    category: 'classic',
+    category: 'vault',
     ultimate: true,
     glyph: '🪙',
     scale: 1.1,
@@ -166,7 +166,7 @@ export const TOKEN_SKINS: TokenSkin[] = [
     blurb:
       'Your hoard never clears. Coins carry over from match to match and keep stacking for as long as you keep counting. Earned at level 84 — it cannot be bought.',
     cost: 0,
-    category: 'classic',
+    category: 'vault',
     ultimate: true,
     unlockLevel: 84,
     persistent: true,

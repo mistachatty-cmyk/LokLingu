@@ -501,13 +501,37 @@ function TokenSkinShop() {
   const level = currentLevel();
   const [owned, setOwned] = useState<string[]>(getOwnedSkins);
   const [previews, setPreviews] = useState<Record<string, number>>({});
+  const [previewedSkin, setPreviewedSkin] = useState<TokenSkin | null>(null);
+  const [purchaseConfirm, setPurchaseConfirm] = useState<string | null>(null);
   const [note, setNote] = useState<{ id: string; text: string; ok: boolean } | null>(null);
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
     coins: true,
-    emoji: true,
+    lingu: true,
+    vault: false,
   });
 
-  // Organize skins into groups
+  const playSound = () => {
+    if (!soundEnabled) return;
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const now = audioContext.currentTime;
+      const osc = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      osc.connect(gain);
+      gain.connect(audioContext.destination);
+      osc.frequency.setValueAtTime(800, now);
+      osc.frequency.exponentialRampToValueAtTime(600, now + 0.1);
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+      osc.start(now);
+      osc.stop(now + 0.1);
+    } catch (e) {
+      // Audio context not available
+    }
+  };
+
+  // Organize skins into groups - Vault goes at the bottom now
   const categorizeGroups: CategoryGroup[] = [
     {
       label: 'Classic Coins',
@@ -527,6 +551,11 @@ function TokenSkinShop() {
       key: 'collab',
       subcategories: [{ label: 'Partners', key: 'collab' }],
     },
+    {
+      label: 'The Vaults',
+      key: 'vault',
+      subcategories: [{ label: 'Pile Effects', key: 'vault' }],
+    },
   ];
 
   const toggleGroup = (key: string) => {
@@ -542,10 +571,19 @@ function TokenSkinShop() {
   const bump = (id: string) => setPreviews((p) => ({ ...p, [id]: (p[id] ?? 0) + 1 }));
 
   const handleCard = (skin: TokenSkin) => {
+    playSound();
     bump(skin.id);
 
-    // Level-gated skins are never for sale. Reaching the level is the
-    // only route, so the card previews and explains rather than charging.
+    // If already owned or equipped, just equip it
+    if (ownsSkin(skin.id, level) || owned.includes(skin.id)) {
+      setSelectedSkin(skin.id);
+      refresh();
+      setNote({ id: skin.id, text: 'Equipped.', ok: true });
+      window.setTimeout(() => setNote(null), 1200);
+      return;
+    }
+
+    // Level-gated skins are never for sale. Reaching the level is the only route.
     if (skin.unlockLevel != null && level < skin.unlockLevel) {
       setNote({
         id: skin.id,
@@ -556,21 +594,38 @@ function TokenSkinShop() {
       return;
     }
 
-    if (ownsSkin(skin.id, level) || owned.includes(skin.id)) {
-      setSelectedSkin(skin.id);
-      refresh();
+    // Achievement-gated skins cannot be bought
+    if (skin.unlockAchievement != null) {
+      setNote({
+        id: skin.id,
+        text: 'Earned through achievement only.',
+        ok: false,
+      });
+      window.setTimeout(() => setNote(null), 2200);
       return;
     }
+
+    // First click: show preview
+    if (previewedSkin?.id !== skin.id) {
+      setPreviewedSkin(skin);
+      setPurchaseConfirm(null);
+      return;
+    }
+
+    // Second click on same skin: attempt purchase
     if (!spendTokens(skin.cost)) {
       setNote({ id: skin.id, text: `Needs ${skin.cost} tokens — keep playing.`, ok: false });
       window.setTimeout(() => setNote(null), 1600);
       return;
     }
+
     grantSkin(skin.id);
     setSelectedSkin(skin.id);
     setOwned(getOwnedSkins());
     refresh();
-    setNote({ id: skin.id, text: 'Unlocked and equipped.', ok: true });
+    setPreviewedSkin(null);
+    setPurchaseConfirm(null);
+    setNote({ id: skin.id, text: 'Unlocked and equipped!', ok: true });
     window.setTimeout(() => setNote(null), 1600);
   };
 
@@ -583,12 +638,19 @@ function TokenSkinShop() {
             <span>Token Skins</span>
           </div>
           <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-0.5">
-            Look and effect · Tap any card to preview
+            Tap to preview · Tap again to buy
           </p>
         </div>
-        <div className="text-right">
+        <div className="text-right space-y-1">
           <p className="font-black text-lg tabular-nums leading-none">{balance.toLocaleString()}</p>
           <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Tokens</p>
+          <button
+            onClick={() => setSoundEnabled(!soundEnabled)}
+            className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
+            title="Toggle coin sound"
+          >
+            {soundEnabled ? '🔊' : '🔇'}
+          </button>
         </div>
       </div>
 
@@ -631,11 +693,13 @@ function TokenSkinShop() {
                     type="button"
                     onClick={() => handleCard(skin)}
                     className={`relative overflow-hidden rounded-xl border p-3 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary active:scale-[0.98] ${
-                      isEquipped
-                        ? 'border-primary bg-primary/10'
-                        : skin.ultimate
-                          ? 'border-amber-500/50 bg-gradient-to-br from-amber-500/10 to-card hover:border-amber-400'
-                          : 'border-border bg-card hover:border-primary/40'
+                      previewedSkin?.id === skin.id && !isOwned && !isEquipped
+                        ? 'border-emerald-500 bg-emerald-500/10 ring-2 ring-emerald-500/50'
+                        : isEquipped
+                          ? 'border-primary bg-primary/10'
+                          : skin.ultimate
+                            ? 'border-amber-500/50 bg-gradient-to-br from-amber-500/10 to-card hover:border-amber-400'
+                            : 'border-border bg-card hover:border-primary/40'
                     }`}
                   >
                     {/* Live preview stage — the real components, contained. */}
@@ -706,6 +770,14 @@ function TokenSkinShop() {
           </div>
         );
       })}
+
+      {previewedSkin && !owned.includes(previewedSkin.id) && !ownsSkin(previewedSkin.id, level) && (
+        <div className="rounded-lg border border-emerald-500/50 bg-emerald-500/10 p-3">
+          <p className="text-xs font-bold text-emerald-400">
+            ✓ Previewing {previewedSkin.name} — click again to purchase for {previewedSkin.cost} tokens
+          </p>
+        </div>
+      )}
 
       <p className="rounded-lg border border-border bg-card p-3 text-[10px] leading-relaxed text-muted-foreground">
         The Vault caps its pile and evicts the oldest coins, and every skin drops to a cheaper
