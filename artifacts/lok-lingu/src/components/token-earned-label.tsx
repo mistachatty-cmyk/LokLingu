@@ -11,6 +11,8 @@ interface TokenEarnedLabelProps {
   label: string;
   /** Override the equipped skin — used by the shop's live preview. */
   skinOverride?: TokenSkin;
+  /** Preview mode: centered and fades back to origin. */
+  contained?: boolean;
 }
 
 /** Pre-computed so the ring is identical every burst and costs nothing per frame. */
@@ -31,7 +33,7 @@ const BURST_DIRS = Array.from({ length: 8 }, (_, i) => {
  * come from the catalog rather than from the score, so the cost of a hit
  * is constant no matter how long the run gets.
  */
-export function TokenEarnedLabel({ animKey, label, skinOverride }: TokenEarnedLabelProps) {
+export function TokenEarnedLabel({ animKey, label, skinOverride, contained = false }: TokenEarnedLabelProps) {
   const prefersReducedMotion = useReducedMotion();
   const { skin: equipped } = useTokenSkin();
   const skin = skinOverride ?? equipped;
@@ -59,12 +61,37 @@ export function TokenEarnedLabel({ animKey, label, skinOverride }: TokenEarnedLa
     return (
       <span
         key={animKey}
-        className="pointer-events-none absolute right-0 top-0 select-none text-[11px] font-black uppercase tracking-widest"
+        className={`pointer-events-none select-none text-[11px] font-black uppercase tracking-widest ${
+          contained ? 'absolute inset-0 flex items-center justify-center' : 'absolute right-0 top-0'
+        }`}
         style={{ color: 'var(--word-color)' }}
         aria-hidden
       >
         {label}
       </span>
+    );
+  }
+
+  // Preview mode: centered, subtle scale and fade animation
+  if (contained) {
+    return (
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={animKey}
+          className="pointer-events-none absolute inset-0 z-20 flex select-none items-center justify-center flex-col gap-0.5"
+          initial={{ opacity: 1, scale: 1 }}
+          animate={{ opacity: 0, scale: 0.6 }}
+          transition={{ duration: skin.duration, ease: 'easeOut' }}
+          aria-hidden
+        >
+          <div className="relative flex items-center justify-center">
+            <span className="text-3xl" style={{ textShadow: skin.outline }}>
+              {skin.glyph}
+            </span>
+          </div>
+          <span className="text-[10px] font-bold text-center">{label}</span>
+        </motion.div>
+      </AnimatePresence>
     );
   }
 

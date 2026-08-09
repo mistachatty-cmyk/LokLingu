@@ -515,11 +515,11 @@ function TokenSkinShop() {
       subcategories: [{ label: 'Coins', key: 'classic' }],
     },
     {
-      label: 'Emoji Tokens',
-      key: 'emoji',
+      label: 'Lingu Collection',
+      key: 'lingu',
       subcategories: [
-        { label: 'Food', key: 'food' },
-        { label: 'Symbolic', key: 'symbolic' },
+        { label: 'Cultural', key: 'food' },
+        { label: 'Aesthetic', key: 'symbolic' },
       ],
     },
     {
@@ -645,13 +645,12 @@ function TokenSkinShop() {
                         skinOverride={skin}
                         contained
                       />
-                      <div className="absolute right-3 top-3">
-                        <TokenEarnedLabel
-                          animKey={previews[skin.id] ?? 0}
-                          label="+2"
-                          skinOverride={skin}
-                        />
-                      </div>
+                      <TokenEarnedLabel
+                        animKey={previews[skin.id] ?? 0}
+                        label="+2"
+                        skinOverride={skin}
+                        contained
+                      />
                       {!previews[skin.id] && (
                         <span className="absolute inset-0 flex items-center justify-center text-2xl opacity-40">
                           {skin.glyph}
@@ -659,23 +658,25 @@ function TokenSkinShop() {
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="truncate font-black text-xs uppercase tracking-wide">
+                    <div className="flex flex-col gap-1">
+                      <span className="font-black text-xs uppercase tracking-wide break-words">
                         {skin.name}
                       </span>
-                      {isEquipped ? (
-                        <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
-                      ) : isOwned ? (
-                        <span className="shrink-0 text-[9px] uppercase tracking-widest text-muted-foreground">
-                          owned
-                        </span>
-                      ) : levelLocked ? (
-                        <span className="shrink-0 font-mono text-[10px] text-amber-400">
-                          Lv {skin.unlockLevel}
-                        </span>
-                      ) : (
-                        <span className="shrink-0 font-mono text-[10px] text-primary">{skin.cost}</span>
-                      )}
+                      <div className="flex items-center justify-between gap-1">
+                        {isEquipped ? (
+                          <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
+                        ) : isOwned ? (
+                          <span className="shrink-0 text-[9px] uppercase tracking-widest text-muted-foreground">
+                            owned
+                          </span>
+                        ) : levelLocked ? (
+                          <span className="shrink-0 font-mono text-[10px] text-amber-400">
+                            Lv {skin.unlockLevel}
+                          </span>
+                        ) : (
+                          <span className="shrink-0 font-mono text-[10px] text-primary">{skin.cost}</span>
+                        )}
+                      </div>
                     </div>
 
                     <p className="mt-1 text-[10px] leading-snug text-muted-foreground break-words whitespace-normal">
