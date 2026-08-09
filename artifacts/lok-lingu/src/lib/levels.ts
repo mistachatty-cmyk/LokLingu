@@ -77,6 +77,45 @@ export function hasEternalVault(level: number): boolean {
   return level >= ETERNAL_VAULT_LEVEL;
 }
 
+/** Six brackets over the 1-100 range — level is otherwise just a bare number. */
+export function rankTitle(level: number): string {
+  if (level >= 100) return 'Legend';
+  if (level >= ETERNAL_VAULT_LEVEL) return 'Eternal';
+  if (level >= 50) return 'Master';
+  if (level >= 25) return 'Expert';
+  if (level >= 10) return 'Adept';
+  return 'Novice';
+}
+
+/**
+ * Level perks — earned only, never purchasable, which is what keeps
+ * levelling from reading as a second shop. Canonical home for this list
+ * (previously duplicated by hand inside roadmap.tsx) so it can be reused
+ * anywhere level progress is shown without drifting out of sync with
+ * EMBLEMS or the skip-count/vault gates above.
+ */
+export interface LevelPerk {
+  level: number;
+  title: string;
+  detail: string;
+}
+
+export const LEVEL_PERKS: LevelPerk[] = [
+  { level: 5,  title: 'Spark emblem',      detail: 'Your first animated emblem, shown beside your name.' },
+  { level: 12, title: 'Ember emblem',      detail: 'Flickers like something still burning.' },
+  { level: 20, title: 'Second free skip',  detail: 'Every match now starts with two free skips instead of one.' },
+  { level: 25, title: 'Prism emblem',      detail: 'Cycles the spectrum, slowly.' },
+  { level: 40, title: 'Comet emblem',      detail: 'Drifts on a long elliptical path.' },
+  { level: 50, title: 'Third free skip',   detail: 'Three free skips at the start of every match.' },
+  { level: 60, title: 'Halo emblem',       detail: 'Turns steadily. Never stops.' },
+  // Cosmetic-only callouts filling the 60→84→100 stretch — no new
+  // mechanics, just a reason for the track to have something at 70/90.
+  { level: 70, title: 'Master Rank',       detail: "You've reached Master — the second-to-last rank on the board." },
+  { level: 84, title: 'The Eternal Vault', detail: 'Your coin hoard stops clearing. It carries between matches and stacks for as long as you keep counting. Cannot be bought at any price.' },
+  { level: 90, title: 'Nearly There',      detail: 'Ten levels from the crown.' },
+  { level: 100, title: 'Crown emblem',     detail: 'Level one hundred. The last mark on the board.' },
+];
+
 /* ------------------------- live readers ------------------------- */
 
 import { getLifetimeWords } from './offline-data';

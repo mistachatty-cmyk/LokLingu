@@ -5,6 +5,19 @@ import { earnTokens } from '@/lib/economy';
 
 const STORAGE_ACTIVE = 'lok-lingu-active-celebration';
 const STORAGE_BOOST_UNLOCKED = 'lok-lingu-boost-unlocked';
+const STORAGE_BEST_STREAK = 'lok-lingu-best-streak';
+
+/**
+ * High-water mark for the in-run "Hundred" ladder. Without this, the
+ * roadmap's match-track section had no way to show real progress — the
+ * in-run counter itself resets to 0 on every new match, so nothing
+ * survived to read on the roadmap page. Mirrors currentWords() in
+ * lib/levels.ts: read-only projection of a counter the game already
+ * writes, not a second source of truth.
+ */
+export function currentBestStreak(): number {
+  return parseInt(localStorage.getItem(STORAGE_BEST_STREAK) || '0');
+}
 
 export function useCelebration() {
   const [matchCount, setMatchCount] = useState(0);
@@ -89,6 +102,10 @@ export function useCelebration() {
     matchCountRef.current += 1;
     const newCount = matchCountRef.current;
     setMatchCount(newCount);
+
+    if (newCount > currentBestStreak()) {
+      localStorage.setItem(STORAGE_BEST_STREAK, String(newCount));
+    }
 
     incrementLifetime(lang);
 

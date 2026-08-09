@@ -6,24 +6,13 @@ import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/use-theme';
 import { useEconomy } from '@/hooks/use-economy';
 import { getLifetimeWords } from '@/lib/offline-data';
-import { levelState, wordsForLevel, MAX_LEVEL } from '@/lib/levels';
+import { levelState, wordsForLevel, MAX_LEVEL, LEVEL_PERKS, rankTitle } from '@/lib/levels';
+import { currentBestStreak } from '@/hooks/use-celebration';
 import { EMBLEMS, earnedEmblems } from '@/lib/emblems';
 import {
-  evaluate, MATCH_MILESTONES, TOTAL_MILESTONES, CONCEPT_MILESTONES,
+  evaluate, MATCH_MILESTONES, TOTAL_MILESTONES, CONCEPT_MILESTONES, TIER_ANIMATION,
   type Milestone, type RewardKind,
 } from '@/lib/roadmap';
-
-/**
- * Placeholder art for the Menagerie gallery. There is no illustration
- * pipeline in this project, so each companion is represented the same
- * way emblems and flag themes already are elsewhere in the app: one
- * large glyph. Swap this map for real artwork paths whenever that
- * pipeline exists — nothing else about the gallery needs to change.
- */
-const COMPANION_GLYPH: Record<string, string> = {
-  Sparrow: '🐦', Centurion: '💯', Fox: '🦊', Crane: '🦢', Wolf: '🐺',
-  Tiger: '🐯', Whale: '🐋', Dragon: '🐉', Phoenix: '🐦‍🔥', Leviathan: '🐙',
-};
 
 const REWARD_ICON: Record<RewardKind, typeof Coins> = {
   tokens: Coins,
@@ -136,23 +125,6 @@ function TrackHeader({
   );
 }
 
-/**
- * Level perks — the third track. Unlike the other two, these are all
- * *earned only*: nothing here has a token price, which is what keeps
- * levelling from reading as a second shop.
- */
-const LEVEL_PERKS: { level: number; title: string; detail: string }[] = [
-  { level: 5,  title: 'Spark emblem',      detail: 'Your first animated emblem, shown beside your name.' },
-  { level: 12, title: 'Ember emblem',      detail: 'Flickers like something still burning.' },
-  { level: 20, title: 'Second free skip',  detail: 'Every match now starts with two free skips instead of one.' },
-  { level: 25, title: 'Prism emblem',      detail: 'Cycles the spectrum, slowly.' },
-  { level: 40, title: 'Comet emblem',      detail: 'Drifts on a long elliptical path.' },
-  { level: 50, title: 'Third free skip',   detail: 'Three free skips at the start of every match.' },
-  { level: 60, title: 'Halo emblem',       detail: 'Turns steadily. Never stops.' },
-  { level: 84, title: 'The Eternal Vault', detail: 'Your coin hoard stops clearing. It carries between matches and stacks for as long as you keep counting. Cannot be bought at any price.' },
-  { level: 100, title: 'Crown emblem',     detail: 'Level one hundred. The last mark on the board.' },
-];
-
 function LevelTrack({ totalWords }: { totalWords: number }) {
   const state = levelState(totalWords);
   const earned = earnedEmblems(state.level);
@@ -172,6 +144,9 @@ function LevelTrack({ totalWords }: { totalWords: number }) {
           <span className="text-3xl font-black tabular-nums">
             Lv {state.level}
             <span className="ml-1 text-xs font-mono text-muted-foreground">/ {MAX_LEVEL}</span>
+            <span className="ml-2 align-middle text-[10px] font-bold uppercase tracking-widest text-primary">
+              {rankTitle(state.level)}
+            </span>
           </span>
           {earned.length > 0 && (
             <span className="flex items-center gap-1.5 text-xl leading-none">
@@ -250,7 +225,7 @@ function LevelTrack({ totalWords }: { totalWords: number }) {
 }
 
 function GalleryCard({
-  glyph, title, at, unit, unlocked, distance, animation,
+  glyph, title, at, unit, unlocked, distance, animation, tier,
 }: {
   glyph: string;
   title: string;
@@ -259,16 +234,21 @@ function GalleryCard({
   unlocked: boolean;
   distance: number;
   animation?: string | null;
+  tier?: string;
 }) {
   const reduce = useReducedMotion();
+  // How close a locked card is to unlocking, for the progress sliver.
+  const progress = Math.min(1, Math.max(0, 1 - distance / Math.max(1, at)));
+  const glow = unlocked && tier === 'mythic';
   return (
     <motion.div
       initial={reduce ? false : { opacity: 0, scale: 0.92 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.25 }}
-      className={`relative flex aspect-square flex-col items-center justify-center gap-1.5 rounded-2xl border p-3 text-center ${
+      className={`relative flex aspect-square flex-col items-center justify-center gap-1.5 overflow-hidden rounded-2xl border p-3 text-center ${
         unlocked ? 'border-primary/40 bg-gradient-to-br from-primary/10 to-card' : 'border-border bg-card'
       }`}
+      style={glow ? { boxShadow: '0 0 20px hsl(var(--primary) / 0.25)' } : undefined}
     >
       <span
         className={`text-4xl leading-none ${unlocked ? (animation ?? '') : 'grayscale opacity-30'}`}
@@ -287,7 +267,15 @@ function GalleryCard({
         </span>
       )}
       {!unlocked && (
-        <Lock className="absolute right-2 top-2 h-3 w-3 text-muted-foreground/50" aria-hidden />
+        <>
+          <Lock className="absolute right-2 top-2 h-3 w-3 text-muted-foreground/50" aria-hidden />
+          <div className="absolute inset-x-0 bottom-0 h-[3px] bg-muted">
+            <div
+              className="h-full bg-primary/60 transition-[width] duration-500"
+              style={{ width: `${Math.round(progress * 100)}%` }}
+            />
+          </div>
+        </>
       )}
     </motion.div>
   );
@@ -306,12 +294,14 @@ function Gallery({ totalWords, level }: { totalWords: number; level: number }) {
           {TOTAL_MILESTONES.filter((m) => m.reward === 'companion').map((m) => (
             <GalleryCard
               key={m.title}
-              glyph={COMPANION_GLYPH[m.title] ?? '❔'}
+              glyph={m.glyph ?? '❔'}
               title={m.title}
               at={m.at}
               unit="words"
               unlocked={totalWords >= m.at}
               distance={Math.max(0, m.at - totalWords)}
+              animation={m.tier ? TIER_ANIMATION[m.tier] : null}
+              tier={m.tier}
             />
           ))}
         </div>
@@ -373,11 +363,11 @@ export default function Roadmap() {
   );
   const level = useMemo(() => levelState(totalWords).level, [totalWords]);
 
-  // The in-run counter resets every match, so on this screen the honest
-  // thing to show is the player's best evidence of a long run: we do not
-  // persist a best-streak yet, so the match track is shown as a preview
-  // of the ladder rather than as live progress.
-  const state = evaluate(0, totalWords);
+  // The in-run counter itself resets every match, but use-celebration
+  // persists a high-water mark on every new best, so this track can show
+  // real progress instead of a permanently-empty preview.
+  const bestStreak = useMemo(() => currentBestStreak(), []);
+  const state = evaluate(bestStreak, totalWords);
 
   return (
     <div className="space-y-8 p-5 pb-28 pt-10">
@@ -437,16 +427,16 @@ export default function Roadmap() {
           <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="space-y-8">
             <section className="space-y-3">
               <TrackHeader
-                title="The Hundred — inside a single run"
-                blurb="Hit words back to back without stopping the mic. Resets when the run ends."
-                value={0}
-                unit="this run"
+                title="The Hundred — your best run"
+                blurb="Hit words back to back without stopping the mic. Shows your best streak, not the current one — the in-run counter itself resets when the run ends."
+                value={bestStreak}
+                unit="best streak"
                 next={state.match.next}
-                progress={0}
+                progress={state.match.progress}
               />
               <div className="space-y-2">
                 {MATCH_MILESTONES.map((m) => (
-                  <Row key={`m-${m.at}`} m={m} unlocked={false} current={0} />
+                  <Row key={`m-${m.at}`} m={m} unlocked={bestStreak >= m.at} current={bestStreak} />
                 ))}
               </div>
             </section>
