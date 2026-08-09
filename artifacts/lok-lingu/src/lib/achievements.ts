@@ -78,10 +78,10 @@ export const CATEGORY_ACHIEVEMENTS: Achievement[] = [
 
 export const ALL_ACHIEVEMENTS: Achievement[] = [...SESSION_ACHIEVEMENTS, ...CATEGORY_ACHIEVEMENTS];
 
-// Some achievements also unlock a SPECIAL_COMPANIONS entry (roadmap.ts).
+// Some achievements also unlock a LOK_COMPANIONS entry (roadmap.ts).
 // Kept as a side-table here rather than a field on Achievement so
 // achievements.ts doesn't need to import roadmap.ts's Milestone shape —
-// the companion id just has to match SPECIAL_COMPANIONS' title-derived id.
+// the companion id just has to match LOK_COMPANIONS' title-derived id.
 const ACHIEVEMENT_COMPANION_UNLOCKS: Record<string, string> = {
   'fr-food-baguette': 'sir-baguette',
 };

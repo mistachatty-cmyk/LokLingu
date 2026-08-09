@@ -10,7 +10,7 @@ import { wordsForLevel, MAX_LEVEL, LEVEL_PERKS, rankTitle } from '@/lib/levels';
 import { currentBestStreak, updateCompanionUnlocks, getUnlockedCompanions, getUnlockedBadges, checkPolyglotBadge, getUnlockedAchievements, payReearnBonuses } from '@/hooks/use-celebration';
 import { EMBLEMS, earnedEmblems } from '@/lib/emblems';
 import {
-  evaluate, MATCH_MILESTONES, TOTAL_MILESTONES, CONCEPT_MILESTONES, SPECIAL_COMPANIONS, TIER_ANIMATION,
+  evaluate, MATCH_MILESTONES, TOTAL_MILESTONES, CONCEPT_MILESTONES, LOK_COMPANIONS, TIER_ANIMATION,
   type Milestone, type RewardKind,
 } from '@/lib/roadmap';
 import {
@@ -515,13 +515,13 @@ function Gallery({
       </div>
 
       <div>
-        <h2 className="text-sm font-black uppercase tracking-widest">Special</h2>
+        <h2 className="text-sm font-black uppercase tracking-widest">LokCompanions</h2>
         <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
-          Achievement-gated companions and challenges — one language example today, more to
+          Achievement-gated companions earned through language mastery — one language example today, more to
           follow.
         </p>
         <div className="mt-3 grid grid-cols-3 gap-2.5 sm:grid-cols-4">
-          {SPECIAL_COMPANIONS.map((m) => {
+          {LOK_COMPANIONS.map((m) => {
             const companionId = m.title.toLowerCase().replace(/\s+/g, '-');
             const isUnlocked = unlockedCompanions.includes(companionId);
             return (
