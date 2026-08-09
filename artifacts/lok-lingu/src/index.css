@@ -4163,3 +4163,25 @@
     animation: none !important;
   }
 }
+
+/* ------------------------------------------------------------------
+   Word emphasis — opt-in customization (FontPicker, Lock Pass gated).
+   Placed last in the file so its equal-specificity selector
+   (:root.word-emphasis-pulse .game-word, same class-count as every
+   per-theme `:root.theme-x .game-word` animation rule above) wins on
+   source order rather than fighting each theme individually.
+------------------------------------------------------------------ */
+@keyframes word-emphasis-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.04); opacity: 0.88; }
+}
+
+:root.word-emphasis-pulse .game-word {
+  animation: word-emphasis-pulse 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root.word-emphasis-pulse .game-word {
+    animation: none;
+  }
+}

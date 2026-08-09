@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'wouter';
-import { Home, Globe, Trophy, User, Palette, Compass, X } from 'lucide-react';
+import { Home, Globe, Trophy, User, Palette, Compass, Map, X } from 'lucide-react';
 
 interface NavItem {
   href: string;
@@ -15,6 +15,7 @@ const NAV_ITEMS: (NavItem | 'spacer')[] = [
   'spacer',
   { href: '/leaderboard', icon: Trophy, label: 'Ranks' },
   { href: '/stats', icon: User, label: 'Stats' },
+  { href: '/roadmap', icon: Map, label: 'Roadmap' },
   { href: '/themes', icon: Palette, label: 'Themes' },
 ];
 

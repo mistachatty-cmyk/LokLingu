@@ -1,5 +1,5 @@
 import { useLocation } from 'wouter';
-import { Home, Compass, Trophy, User, Palette, Backpack } from 'lucide-react';
+import { Home, Compass, Trophy, User, Palette, Backpack, Map } from 'lucide-react';
 
 interface NavItem {
   href: string;
@@ -12,6 +12,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/explore', icon: Compass, label: 'Explore' },
   { href: '/leaderboard', icon: Trophy, label: 'Ranks' },
   { href: '/stats', icon: User, label: 'Stats' },
+  { href: '/roadmap', icon: Map, label: 'Map' },
   { href: '/themes', icon: Palette, label: 'Themes' },
   { href: '/inventory', icon: Backpack, label: 'Items' },
 ];
@@ -33,7 +34,7 @@ export function ClassicNavbar() {
             <button
               key={item.href}
               onClick={() => setLocation(item.href)}
-              className={`flex flex-col items-center gap-0.5 py-2 px-3 rounded-xl transition-all min-w-0 flex-1 ${
+              className={`flex flex-col items-center gap-0.5 py-2 px-1.5 rounded-xl transition-all min-w-0 flex-1 ${
                 active
                   ? 'text-primary'
                   : 'text-muted-foreground hover:text-foreground'

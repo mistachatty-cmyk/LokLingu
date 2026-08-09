@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Volume2, Mic, Home, AlertTriangle, SkipForward } from 'lucide-react';
+import { Volume2, Mic, Home, AlertTriangle, SkipForward, Keyboard } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useSubmitScore } from '@workspace/api-client-react';
@@ -21,6 +21,8 @@ import { useCelebrationSound } from '@/hooks/use-celebration-sound';
 import { CelebrationEffect } from '@/components/celebration-effect';
 import { TokenEarnedLabel } from '@/components/token-earned-label';
 import { TokenVaultLayer } from '@/components/token-vault-layer';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 type NormalWord = { word: string; translation: string; pronunciation?: string };
 
@@ -203,6 +205,14 @@ export default function Game() {
   // flight when playback starts must still be dropped, not scored.
   const speechMutedRef = useRef(false);
 
+  // Typed-answer fallback — the mic is unusable while the OS hands it to a
+  // phone call (or on any device with no working mic). There is no API to
+  // detect "on a call" directly, so this is offered when the engine keeps
+  // producing empty/failed sessions, and always available as a manual
+  // toggle for anyone who just prefers typing.
+  const [showTypedInput, setShowTypedInput] = useState(false);
+  const [typedAnswer, setTypedAnswer] = useState('');
+
   const handleResult = useCallback((spoken: string, isFinal: boolean) => {
     if (lockedRef.current || speechMutedRef.current) return;
     const target = currentWordRef.current?.word;
@@ -296,6 +306,24 @@ export default function Game() {
   // being in the useCallback dependency array (which would cause a TDZ crash
   // since abortSession is declared after handleResult in the component body).
   abortSessionRef.current = abortSession;
+
+  // Repeated empty sessions or repeated not-allowed/network errors are the
+  // exact shape a call-stolen mic produces — sessions open and close with
+  // nothing, over and over. Auto-surface the typed fallback rather than
+  // leaving the player stuck with a mic button that does nothing visible.
+  const micLikelyBlocked =
+    isActive && (emptySessions >= 3 || lastError === 'not-allowed' || lastError === 'network');
+
+  useEffect(() => {
+    if (micLikelyBlocked) setShowTypedInput(true);
+  }, [micLikelyBlocked]);
+
+  const submitTypedAnswer = () => {
+    const value = typedAnswer.trim();
+    if (!value) return;
+    handleResult(value, true);
+    setTypedAnswer('');
+  };
 
   const handleMic = () => {
     if (isActive) {
@@ -517,6 +545,28 @@ export default function Game() {
       </div>
 
       <div className="pb-14 px-6 flex flex-col items-center gap-3 w-full">
+        {showTypedInput && (
+          <div className="w-full max-w-sm space-y-1.5">
+            {micLikelyBlocked && (
+              <p className="text-center text-[11px] font-mono text-amber-400 opacity-90">
+                Mic seems unavailable (on a call?) — type your answer instead
+              </p>
+            )}
+            <div className="flex gap-2">
+              <Input
+                value={typedAnswer}
+                onChange={(e) => setTypedAnswer(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && submitTypedAnswer()}
+                placeholder="Type the word…"
+                autoFocus={micLikelyBlocked}
+                className="flex-1 font-mono"
+              />
+              <Button size="default" onClick={submitTypedAnswer} disabled={!typedAnswer.trim()}>
+                Check
+              </Button>
+            </div>
+          </div>
+        )}
         <button
           onClick={handleMic}
           disabled={isUnsupported}
@@ -565,6 +615,15 @@ export default function Game() {
           </span>
         )}
         {micError && <span className="text-xs text-destructive opacity-80">{micError}</span>}
+        {!showTypedInput && (
+          <button
+            type="button"
+            onClick={() => setShowTypedInput(true)}
+            className="flex items-center gap-1 text-[11px] font-mono text-muted-foreground opacity-60 hover:opacity-100 transition-opacity"
+          >
+            <Keyboard size={12} /> Type instead
+          </button>
+        )}
       </div>
 
       {/* Skip — bottom right, deliberately out of the thumb path of the mic

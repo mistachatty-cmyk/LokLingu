@@ -27,6 +27,21 @@ const STORAGE_KEYS = {
   word: 'lok-lingu-font-word',
 } as const;
 
+const ACCENT_COLORS = [
+  { name: 'Cyan', value: '186 100% 50%' },
+  { name: 'Pink', value: '330 100% 60%' },
+  { name: 'Blue', value: '221 100% 60%' },
+  { name: 'Green', value: '120 100% 45%' },
+  { name: 'Purple', value: '270 70% 60%' },
+  { name: 'Orange', value: '38 100% 55%' },
+  { name: 'Red', value: '0 90% 55%' },
+  { name: 'Gold', value: '42 60% 30%' },
+];
+
+const ACCENT_KEY = 'lok-lingu-accent-color';
+const EMPHASIS_KEY = 'lok-lingu-word-emphasis';
+const EMPHASIS_CLASS = 'word-emphasis-pulse';
+
 const UNLOCK_KEY = 'lok-lingu-custom-fonts-unlocked';
 const UNLOCK_COST = 50; // matches the "Lock Pass · 50 Tokens" copy already used elsewhere in the shop
 
@@ -67,6 +82,10 @@ export function FontPicker() {
   const [sansFont, setSansFont] = useState(() => localStorage.getItem(STORAGE_KEYS.sans) || '');
   const [monoFont, setMonoFont] = useState(() => localStorage.getItem(STORAGE_KEYS.mono) || '');
   const [wordFont, setWordFont] = useState(() => localStorage.getItem(STORAGE_KEYS.word) || '');
+  const [accentColor, setAccentColor] = useState(() => localStorage.getItem(ACCENT_KEY) || '');
+  const [wordEmphasis, setWordEmphasis] = useState(
+    () => localStorage.getItem(EMPHASIS_KEY) === 'true',
+  );
   const [unlocked, setUnlocked] = useState(isUnlocked);
   const [unlockMsg, setUnlockMsg] = useState<string | null>(null);
   const { balance } = useEconomy();
@@ -96,7 +115,22 @@ export function FontPicker() {
       root.style.removeProperty('--word-font');
       localStorage.removeItem(STORAGE_KEYS.word);
     }
-  }, [sansFont, monoFont, wordFont]);
+    if (accentColor) {
+      // Same inline-override trick as --word-font — every theme sets
+      // --primary on :root.theme-x, so only an inline style reliably wins.
+      root.style.setProperty('--primary', accentColor);
+      localStorage.setItem(ACCENT_KEY, accentColor);
+    } else {
+      root.style.removeProperty('--primary');
+      localStorage.removeItem(ACCENT_KEY);
+    }
+    root.classList.toggle(EMPHASIS_CLASS, wordEmphasis);
+    if (wordEmphasis) {
+      localStorage.setItem(EMPHASIS_KEY, 'true');
+    } else {
+      localStorage.removeItem(EMPHASIS_KEY);
+    }
+  }, [sansFont, monoFont, wordFont, accentColor, wordEmphasis]);
 
   const handleUnlock = () => {
     if (!spendTokens(UNLOCK_COST)) {
@@ -173,6 +207,47 @@ export function FontPicker() {
       <FontRow label="Game Word Font" fonts={[...sansFonts, ...displayFonts, ...serifFonts]} value={wordFont} onChange={setWordFont} />
       <FontRow label="UI Font" fonts={sansFonts} value={sansFont} onChange={setSansFont} />
       <FontRow label="Mono Font" fonts={monoFonts} value={monoFont} onChange={setMonoFont} />
+
+      <div className="space-y-1.5">
+        <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+          Accent Color
+        </label>
+        <div className="grid grid-cols-4 gap-1.5">
+          {ACCENT_COLORS.map((c) => (
+            <button
+              key={c.name}
+              onClick={() => setAccentColor(c.value === accentColor ? '' : c.value)}
+              title={c.name}
+              aria-label={c.name}
+              className={`h-8 rounded-lg border-2 transition-all ${
+                c.value === accentColor ? 'border-foreground scale-105' : 'border-border/50'
+              }`}
+              style={{ backgroundColor: `hsl(${c.value})` }}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2.5">
+        <div>
+          <p className="text-xs font-bold">Word Pulse</p>
+          <p className="text-[10px] text-muted-foreground">Subtle pulse animation on the game word</p>
+        </div>
+        <button
+          onClick={() => setWordEmphasis((v) => !v)}
+          className={`h-6 w-11 shrink-0 rounded-full transition-colors ${
+            wordEmphasis ? 'bg-primary' : 'bg-border'
+          }`}
+          aria-pressed={wordEmphasis}
+          aria-label="Toggle word pulse animation"
+        >
+          <span
+            className={`block h-5 w-5 translate-x-0.5 rounded-full bg-background transition-transform ${
+              wordEmphasis ? 'translate-x-[22px]' : ''
+            }`}
+          />
+        </button>
+      </div>
     </div>
   );
 }

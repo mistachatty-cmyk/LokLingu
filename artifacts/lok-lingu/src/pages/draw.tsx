@@ -7,9 +7,11 @@ import { useUser } from '../hooks/use-user';
 import { useToast } from '../hooks/use-toast';
 import {
   Heart, RotateCcw, Home, Check, Eraser, Eye, EyeOff,
-  Timer, Sparkles, Volume2, Mic, MicOff, Loader2, ScanText,
+  Timer, Sparkles, Volume2, VolumeX, Mic, MicOff, Loader2, ScanText, Keyboard,
+  Maximize2, Minimize2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Tooltip,
   TooltipContent,
@@ -24,6 +26,7 @@ import { GlitchText } from '@/components/glitch-text';
 import { useTheme } from '@/hooks/use-theme';
 import { TokenEarnedLabel } from '@/components/token-earned-label';
 import { FALLBACK_WORDS, saveLocalScore } from '@/lib/offline-data';
+import { gameWordFontSize } from '@/lib/word-sizing';
 import { speakWord, matchWord } from '@/lib/speech-utils';
 import { useSpeechEngine } from '@/hooks/use-speech-engine';
 
@@ -106,6 +109,17 @@ export default function Draw() {
   // Must be declared before the effects below to avoid TDZ errors.
   const currentWord = words?.[wordIndex];
   const currentWordRef = useRef(currentWord);
+  // Same clamp-based responsive sizing as the voice game's word — draw mode
+  // used to pin a fixed text-3xl that fought .game-word's own font-size
+  // rule at equal specificity, capping the word far below what /game shows.
+  const wordFontSize = useMemo(
+    () => gameWordFontSize(currentWord?.word ?? ''),
+    [currentWord?.word],
+  );
+
+  // Optional larger canvas — collapses the ink-color row to give the
+  // canvas more room, since it already scales via w-full + aspect-ratio.
+  const [expanded, setExpanded] = useState(false);
   currentWordRef.current = currentWord;
 
   // ── success / failure handlers ─────────────────────────────────────────────
@@ -208,7 +222,7 @@ export default function Draw() {
 
   // ── voice engine (used only when voiceConfirmEnabled) ─────────────────────
   // Hooks must always be called — we just conditionally start/stop listening.
-  const { isListening, startListening, stopListening } = useSpeechEngine({
+  const { isListening, emptySessions, lastError, startListening, stopListening } = useSpeechEngine({
     lang: language,
     expected: currentWord ? [currentWord.word] : [],
     onResult: useCallback(
@@ -238,6 +252,33 @@ export default function Draw() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [voiceConfirmEnabled]);
 
+  // Typed-answer fallback for "say the word" — same reasoning as game.tsx:
+  // no API tells us the mic is being held by a phone call, so repeated
+  // empty/failed sessions are treated as the signal instead.
+  const [showTypedConfirm, setShowTypedConfirm] = useState(false);
+  const [typedConfirm, setTypedConfirm] = useState('');
+  const micLikelyBlockedDraw =
+    voiceConfirmEnabled && (emptySessions >= 3 || lastError === 'not-allowed' || lastError === 'network');
+
+  useEffect(() => {
+    if (micLikelyBlockedDraw) setShowTypedConfirm(true);
+  }, [micLikelyBlockedDraw]);
+
+  const submitTypedConfirm = useCallback(() => {
+    const value = typedConfirm.trim();
+    if (!value) return;
+    if (statusRef.current !== 'idle' || gameOverRef.current) return;
+    const target = currentWordRef.current?.word;
+    if (!target) return;
+    const pronunciation = currentWordRef.current?.pronunciation as string | undefined;
+    if (matchWord(value, target, pronunciation ? [pronunciation] : [])) {
+      handleSuccess();
+    } else {
+      handleFailure();
+    }
+    setTypedConfirm('');
+  }, [typedConfirm, handleSuccess, handleFailure]);
+
   // Toggle voice confirm, persist preference, start/stop mic accordingly
   const toggleVoiceConfirm = useCallback(() => {
     setVoiceConfirmEnabled((prev) => {
@@ -246,6 +287,7 @@ export default function Draw() {
       if (!next) {
         stopListening();
         setAwaitingVoice(false);
+        setShowTypedConfirm(false);
       }
       return next;
     });
@@ -273,13 +315,19 @@ export default function Draw() {
     });
   }, [language]);
 
-  // ── TTS on word change ─────────────────────────────────────────────────────
+  // ── TTS on word change ("voice quip", toggleable) ──────────────────────────
+  const [autoSpeak, setAutoSpeak] = useState(
+    () => localStorage.getItem('lok-lingu-draw-autospeak') !== 'false',
+  );
   useEffect(() => {
-    if (!currentWord) return undefined;
+    localStorage.setItem('lok-lingu-draw-autospeak', String(autoSpeak));
+  }, [autoSpeak]);
+  useEffect(() => {
+    if (!autoSpeak || !currentWord) return undefined;
     const timer = setTimeout(() => speakMuted(currentWord.word), 400);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wordIndex, currentWord, language]);
+  }, [wordIndex, currentWord, language, autoSpeak]);
 
   // ── render ─────────────────────────────────────────────────────────────────
   return (
@@ -377,26 +425,30 @@ export default function Draw() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="w-full max-w-sm space-y-4"
+              className={`w-full space-y-4 transition-all duration-300 ${expanded ? 'max-w-2xl' : 'max-w-sm'}`}
             >
               {/* Word display */}
               <div
                 className={`text-center space-y-1 transition-all duration-300 ${
                   status === 'error' ? 'animate-[shake_0.3s_ease-in-out]' : ''
                 }`}
+                style={{
+                  '--word-size-mobile': wordFontSize.mobile,
+                  '--word-size-desktop': wordFontSize.desktop,
+                } as React.CSSProperties}
               >
                 {theme === 'theme-ultimate' && status === 'idle' ? (
                   <GlitchText
                     text={currentWord.word}
                     as="h1"
-                    className="game-word text-3xl font-black capitalize word-glow"
+                    className="game-word font-black capitalize word-glow"
                     delay={0}
                     interval={50}
                     glitchDuration={80}
                   />
                 ) : (
                   <h1
-                    className={`game-word text-3xl font-black capitalize ${
+                    className={`game-word font-black capitalize ${
                       status === 'error' ? 'neon-text-glow-destructive text-destructive' : 'word-glow'
                     }`}
                     style={{ color: status === 'error' ? undefined : 'var(--word-color)' }}
@@ -445,23 +497,25 @@ export default function Draw() {
                 )}
               </motion.div>
 
-              {/* Ink color picker */}
-              <div className="flex flex-wrap items-center justify-center gap-2">
-                {INK_COLORS.map((c) => (
-                  <button
-                    key={c.label}
-                    onClick={() => setInkColor(c.value)}
-                    className={`w-8 h-8 rounded-full border-2 transition-all ${
-                      inkColor === c.value ? 'border-foreground scale-110' : 'border-transparent'
-                    }`}
-                    style={{ background: c.value }}
-                    aria-label={c.label}
-                  />
-                ))}
-              </div>
+              {/* Ink color picker — collapsed in expanded mode to give the canvas more room */}
+              {!expanded && (
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  {INK_COLORS.map((c) => (
+                    <button
+                      key={c.label}
+                      onClick={() => setInkColor(c.value)}
+                      className={`w-8 h-8 rounded-full border-2 transition-all ${
+                        inkColor === c.value ? 'border-foreground scale-110' : 'border-transparent'
+                      }`}
+                      style={{ background: c.value }}
+                      aria-label={c.label}
+                    />
+                  ))}
+                </div>
+              )}
 
               {/* Action buttons */}
-              <div className="flex items-center justify-center gap-3">
+              <div className="flex flex-wrap items-center justify-center gap-3">
                 <Button
                   variant="default"
                   size="sm"
@@ -473,6 +527,26 @@ export default function Draw() {
                 <Button variant="outline" size="sm" onClick={() => setShowGuide(!showGuide)} className="gap-2">
                   {showGuide ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   Guide
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setAutoSpeak((v) => !v)}
+                  className="gap-2"
+                  title="Auto-speak the word when it loads"
+                >
+                  {autoSpeak ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                  Quip
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setExpanded((v) => !v)}
+                  className="gap-2"
+                  title="Expand the canvas"
+                >
+                  {expanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                  {expanded ? 'Collapse' : 'Expand'}
                 </Button>
                 <Button variant="outline" size="sm" onClick={handleClear} className="gap-2">
                   <Eraser className="w-4 h-4" /> Clear
@@ -514,14 +588,46 @@ export default function Draw() {
                   </motion.div>
                 )}
 
+                {/* Typed fallback for "say the word" — auto-shown after repeated
+                    empty/failed sessions (mic likely stolen by a phone call),
+                    also reachable manually via the "Type instead" link below. */}
+                {voiceConfirmEnabled && showTypedConfirm && (
+                  <motion.div
+                    key="typed-confirm"
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.18 }}
+                    className="flex flex-col items-center gap-1.5 w-full max-w-xs mx-auto"
+                  >
+                    {micLikelyBlockedDraw && (
+                      <span className="text-[10px] font-mono text-amber-400 uppercase tracking-widest text-center">
+                        Mic seems unavailable (on a call?) — type instead
+                      </span>
+                    )}
+                    <div className="flex gap-2 w-full">
+                      <Input
+                        value={typedConfirm}
+                        onChange={(e) => setTypedConfirm(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && submitTypedConfirm()}
+                        placeholder="Type the word…"
+                        className="flex-1 font-mono"
+                      />
+                      <Button size="default" onClick={submitTypedConfirm} disabled={!typedConfirm.trim()}>
+                        Check
+                      </Button>
+                    </div>
+                  </motion.div>
+                )}
+
                 {/* Mic status (voice mode only, when not awaiting) */}
-                {voiceConfirmEnabled && !awaitingVoice && (
+                {voiceConfirmEnabled && !awaitingVoice && !showTypedConfirm && (
                   <motion.div
                     key="mic-status"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="flex items-center justify-center gap-2 pt-1"
+                    className="flex flex-col items-center gap-1 pt-1"
                   >
                     {isListening ? (
                       <span className="flex items-center gap-1.5 text-xs text-primary animate-pulse">
@@ -534,6 +640,13 @@ export default function Draw() {
                         <span className="font-mono uppercase tracking-widest">Say the word</span>
                       </span>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => setShowTypedConfirm(true)}
+                      className="flex items-center gap-1 text-[10px] font-mono text-muted-foreground opacity-60 hover:opacity-100 transition-opacity"
+                    >
+                      <Keyboard className="w-3 h-3" /> Type instead
+                    </button>
                   </motion.div>
                 )}
 

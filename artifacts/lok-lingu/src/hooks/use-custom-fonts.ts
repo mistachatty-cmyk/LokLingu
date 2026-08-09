@@ -16,13 +16,18 @@ const KEYS = {
   sans: 'lok-lingu-font-sans',
   mono: 'lok-lingu-font-mono',
   word: 'lok-lingu-font-word',
+  accent: 'lok-lingu-accent-color',
 } as const;
 
 const PROPS = {
   sans: '--app-font-sans',
   mono: '--app-font-mono',
   word: '--word-font',
+  accent: '--primary',
 } as const;
+
+const EMPHASIS_KEY = 'lok-lingu-word-emphasis';
+const EMPHASIS_CLASS = 'word-emphasis-pulse';
 
 export function useCustomFonts(): void {
   useEffect(() => {
@@ -32,6 +37,7 @@ export function useCustomFonts(): void {
         const value = localStorage.getItem(KEYS[key]);
         if (value) root.style.setProperty(PROPS[key], value);
       }
+      root.classList.toggle(EMPHASIS_CLASS, localStorage.getItem(EMPHASIS_KEY) === 'true');
     } catch {
       /* storage unavailable — theme defaults apply, nothing to restore */
     }

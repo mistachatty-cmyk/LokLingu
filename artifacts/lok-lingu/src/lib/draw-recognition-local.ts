@@ -6,7 +6,7 @@
  * loads once per session.
  */
 
-import { createWorker, type Worker } from 'tesseract.js';
+import { createWorker, PSM, type Worker } from 'tesseract.js';
 
 export type DrawVerdict = 'ACCEPT' | 'CLOSE' | 'REJECT';
 
@@ -89,7 +89,14 @@ async function getWorker(lang: string): Promise<Worker> {
         langPath: vendored ? VENDOR_BASE : 'https://tessdata.projectnaptha.com/4.0.0_best',
         logger: () => undefined, // silence progress logs
       }),
-    ).then((w) => {
+    ).then(async (w) => {
+      // Default page-segmentation mode (PSM 3, "automatic page
+      // segmentation") is tuned for paragraphs of printed text. Fed a
+      // single hand-drawn word on an otherwise blank canvas, it frequently
+      // segments nothing or garbage, so recognition silently rejected
+      // every drawing regardless of correctness. SINGLE_WORD matches what
+      // the canvas actually contains.
+      await w.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_WORD });
       cachedWorker = w;
       cachedLang = lang;
       return w;
