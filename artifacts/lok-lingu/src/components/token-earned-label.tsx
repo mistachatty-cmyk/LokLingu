@@ -72,25 +72,28 @@ export function TokenEarnedLabel({ animKey, label, skinOverride, contained = fal
     );
   }
 
-  // Preview mode: centered, subtle scale and fade animation
+  // Preview mode: centered, with spinning and fade animation
   if (contained) {
     return (
       <AnimatePresence mode="wait">
-        <motion.div
-          key={animKey}
-          className="pointer-events-none absolute inset-0 z-20 flex select-none items-center justify-center flex-col gap-0.5"
-          initial={{ opacity: 1, scale: 1 }}
-          animate={{ opacity: 0, scale: 0.6 }}
-          transition={{ duration: skin.duration, ease: 'easeOut' }}
-          aria-hidden
-        >
-          <div className="relative flex items-center justify-center">
-            <span className="text-3xl" style={{ textShadow: skin.outline }}>
-              {skin.glyph}
-            </span>
-          </div>
-          <span className="text-[10px] font-bold text-center">{label}</span>
-        </motion.div>
+        {animKey > 0 && (
+          <motion.div
+            key={animKey}
+            className="pointer-events-none absolute inset-0 z-20 flex select-none items-center justify-center flex-col gap-0.5"
+            initial={{ opacity: 1, scale: 1, rotateY: 0 }}
+            animate={{ opacity: 0, scale: 0.6, rotateY: 720 }}
+            transition={{ duration: skin.duration, ease: 'easeOut' }}
+            style={{ transformStyle: 'preserve-3d' }}
+            aria-hidden
+          >
+            <div className="relative flex items-center justify-center">
+              <span className="text-3xl" style={{ textShadow: skin.outline }}>
+                {skin.glyph}
+              </span>
+            </div>
+            <span className="text-[10px] font-bold text-center">{label}</span>
+          </motion.div>
+        )}
       </AnimatePresence>
     );
   }

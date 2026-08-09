@@ -703,7 +703,13 @@ function TokenSkinShop() {
                     }`}
                   >
                     {/* Live preview stage — the real components, contained. */}
-                    <div className="relative mb-2 h-20 overflow-hidden rounded-lg bg-background/60">
+                    <div className="relative mb-2 h-20 overflow-hidden rounded-lg bg-background/60 flex items-center justify-center">
+                      {/* Static glyph base — always visible underneath animations */}
+                      <span className="absolute inset-0 flex items-center justify-center text-2xl opacity-40">
+                        {skin.glyph}
+                      </span>
+
+                      {/* Animation layers (overlay on top of static glyph) */}
                       <TokenVaultLayer
                         animKey={previews[skin.id] ?? 0}
                         skinOverride={skin}
@@ -715,11 +721,6 @@ function TokenSkinShop() {
                         skinOverride={skin}
                         contained
                       />
-                      {!previews[skin.id] && (
-                        <span className="absolute inset-0 flex items-center justify-center text-2xl opacity-40">
-                          {skin.glyph}
-                        </span>
-                      )}
                     </div>
 
                     <div className="flex flex-col gap-1">
