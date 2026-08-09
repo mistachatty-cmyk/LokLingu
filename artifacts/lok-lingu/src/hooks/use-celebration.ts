@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import { CELEBRATIONS, CELEBRATION_BY_ID, INTENSITY_CONFIG } from '@/lib/celebrations';
 import type { CelebrationDef, CelebrationIntensity, SoundProfile } from '@/lib/celebrations';
 import { earnTokens } from '@/lib/economy';
+import { isDevMode } from '@/lib/dev-mode';
 
 const STORAGE_ACTIVE = 'lok-lingu-active-celebration';
 const STORAGE_BOOST_UNLOCKED = 'lok-lingu-boost-unlocked';
@@ -35,6 +36,7 @@ export function currentSessionBestWords(): number {
 }
 
 export function getCompanionUnlocked(companionId: string): boolean {
+  if (isDevMode()) return true;
   return localStorage.getItem(STORAGE_COMPANION_PREFIX + companionId) === 'true';
 }
 
@@ -57,6 +59,9 @@ export function getUnlockedCompanions(): string[] {
 }
 
 export function getUnlockedBadges(): string[] {
+  if (isDevMode()) {
+    return ['warm', 'rolling', 'deep-run', 'polyglot', 'streak-keeper', 'archivist'];
+  }
   const result: string[] = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
@@ -75,6 +80,9 @@ export function setBadgeUnlocked(badgeId: string): void {
 }
 
 export function getUnlockedAchievements(): string[] {
+  if (isDevMode()) {
+    return ['thousand-club', 'fr-food-baguette', 'ja-animals-shiba', 'es-greetings-saludo'];
+  }
   const result: string[] = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);

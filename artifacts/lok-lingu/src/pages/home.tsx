@@ -32,6 +32,7 @@ import { GlitchText } from '@/components/glitch-text';
 import { FontPicker } from '@/components/font-picker';
 import { SavePanel } from '@/components/save-panel';
 import { VaultExplainer } from '@/components/vault-explainer';
+import { DevSettings } from '@/components/dev-settings';
 
 import { normalizeLanguagesData } from '@/lib/offline-data';
 import { getCoverage, coverageOpacity, coverageSymbol } from '@/lib/word-coverage';
@@ -881,6 +882,9 @@ export default function Home() {
                             </div>
                             <span className="text-xs text-muted-foreground font-mono uppercase tracking-wider">🎉</span>
                           </button>
+
+                          {/* Dev Settings */}
+                          <DevSettings />
                         </motion.div>
                       )}
                     </AnimatePresence>
