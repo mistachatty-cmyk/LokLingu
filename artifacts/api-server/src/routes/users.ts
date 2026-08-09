@@ -3,6 +3,10 @@ import { db, usersTable } from '@workspace/db';
 import { eq } from 'drizzle-orm';
 import { CreateUserBody, GetUserParams } from '@workspace/api-zod';
 
+interface PostgresError {
+  code?: string; // PostgreSQL error codes (e.g., 23505 duplicate key, 23503 foreign key)
+}
+
 const router = Router();
 
 // POST /users - create or get user by username
@@ -39,7 +43,7 @@ router.post('/users', async (req, res) => {
   try {
     [newUser] = await db.insert(usersTable).values({ username }).returning();
   } catch (err: unknown) {
-    const pgErr = err as { code?: string };
+    const pgErr = err as PostgresError;
     if (pgErr?.code === '23505') {
       // Another request won the race — return the already-existing user.
       const [raceUser] = await db

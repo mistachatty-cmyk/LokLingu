@@ -2,6 +2,10 @@ import { Router } from 'express';
 import { db, playerStateTable, playerStatePayload } from '@workspace/db';
 import { eq } from 'drizzle-orm';
 
+interface PostgresError {
+  code?: string; // PostgreSQL error codes (e.g., 23505 duplicate key, 23503 foreign key)
+}
+
 const router = Router();
 
 /**
@@ -91,7 +95,7 @@ router.put('/users/:id/state', async (req, res) => {
   } catch (err: unknown) {
     // Foreign key violation — the user row does not exist. That is a
     // client bug (syncing before the account was created), not a 500.
-    if ((err as { code?: string })?.code === '23503') {
+    if ((err as PostgresError)?.code === '23503') {
       res.status(404).json({ error: 'Unknown user' });
       return;
     }
