@@ -327,17 +327,16 @@ export default function Explore() {
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
             className="px-3"
-            ref={mapContainerRef}
           >
-            <div className="bg-card border border-border rounded-xl overflow-hidden p-2 w-full">
-              <div className="flex justify-center overflow-x-auto">
+            <div className="bg-card border border-border rounded-xl overflow-hidden p-2 w-full" ref={mapContainerRef}>
+              <div className="flex justify-center">
                 <ChoroplethMap
                   onSelectLanguage={handleSelectLanguage}
                   onHoverLanguage={(lang, country) => setHover({ lang, country })}
                   selectedLanguage={selectedLang}
                   supportedLanguages={supportedCodes}
                   projection="equirectangular"
-                  width={mapWidth}
+                  width={Math.max(mapWidth, 300)}
                   height={Math.max(300, (mapWidth / 700) * 380)}
                 />
               </div>

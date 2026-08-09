@@ -563,8 +563,7 @@ export default function Home() {
             {selectedLang?.name ?? language} · {category}
           </p>
 
-          {/* START button — never silently disabled. When a name is missing
-              it still responds, and says what it needs. */}
+          {/* START button */}
           <motion.div animate={nameError && needsName ? { x: [0, -8, 8, -5, 0] } : {}} transition={{ duration: 0.35 }}>
             <Button
               onClick={handleStart}
@@ -576,10 +575,6 @@ export default function Home() {
             >
               {createUser.isPending ? (
                 <Loader2 className="w-6 h-6 animate-spin" />
-              ) : needsName ? (
-                <>
-                  <UserIcon className="w-5 h-5 mr-3" /> Name yourself
-                </>
               ) : (
                 <>
                   <Play className="w-5 h-5 mr-3 fill-current" /> Start {mode}
@@ -595,7 +590,7 @@ export default function Home() {
                 nameError ? 'text-destructive' : 'text-muted-foreground'
               }`}
             >
-              {nameError ?? 'A name or alias is required to play'}
+              {nameError ?? 'Set a username in Options'}
             </p>
           )}
 
@@ -620,20 +615,18 @@ export default function Home() {
                 className="overflow-hidden"
               >
                 <div className="border border-border rounded-xl bg-card p-4 space-y-4 mt-1">
-                  {/* Username (if not set) */}
-                  {!username && (
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                        Username
-                      </label>
-                      <Input
-                        placeholder="Enter your alias..."
-                        value={localUsername}
-                        onChange={(e) => setLocalUsername(e.target.value)}
-                        className="font-mono"
-                      />
-                    </div>
-                  )}
+                  {/* Username */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Username
+                    </label>
+                    <Input
+                      placeholder="Enter your alias..."
+                      value={localUsername}
+                      onChange={(e) => setLocalUsername(e.target.value)}
+                      className="font-mono"
+                    />
+                  </div>
 
                   {/* Language */}
                   <div className="space-y-1.5">
