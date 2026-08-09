@@ -496,6 +496,16 @@ function TokenSkinShop() {
   const [owned, setOwned] = useState<string[]>(getOwnedSkins);
   const [previews, setPreviews] = useState<Record<string, number>>({});
   const [note, setNote] = useState<{ id: string; text: string; ok: boolean } | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  // Get unique categories from all skins
+  const categories = Array.from(
+    new Set(TOKEN_SKINS.map((s) => s.category).filter((c): c is string => c != null))
+  ).sort();
+
+  const filteredSkins = selectedCategory
+    ? TOKEN_SKINS.filter((s) => s.category === selectedCategory)
+    : TOKEN_SKINS;
 
   const bump = (id: string) => setPreviews((p) => ({ ...p, [id]: (p[id] ?? 0) + 1 }));
 
@@ -550,13 +560,32 @@ function TokenSkinShop() {
         </div>
       </div>
 
+      <div className="flex items-center gap-2">
+        <label htmlFor="category-filter" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+          Category:
+        </label>
+        <select
+          id="category-filter"
+          value={selectedCategory || ''}
+          onChange={(e) => setSelectedCategory(e.target.value || null)}
+          className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-all hover:border-primary/40"
+        >
+          <option value="">All Skins</option>
+          {categories.map((category) => (
+            <option key={category} value={category}>
+              {category.charAt(0).toUpperCase() + category.slice(1)}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <p className="text-xs text-muted-foreground leading-snug">
         Appearance and effect ship bundled for now. They are stored as separate fields, so they can
         be split into independent pickers later without resetting what you own.
       </p>
 
       <div className="grid grid-cols-2 gap-2">
-        {TOKEN_SKINS.map((skin) => {
+        {filteredSkins.map((skin) => {
           const isOwned = ownsSkin(skin.id, level) || owned.includes(skin.id);
           const levelLocked = skin.unlockLevel != null && level < skin.unlockLevel;
           const isEquipped = equipped.id === skin.id;
