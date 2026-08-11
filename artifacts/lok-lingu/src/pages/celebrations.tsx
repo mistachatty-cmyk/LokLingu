@@ -4,6 +4,7 @@ import { CELEBRATIONS, INTENSITY_CONFIG } from '@/lib/celebrations';
 import { useCelebration } from '@/hooks/use-celebration';
 import { useCelebrationSound } from '@/hooks/use-celebration-sound';
 import { CelebrationEffect } from '@/components/celebration-effect';
+import { TokenEarnedLabel } from '@/components/token-earned-label';
 import { Check, Home, Play, Lock, Star, Zap, Sparkles, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
@@ -100,10 +101,13 @@ export default function Celebrations() {
   const { activeCelebrationId, setActiveCelebration, matchCount, boostUnlocked } = useCelebration();
   const { play } = useCelebrationSound();
   const [preview, setPreview] = useState<{ celebration: CelebrationDef; intensity: CelebrationIntensity } | null>(null);
+  const [tokenPreview, setTokenPreview] = useState<{ key: number; label: string }>({ key: 0, label: '' });
 
   const handlePreview = (c: CelebrationDef, intensity: CelebrationIntensity) => {
     setPreview({ celebration: c, intensity });
     play(c.soundProfile, intensity);
+    // Fire the same spinning coin animation players see in-game.
+    setTokenPreview((prev) => ({ key: prev.key + 1, label: '+25 🎁' }));
   };
 
   const nextMilestone = (() => {
@@ -124,6 +128,11 @@ export default function Celebrations() {
           onComplete={() => setPreview(null)}
         />
       )}
+
+      {/* Coin animation overlay — same component as in-game */}
+      <div className="fixed top-16 right-6 z-50 pointer-events-none">
+        <TokenEarnedLabel animKey={tokenPreview.key} label={tokenPreview.label} />
+      </div>
 
       <div className="flex items-center justify-between">
         <div className="space-y-1">

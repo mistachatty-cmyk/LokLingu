@@ -6,6 +6,9 @@ import { ArrowLeft, Check, Lock, Palette, Sparkles, Star, Coins, Award } from 'l
 import { Button } from '@/components/ui/button';
 import { THEMES } from './themes-data';
 import type { ThemeDef } from './themes-data';
+import { ACHIEVEMENTS } from '@/data/achievements';
+import type { UserStats } from '@/data/achievements';
+import { AchievementBadge } from '@/components/achievement-badge';
 
 export default function Inventory() {
   const [, setLocation] = useLocation();
@@ -15,6 +18,31 @@ export default function Inventory() {
   const ownedThemes = THEMES;
   const ownedCelebrations = CELEBRATIONS;
   const lifetimeTokens = parseInt(localStorage.getItem('lok-lingu-lifetime-tokens') || '0');
+
+  // Compute user stats for achievement conditions.
+  const userStats: UserStats = (() => {
+    let totalWords = 0;
+    const languagesLearned: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith('lok-lingu-lifetime-') && key !== 'lok-lingu-lifetime-tokens') {
+        const count = parseInt(localStorage.getItem(key) || '0');
+        if (count > 0) {
+          totalWords += count;
+          languagesLearned.push(key.replace('lok-lingu-lifetime-', ''));
+        }
+      }
+    }
+    return {
+      totalWords,
+      bestStreak: parseInt(localStorage.getItem('lok-lingu-best-streak') || '0'),
+      totalGames: parseInt(localStorage.getItem('lok-lingu-total-games') || '0'),
+      languagesLearned,
+      lifetimeTokens,
+    };
+  })();
+
+  const earnedCount = ACHIEVEMENTS.filter((a) => a.condition(userStats)).length;
 
   return (
     <div className="p-5 space-y-8 pt-10 pb-28">
@@ -106,17 +134,23 @@ export default function Inventory() {
 
       {/* Achievement badges */}
       <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <Award className="w-4 h-4 text-primary" />
-          <h2 className="text-sm font-black uppercase tracking-widest">Achievements</h2>
-          <span className="text-[10px] text-muted-foreground font-mono">Coming Soon</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Award className="w-4 h-4 text-primary" />
+            <h2 className="text-sm font-black uppercase tracking-widest">Achievements</h2>
+          </div>
+          <span className="text-[10px] font-mono text-muted-foreground">
+            {earnedCount}/{ACHIEVEMENTS.length} unlocked
+          </span>
         </div>
-        <div className="grid grid-cols-4 gap-2 opacity-40">
-          {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
-            <div key={i} className="rounded-xl border border-border bg-card p-3 flex flex-col items-center gap-1">
-              <Lock className="w-5 h-5 text-muted-foreground" />
-              <span className="text-[7px] text-muted-foreground font-mono uppercase">Locked</span>
-            </div>
+        <div className="grid grid-cols-4 gap-2">
+          {ACHIEVEMENTS.map((a) => (
+            <AchievementBadge
+              key={a.id}
+              achievement={a}
+              earned={a.condition(userStats)}
+              size="sm"
+            />
           ))}
         </div>
       </div>

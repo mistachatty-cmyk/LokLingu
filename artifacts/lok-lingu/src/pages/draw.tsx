@@ -349,7 +349,7 @@ export default function Draw() {
       </div>
 
       {/* ── Main game area ────────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-20">
+      <div className="flex-1 flex flex-col items-center justify-start px-4 pt-24 pb-3 overflow-hidden">
         <AnimatePresence mode="wait">
           {!gameOver ? (
             <motion.div
@@ -369,14 +369,14 @@ export default function Draw() {
                   <GlitchText
                     text={currentWord.word}
                     as="h1"
-                    className="game-word text-3xl font-black capitalize word-glow"
+                    className="game-word text-4xl font-black capitalize word-glow"
                     delay={0}
                     interval={50}
                     glitchDuration={80}
                   />
                 ) : (
                   <h1
-                    className={`game-word text-3xl font-black capitalize ${
+                    className={`game-word text-4xl font-black capitalize ${
                       status === 'error' ? 'neon-text-glow-destructive text-destructive' : 'word-glow'
                     }`}
                     style={{ color: status === 'error' ? undefined : 'var(--word-color)' }}
@@ -392,6 +392,7 @@ export default function Draw() {
                 key={shakeKey}
                 animate={shakeKey > 0 ? { x: [-14, 14, -10, 10, -6, 6, 0] } : { x: 0 }}
                 transition={{ duration: 0.35, ease: 'easeInOut' }}
+                style={{ maxHeight: 'clamp(200px, calc(100dvh - 310px), 430px)' }}
                 className={`relative rounded-xl border-2 overflow-hidden transition-colors duration-300 ${
                   status === 'error'
                     ? 'border-destructive'
