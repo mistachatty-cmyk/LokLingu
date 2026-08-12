@@ -396,7 +396,7 @@ export default function Draw() {
                 key={shakeKey}
                 animate={shakeKey > 0 ? { x: [-14, 14, -10, 10, -6, 6, 0] } : { x: 0 }}
                 transition={{ duration: 0.35, ease: 'easeInOut' }}
-                style={{ maxHeight: 'clamp(200px, calc(100dvh - 310px), 430px)' }}
+                style={{ maxHeight: 'clamp(180px, calc(100dvh - 380px), 360px)' }}
                 className={`relative rounded-xl border-2 overflow-hidden transition-colors duration-300 ${
                   status === 'error'
                     ? 'border-destructive'
