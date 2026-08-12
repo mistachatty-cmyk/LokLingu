@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { CELEBRATIONS, CELEBRATION_BY_ID, INTENSITY_CONFIG } from '@/lib/celebrations';
+import { CELEBRATIONS, ALL_CELEBRATION_BY_ID, INTENSITY_CONFIG, addTokenBalance } from '@/lib/celebrations';
 import type { CelebrationDef, CelebrationIntensity, SoundProfile } from '@/lib/celebrations';
 
 const STORAGE_ACTIVE = 'lok-lingu-active-celebration';
@@ -52,6 +52,8 @@ export function useCelebration() {
   const addLifetimeTokens = useCallback((amount: number) => {
     const current = parseInt(localStorage.getItem('lok-lingu-lifetime-tokens') || '0');
     localStorage.setItem('lok-lingu-lifetime-tokens', String(current + amount));
+    // Credit the same amount to the spendable balance (separate from the lifetime stat)
+    addTokenBalance(amount);
   }, []);
 
   const stopBoost = useCallback(() => {
@@ -105,7 +107,7 @@ export function useCelebration() {
     }
 
     const celebrationId = localStorage.getItem(STORAGE_ACTIVE) || 'pinata';
-    const celebration = CELEBRATION_BY_ID[celebrationId] || CELEBRATIONS[0];
+    const celebration = ALL_CELEBRATION_BY_ID[celebrationId] || CELEBRATIONS[0];
 
     if (newCount % 100 === 0) {
       if (boostUnlocked) {

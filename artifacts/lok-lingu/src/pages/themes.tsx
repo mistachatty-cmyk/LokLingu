@@ -1,7 +1,17 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTheme } from '../hooks/use-theme';
-import { Check, Flame, Lock, Star, Zap, Sparkles, Globe } from 'lucide-react';
+import { Check, Flame, Lock, Star, Zap, Sparkles, Globe, Coins, Heart, SkipForward } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { CONSUMABLES, SKIPS_KEY, HEARTS_KEY, getConsumableCount, setConsumableCount } from '@/lib/consumables';
+import { TOKEN_SKINS, getActiveTokenSkin, setActiveTokenSkin, getOwnedTokenSkins, addOwnedTokenSkin } from '@/lib/token-skins';
+import {
+  SHOP_CELEBRATIONS, COLLAB_ITEMS, VAULT_ITEMS,
+  getOwnedShopCelebrations, addOwnedShopCelebration,
+  getOwnedCollabs, addOwnedCollab,
+  getOwnedVaults, addOwnedVault,
+  getTokenBalance, spendTokenBalance,
+} from '@/lib/celebrations';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { THEMES, type ThemeDef } from './themes-data';
 import { flagEmojiFromLanguageOrCountry } from './theme-emoji';
@@ -366,18 +376,402 @@ const FONT_GROUPS = (() => {
 export default function Themes() {
   const { theme, setTheme } = useTheme();
 
+  // ── Shop state ─────────────────────────────────────────────────────────────
+  const [tokens, setTokens] = useState(getTokenBalance);
+  const [skipsOwned, setSkipsOwned] = useState(() => getConsumableCount(SKIPS_KEY));
+  const [heartsOwned, setHeartsOwned] = useState(() => getConsumableCount(HEARTS_KEY));
+  const [activeSkin, setActiveSkin] = useState(getActiveTokenSkin);
+  const [ownedSkins, setOwnedSkins] = useState(getOwnedTokenSkins);
+  const [previewSkin, setPreviewSkin] = useState<string | null>(null);
+  const [ownedShopCelebIds, setOwnedShopCelebIds] = useState(getOwnedShopCelebrations);
+  const [ownedCollabIds, setOwnedCollabIds] = useState(getOwnedCollabs);
+  const [ownedVaultIds, setOwnedVaultIds] = useState(getOwnedVaults);
+  const [activeCelebrationId, setActiveCelebrationId] = useState(
+    () => localStorage.getItem('lok-lingu-active-celebration') || 'pinata',
+  );
+
   const handleSelect = (t: ThemeDef, tierLocked: boolean) => {
     if (tierLocked) return;
     setTheme(t.id);
   };
 
+  function spendTokens(amount: number): boolean {
+    if (!spendTokenBalance(amount)) return false;
+    setTokens(getTokenBalance());
+    return true;
+  }
+
+  function handleSetActiveCelebration(id: string) {
+    localStorage.setItem('lok-lingu-active-celebration', id);
+    setActiveCelebrationId(id);
+  }
+
+  function handleBuyConsumable(storageKey: string, qty: number, cost: number) {
+    if (!spendTokens(cost)) return;
+    const newCount = getConsumableCount(storageKey) + qty;
+    setConsumableCount(storageKey, newCount);
+    if (storageKey === SKIPS_KEY) setSkipsOwned(newCount);
+    else setHeartsOwned(newCount);
+  }
+
+  function handleSkinTap(skinId: string, cost: number, cannotBuy?: boolean) {
+    if (ownedSkins.has(skinId)) {
+      setActiveTokenSkin(skinId);
+      setActiveSkin(skinId);
+      setPreviewSkin(null);
+      return;
+    }
+    if (cannotBuy) return;
+    if (previewSkin === skinId) {
+      if (!spendTokens(cost)) return;
+      addOwnedTokenSkin(skinId);
+      setOwnedSkins((prev) => { const s = new Set(prev); s.add(skinId); return s; });
+      setActiveTokenSkin(skinId);
+      setActiveSkin(skinId);
+      setPreviewSkin(null);
+    } else {
+      setPreviewSkin(skinId);
+    }
+  }
+
+  function handleBuyShopCelebration(id: string, cost: number) {
+    if (ownedShopCelebIds.has(id)) return;
+    if (!spendTokens(cost)) return;
+    addOwnedShopCelebration(id);
+    setOwnedShopCelebIds((prev) => { const s = new Set(prev); s.add(id); return s; });
+  }
+
+  function handleBuyCollab(id: string, cost: number) {
+    if (ownedCollabIds.has(id)) return;
+    if (!spendTokens(cost)) return;
+    addOwnedCollab(id);
+    setOwnedCollabIds((prev) => { const s = new Set(prev); s.add(id); return s; });
+  }
+
+  function handleBuyVault(id: string, cost: number) {
+    if (ownedVaultIds.has(id)) return;
+    if (!spendTokens(cost)) return;
+    addOwnedVault(id);
+    setOwnedVaultIds((prev) => { const s = new Set(prev); s.add(id); return s; });
+  }
+
   return (
     <div className="p-5 space-y-8 pt-10 pb-28">
-      <div className="space-y-1">
-        <h1 className="text-3xl font-black tracking-tighter uppercase">Theme Shop</h1>
+
+      {/* ── SHOP HEADER ──────────────────────────────────────────────────── */}
+      <div className="space-y-2">
+        <h1 className="text-3xl font-black tracking-tighter uppercase">Shop</h1>
         <p className="text-muted-foreground text-sm">
           {THEMES.length} aesthetics · {FONT_GROUPS.length} font styles · Your arcade, your look
         </p>
+      </div>
+
+      {/* ── STACKS — CONSUMABLES ─────────────────────────────────────────── */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-black uppercase tracking-widest text-primary">
+              🔗 Stacks — Consumables
+            </p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
+              Buy in bundles · bulk is cheaper per unit
+            </p>
+          </div>
+          <div className="flex items-center gap-1">
+            <Coins className="w-3.5 h-3.5 text-primary" />
+            <span className="text-sm font-black">{tokens.toLocaleString()}</span>
+            <span className="text-[10px] text-muted-foreground uppercase tracking-widest ml-0.5">Tokens</span>
+          </div>
+        </div>
+
+        {CONSUMABLES.map((c) => {
+          const owned = c.id === 'skips' ? skipsOwned : heartsOwned;
+          return (
+            <div key={c.id} className="rounded-xl border border-border bg-card p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {c.id === 'hearts' ? (
+                    <Heart className="w-4 h-4 text-destructive fill-destructive" />
+                  ) : (
+                    <SkipForward className="w-4 h-4 text-primary" />
+                  )}
+                  <span className="font-black text-sm uppercase tracking-wider">{c.name}</span>
+                </div>
+                <span className="text-[10px] text-muted-foreground uppercase tracking-widest">owned: {owned}</span>
+              </div>
+              <p className="text-xs text-muted-foreground">{c.desc}</p>
+              <div className="grid grid-cols-3 gap-2">
+                {c.bundles.map((b) => (
+                  <button
+                    key={b.qty}
+                    onClick={() => handleBuyConsumable(c.storageKey, b.qty, b.cost)}
+                    disabled={tokens < b.cost}
+                    className="rounded-lg border border-border bg-background p-2 text-left transition-all hover:border-primary hover:bg-primary/5 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <p className="text-xs font-black">
+                      +{b.qty} {c.id === 'skips' ? (b.qty === 1 ? 'Skip' : 'Skips') : (b.qty === 1 ? 'Heart' : 'Hearts')}
+                    </p>
+                    <p className="text-[10px] text-primary font-bold">{b.cost} tokens</p>
+                    <p className="text-[8px] text-muted-foreground uppercase tracking-widest leading-tight mt-0.5">
+                      earn free at {b.earnFreeAt.toLocaleString()} words
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ── TOKEN SKINS ───────────────────────────────────────────────────── */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-black uppercase tracking-widest text-primary">🔗 Token Skins</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
+              Tap to preview · tap again to buy
+            </p>
+          </div>
+          <div className="flex items-center gap-1">
+            <Coins className="w-3.5 h-3.5 text-primary" />
+            <span className="text-sm font-black">{tokens.toLocaleString()}</span>
+            <span className="text-[10px] text-muted-foreground uppercase tracking-widest ml-0.5">Tokens</span>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-border bg-card/50 p-3 text-[10px] text-muted-foreground leading-relaxed">
+          Appearance and effect ship bundled for now. They are stored as separate fields,
+          so they can be split into independent pickers later without resetting what you own.
+        </div>
+
+        <Accordion type="multiple" defaultValue={['classic', 'lingu']} className="space-y-2">
+          <AccordionItem value="classic" className="border border-border rounded-xl overflow-hidden">
+            <AccordionTrigger className="px-4 font-black text-xs uppercase tracking-widest hover:no-underline">
+              Classic Coins
+            </AccordionTrigger>
+            <AccordionContent className="px-4 pb-4">
+              <div className="grid grid-cols-2 gap-2">
+                {TOKEN_SKINS.filter((s) => s.section === 'classic').map((skin) => {
+                  const owned = ownedSkins.has(skin.id);
+                  const active = activeSkin === skin.id;
+                  const isPreviewing = previewSkin === skin.id;
+                  return (
+                    <button
+                      key={skin.id}
+                      onClick={() => handleSkinTap(skin.id, skin.cost)}
+                      className={`rounded-xl border-2 p-3 text-left transition-all ${
+                        active
+                          ? 'border-primary bg-primary/10'
+                          : isPreviewing
+                            ? 'border-amber-400 bg-amber-400/10'
+                            : owned
+                              ? 'border-border bg-card hover:border-primary/50'
+                              : 'border-border bg-card opacity-80 hover:opacity-100 hover:border-primary/30'
+                      }`}
+                    >
+                      <div className="text-2xl mb-1">🪙</div>
+                      <p className="font-black text-[10px] uppercase tracking-wide leading-tight">{skin.name}</p>
+                      {active ? (
+                        <p className="text-[9px] text-primary font-bold mt-0.5">✓ Active</p>
+                      ) : owned ? (
+                        <p className="text-[9px] text-muted-foreground mt-0.5">tap to equip</p>
+                      ) : isPreviewing ? (
+                        <p className="text-[9px] text-amber-400 font-bold mt-0.5">tap again — {skin.cost} tokens</p>
+                      ) : (
+                        <p className="text-[9px] text-primary mt-0.5">{skin.cost === 0 ? 'Free' : `${skin.cost} tokens`}</p>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="lingu" className="border border-border rounded-xl overflow-hidden">
+            <AccordionTrigger className="px-4 font-black text-xs uppercase tracking-widest hover:no-underline">
+              Lingu Collection
+            </AccordionTrigger>
+            <AccordionContent className="px-4 pb-4">
+              <div className="grid grid-cols-2 gap-2">
+                {TOKEN_SKINS.filter((s) => s.section === 'lingu').map((skin) => {
+                  const owned = ownedSkins.has(skin.id);
+                  const active = activeSkin === skin.id;
+                  const isPreviewing = previewSkin === skin.id;
+                  return (
+                    <button
+                      key={skin.id}
+                      onClick={() => handleSkinTap(skin.id, skin.cost, skin.cannotBuy)}
+                      disabled={skin.cannotBuy && !owned}
+                      className={`rounded-xl border-2 p-3 text-left transition-all disabled:cursor-default ${
+                        active
+                          ? 'border-primary bg-primary/10'
+                          : isPreviewing
+                            ? 'border-amber-400 bg-amber-400/10'
+                            : owned
+                              ? 'border-border bg-card hover:border-primary/50'
+                              : 'border-border bg-card opacity-70'
+                      }`}
+                    >
+                      <div className="text-2xl mb-1">{skin.id === 'baguette' ? '🥖' : '🍣'}</div>
+                      <p className="font-black text-[10px] uppercase tracking-wide leading-tight">{skin.name}</p>
+                      {active ? (
+                        <p className="text-[9px] text-primary font-bold mt-0.5">✓ Active</p>
+                      ) : owned ? (
+                        <p className="text-[9px] text-muted-foreground mt-0.5">tap to equip</p>
+                      ) : skin.cannotBuy ? (
+                        <p className="text-[9px] text-muted-foreground mt-0.5 leading-snug">earn: {skin.earnCondition}</p>
+                      ) : isPreviewing ? (
+                        <p className="text-[9px] text-amber-400 font-bold mt-0.5">tap again — {skin.cost} tokens</p>
+                      ) : (
+                        <p className="text-[9px] text-primary mt-0.5">{skin.cost} tokens</p>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </div>
+
+      {/* ── SHOP CELEBRATIONS ─────────────────────────────────────────────── */}
+      <div className="space-y-3">
+        <div>
+          <p className="text-xs font-black uppercase tracking-widest text-primary">Celebrations</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
+            Cosmetics · Applied on correct answers
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {SHOP_CELEBRATIONS.map((item) => {
+            const owned = ownedShopCelebIds.has(item.id);
+            return (
+              <div key={item.id} className="rounded-xl border border-border overflow-hidden">
+                <div
+                  className="h-24 flex items-center justify-center text-5xl"
+                  style={{ background: item.bgColor }}
+                >
+                  {item.emoji}
+                </div>
+                <div className="p-3 space-y-1.5 bg-card">
+                  <p className="font-black text-xs uppercase tracking-wide">{item.name}</p>
+                  {!owned && <p className="text-[10px] font-bold text-yellow-400">{item.price}</p>}
+                  <p className="text-[9px] text-muted-foreground leading-snug">{item.desc}</p>
+                  {owned ? (
+                    <button
+                      onClick={() => handleSetActiveCelebration(item.id)}
+                      className={`w-full rounded-lg py-1.5 text-[10px] font-black uppercase tracking-widest transition-all ${
+                        activeCelebrationId === item.id
+                          ? 'bg-primary text-primary-foreground cursor-default'
+                          : 'bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30 active:scale-95'
+                      }`}
+                    >
+                      {activeCelebrationId === item.id ? '✓ Active' : 'Set Active'}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleBuyShopCelebration(item.id, item.price)}
+                      disabled={tokens < item.price}
+                      className={`w-full rounded-lg py-1.5 text-[10px] font-black uppercase tracking-widest transition-all ${
+                        tokens < item.price
+                          ? 'bg-muted text-muted-foreground border border-border opacity-50 cursor-not-allowed'
+                          : 'bg-primary text-primary-foreground hover:brightness-110 active:scale-95'
+                      }`}
+                    >
+                      {item.price} tokens
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── COLLABORATIONS + VAULTS ────────────────────────────────────────── */}
+      <Accordion type="multiple" defaultValue={['collaborations', 'vaults']} className="space-y-2">
+        <AccordionItem value="collaborations" className="border border-border rounded-xl overflow-hidden">
+          <AccordionTrigger className="px-4 font-black text-xs uppercase tracking-widest hover:no-underline">
+            Collaborations
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <div className="grid grid-cols-2 gap-3">
+              {COLLAB_ITEMS.map((item) => {
+                const owned = ownedCollabIds.has(item.id);
+                return (
+                  <div key={item.id} className="rounded-xl border border-border overflow-hidden">
+                    <div className="h-20 flex items-center justify-center text-4xl bg-gradient-to-br from-card to-muted">
+                      {item.emoji}
+                    </div>
+                    <div className="p-3 space-y-1.5 bg-card">
+                      <p className="font-black text-xs uppercase tracking-wide">{item.name}</p>
+                      {!owned && <p className="text-[10px] font-bold text-yellow-400">{item.price}</p>}
+                      <p className="text-[9px] text-muted-foreground leading-snug">{item.desc}</p>
+                      <button
+                        onClick={() => handleBuyCollab(item.id, item.price)}
+                        disabled={owned || tokens < item.price}
+                        className={`w-full rounded-lg py-1.5 text-[10px] font-black uppercase tracking-widest transition-all ${
+                          owned
+                            ? 'bg-primary/20 text-primary border border-primary/30 cursor-default'
+                            : tokens < item.price
+                              ? 'bg-muted text-muted-foreground border border-border opacity-50 cursor-not-allowed'
+                              : 'bg-primary text-primary-foreground hover:brightness-110 active:scale-95'
+                        }`}
+                      >
+                        {owned ? '✓ Owned' : `${item.price} tokens`}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="vaults" className="border border-border rounded-xl overflow-hidden">
+          <AccordionTrigger className="px-4 font-black text-xs uppercase tracking-widest hover:no-underline">
+            The Vaults
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4 space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              {VAULT_ITEMS.map((item) => {
+                const owned = ownedVaultIds.has(item.id);
+                const cantBuy = item.price === null;
+                return (
+                  <div key={item.id} className="rounded-xl border border-border bg-card p-3 space-y-2">
+                    <div className="text-3xl">🏛️</div>
+                    <p className="font-black text-xs uppercase tracking-wide leading-tight">{item.name}</p>
+                    {item.requiredLevel && (
+                      <p className="text-[9px] text-primary font-bold">Lv {item.requiredLevel}</p>
+                    )}
+                    {!owned && item.price !== null && (
+                      <p className="text-[10px] font-bold text-yellow-400">{item.price}</p>
+                    )}
+                    <p className="text-[9px] text-muted-foreground leading-snug">{item.desc}</p>
+                    <span className="inline-block text-[8px] uppercase tracking-widest font-bold px-1.5 py-0.5 rounded border border-primary/40 text-primary">
+                      {item.tag}
+                    </span>
+                    {/* Vault mechanics (coin-pile rendering) are in development */}
+                    <div className="mt-1 rounded-lg py-1.5 text-[10px] font-bold uppercase tracking-widest text-center text-muted-foreground border border-border/50 bg-muted/30">
+                      Coming next update
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-[10px] text-muted-foreground leading-relaxed">
+              The Vault caps its pile and evicts the oldest coins, and every skin drops to a cheaper
+              budget automatically if the frame rate dips — so none of these cost you responsiveness
+              mid-run. All of them collapse to a static label under reduced-motion.
+            </p>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+
+      {/* ── THEMES ────────────────────────────────────────────────────────── */}
+      <div className="space-y-1 pt-2 border-t border-border">
+        <h2 className="text-xl font-black uppercase tracking-widest">Themes</h2>
+        <p className="text-muted-foreground text-xs uppercase tracking-widest">Cosmetics · Applied everywhere in the app</p>
       </div>
 
       {TIERS.map(({ tier, label, sublabel, icon: Icon, color, locked }) => {

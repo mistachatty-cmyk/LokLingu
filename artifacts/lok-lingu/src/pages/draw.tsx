@@ -26,6 +26,7 @@ import { TokenEarnedLabel } from '@/components/token-earned-label';
 import { FALLBACK_WORDS, saveLocalScore } from '@/lib/offline-data';
 import { speakWord, matchWord } from '@/lib/speech-utils';
 import { useSpeechEngine } from '@/hooks/use-speech-engine';
+import { HEARTS_KEY, getConsumableCount, setConsumableCount } from '@/lib/consumables';
 
 const INK_COLORS = [
   { label: 'Primary', value: 'hsl(var(--primary))' },
@@ -140,6 +141,15 @@ export default function Draw() {
     setLives(newLives);
     setTimeout(() => {
       if (newLives <= 0) {
+        // Spend a banked heart to survive instead of ending the game
+        const banked = getConsumableCount(HEARTS_KEY);
+        if (banked > 0) {
+          setConsumableCount(HEARTS_KEY, banked - 1);
+          setLives(1);
+          canvasRef.current?.clear();
+          setStatus('idle');
+          return;
+        }
         setGameOver(true);
         saveLocalScore({ userId: userId || 1, language, category, count });
         if (userId) {

@@ -11,6 +11,7 @@ interface TokenEarnedLabelProps {
  * A spinning 3D coin that bursts upward from the streak counter after each
  * correct word, showing the tokens earned. Fades and drifts upward, then
  * unmounts. Suppressed automatically when prefers-reduced-motion is active.
+ * Reads the active token skin from localStorage to change appearance.
  */
 export function TokenEarnedLabel({ animKey, label }: TokenEarnedLabelProps) {
   const prefersReducedMotion = useReducedMotion();
@@ -19,6 +20,31 @@ export function TokenEarnedLabel({ animKey, label }: TokenEarnedLabelProps) {
   if (prefersReducedMotion || animKey === 0) return null;
 
   const isMilestone = label.includes('🎁');
+  const activeSkin = localStorage.getItem('lok-lingu-token-skin') || 'classic';
+
+  // Choose coin emoji based on skin
+  const coinEmoji =
+    activeSkin === 'baguette'    ? '🥖' :
+    activeSkin === 'sushi-roll'  ? '🍣' :
+    '🪙';
+
+  // Visual filter for glow/neon skins
+  const skinFilter =
+    activeSkin === 'aurora-glow'
+      ? 'drop-shadow(0 0 6px rgba(100,200,255,0.85))'
+      : activeSkin === 'neon-outline'
+        ? 'drop-shadow(0 0 4px rgba(255,50,255,0.9)) drop-shadow(0 0 8px rgba(50,255,255,0.7))'
+        : undefined;
+
+  const isJumbo      = activeSkin === 'jumbo';
+  const isSupernova  = activeSkin === 'supernova';
+  const isFreefall   = activeSkin === 'freefall';
+
+  const initialScale = isMilestone ? 0.5 : isJumbo ? 1.0 : 0.7;
+  const finalScale   = isMilestone ? 1.5 : isJumbo ? 2.2 : 1.1;
+  const rotations    = isSupernova ? 2880 : isMilestone ? 1080 : 720;
+  const flyY         = isMilestone ? -64 : isJumbo ? -80 : isFreefall ? 40 : -48;
+  const flyDuration  = isMilestone ? 0.9 : isFreefall ? 0.55 : 0.65;
 
   return (
     <AnimatePresence mode="wait">
@@ -27,19 +53,19 @@ export function TokenEarnedLabel({ animKey, label }: TokenEarnedLabelProps) {
         className="pointer-events-none absolute right-0 top-0 flex flex-col items-center gap-0.5 select-none z-20"
         style={{ perspective: '300px' }}
         initial={{ opacity: 1, y: 0 }}
-        animate={{ opacity: 0, y: isMilestone ? -64 : -48 }}
-        transition={{ duration: isMilestone ? 0.9 : 0.65, ease: 'easeOut' }}
+        animate={{ opacity: 0, y: flyY }}
+        transition={{ duration: flyDuration, ease: isFreefall ? 'easeIn' : 'easeOut' }}
         aria-hidden
       >
         {/* 3D spinning coin */}
         <motion.div
-          initial={{ rotateY: 0, scale: isMilestone ? 0.5 : 0.7 }}
-          animate={{ rotateY: isMilestone ? 1080 : 720, scale: isMilestone ? 1.5 : 1.1 }}
-          transition={{ duration: isMilestone ? 0.85 : 0.6, ease: 'easeOut' }}
-          style={{ display: 'inline-block', transformStyle: 'preserve-3d' }}
+          initial={{ rotateY: 0, scale: initialScale }}
+          animate={{ rotateY: rotations, scale: finalScale }}
+          transition={{ duration: flyDuration * 0.9, ease: 'easeOut' }}
+          style={{ display: 'inline-block', transformStyle: 'preserve-3d', filter: skinFilter }}
           className="text-2xl leading-none"
         >
-          🪙
+          {coinEmoji}
         </motion.div>
 
         {/* Amount label */}

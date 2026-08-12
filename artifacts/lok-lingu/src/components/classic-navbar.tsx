@@ -1,5 +1,5 @@
 import { useLocation } from 'wouter';
-import { Home, Compass, Trophy, User, Palette, Backpack } from 'lucide-react';
+import { Home, Compass, Trophy, User, Palette, Backpack, Map } from 'lucide-react';
 
 interface NavItem {
   href: string;
@@ -12,6 +12,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/explore', icon: Compass, label: 'Explore' },
   { href: '/leaderboard', icon: Trophy, label: 'Ranks' },
   { href: '/stats', icon: User, label: 'Stats' },
+  { href: '/map', icon: Map, label: 'Map' },
   { href: '/themes', icon: Palette, label: 'Themes' },
   { href: '/inventory', icon: Backpack, label: 'Items' },
 ];

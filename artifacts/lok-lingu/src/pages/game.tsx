@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Volume2, Mic, Home, AlertTriangle } from 'lucide-react';
+import { Volume2, Mic, Home, AlertTriangle, SkipForward } from 'lucide-react';
+import { SKIPS_KEY, getConsumableCount, setConsumableCount } from '@/lib/consumables';
 import { useLocation } from 'wouter';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useSubmitScore } from '@workspace/api-client-react';
@@ -171,6 +172,15 @@ export default function Game() {
   submitRef.current = submitScore;
   const missVariantRef = useRef(0);
   const lifetimeBase = useRef(parseInt(localStorage.getItem('lok-lingu-lifetime-tokens') || '0'));
+  const [skipsOwned, setSkipsOwned] = useState(() => getConsumableCount(SKIPS_KEY));
+
+  const handleSkip = useCallback(() => {
+    if (skipsOwned <= 0) return;
+    const newCount = skipsOwned - 1;
+    setSkipsOwned(newCount);
+    setConsumableCount(SKIPS_KEY, newCount);
+    setWordIndex((i) => i + 1);
+  }, [skipsOwned]);
 
   const commitRun = useCallback(() => {
     const count = streakRef.current;
@@ -443,6 +453,17 @@ export default function Game() {
             </>
           )}
         </button>
+
+        {skipsOwned > 0 && (
+          <button
+            onClick={handleSkip}
+            className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <SkipForward size={16} />
+            Skip word · {skipsOwned} left
+          </button>
+        )}
+
         {devMode && isActive && engine && (
           <span className="text-[10px] font-mono uppercase tracking-widest opacity-40">
             {engine === 'vosk' ? 'offline engine' : 'browser engine'} · {engineNote}
