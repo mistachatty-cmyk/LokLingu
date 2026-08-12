@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, type ReactNode } from 'react';
 import { useTheme } from '../hooks/use-theme';
 import { Check, Flame, Lock, Star, Zap, Sparkles, Globe, Coins, Heart, SkipForward } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -118,6 +118,192 @@ const TIERS = [
     locked: false,
   },
 ];
+
+// ── Shop helper components ────────────────────────────────────────────────────
+
+/** Animated coin preview for token-skin cards. Tap to replay the spin. */
+function CoinPreview({ skinId }: { skinId: string }) {
+  const [playKey, setPlayKey] = useState(0);
+  const prefersReducedMotion = useReducedMotion();
+
+  const emoji =
+    skinId === 'baguette'   ? '🥖' :
+    skinId === 'sushi-roll' ? '🍣' : '🪙';
+
+  const filter =
+    skinId === 'aurora-glow'
+      ? 'drop-shadow(0 0 10px rgba(100,200,255,0.95))'
+      : skinId === 'neon-outline'
+        ? 'drop-shadow(0 0 5px rgba(255,50,255,0.95)) drop-shadow(0 0 10px rgba(50,255,255,0.8))'
+        : undefined;
+
+  const isJumbo     = skinId === 'jumbo';
+  const isSupernova = skinId === 'supernova';
+  const rotations   = isSupernova ? 2880 : 720;
+  const initScale   = isJumbo ? 1.3 : 1.0;
+  const peakScale   = isJumbo ? 2.4 : 1.6;
+  const dur         = isSupernova ? 0.95 : 0.75;
+
+  return (
+    <div
+      className="w-full h-full flex items-center justify-center cursor-pointer"
+      onClick={() => setPlayKey((k) => k + 1)}
+    >
+      {prefersReducedMotion || playKey === 0 ? (
+        <span className="text-4xl leading-none select-none" style={{ filter }}>{emoji}</span>
+      ) : (
+        <motion.div
+          key={playKey}
+          style={{ display: 'inline-block', transformStyle: 'preserve-3d', filter, fontSize: '2.5rem', lineHeight: 1 }}
+          initial={{ rotateY: 0, scale: initScale }}
+          animate={{ rotateY: rotations, scale: [initScale, peakScale, 1.0] }}
+          transition={{ duration: dur, ease: 'easeOut' }}
+          className="select-none"
+        >
+          {emoji}
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
+/** Bouncing emoji preview for celebration / collab / vault cards. Tap to replay. */
+function EmojiPreview({ emoji, bgColor }: { emoji: string; bgColor?: string }) {
+  const [playKey, setPlayKey] = useState(0);
+  const prefersReducedMotion = useReducedMotion();
+
+  return (
+    <div
+      className="w-full h-full flex items-center justify-center cursor-pointer"
+      style={{ background: bgColor || 'transparent' }}
+      onClick={() => setPlayKey((k) => k + 1)}
+    >
+      {prefersReducedMotion || playKey === 0 ? (
+        <span className="text-5xl leading-none select-none">{emoji}</span>
+      ) : (
+        <motion.div
+          key={playKey}
+          className="text-5xl leading-none select-none"
+          initial={{ scale: 1, rotate: 0 }}
+          animate={{ scale: [1, 1.55, 0.82, 1.18, 1], rotate: [0, -14, 9, -4, 0] }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+        >
+          {emoji}
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
+interface ShopCardProps {
+  preview: ReactNode;
+  name: string;
+  /** Token cost for buyable items. null = cannot be purchased (earn-only or level-gated). undefined = already owned (no price row). */
+  price?: number | null;
+  /** Overrides numeric display — e.g. "Lv 84", "earn: 50 French food words" */
+  priceLabel?: string;
+  desc: string;
+  tag?: string;
+  owned?: boolean;
+  active?: boolean;
+  onSetActive?: () => void;
+  onBuy?: () => void;
+  insufficientFunds?: boolean;
+  /** When true (earn-only items), price row shows muted text not gold */
+  earnOnly?: boolean;
+}
+
+/**
+ * Unified shop card: tall dark preview box + name + interactive price text + desc + optional badge.
+ * Double-tap the price text to purchase (first tap enters confirm state, second tap buys).
+ */
+function ShopCard({
+  preview, name, price, priceLabel, desc, tag,
+  owned, active, onSetActive, onBuy, insufficientFunds, earnOnly,
+}: ShopCardProps) {
+  const [confirming, setConfirming] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
+
+  function handlePriceTap() {
+    if (insufficientFunds) return;
+    if (confirming) {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      setConfirming(false);
+      onBuy?.();
+    } else {
+      setConfirming(true);
+      timerRef.current = setTimeout(() => setConfirming(false), 2500);
+    }
+  }
+
+  return (
+    <div className="rounded-xl border border-border overflow-hidden">
+      {/* Preview */}
+      <div className="h-28 bg-[#0d0d16] flex items-center justify-center overflow-hidden">
+        {preview}
+      </div>
+
+      {/* Info */}
+      <div className="p-3 bg-card space-y-0.5">
+        <p className="font-black text-xs uppercase tracking-wide leading-tight">{name}</p>
+
+        {/* Status / price row */}
+        {owned ? (
+          onSetActive ? (
+            <button
+              onClick={onSetActive}
+              className={`block text-[10px] font-bold transition-colors ${
+                active
+                  ? 'text-primary cursor-default'
+                  : 'text-muted-foreground hover:text-primary'
+              }`}
+            >
+              {active ? '✓ Active' : 'Set Active'}
+            </button>
+          ) : (
+            <p className="text-[10px] text-primary font-bold">✓ Owned</p>
+          )
+        ) : price === null ? (
+          /* Cannot purchase — earn-only (muted) or level-gated (gold) */
+          earnOnly ? (
+            <p className="text-[10px] text-muted-foreground leading-snug">{priceLabel}</p>
+          ) : (
+            <p className="text-[10px] text-yellow-400 font-bold">{priceLabel}</p>
+          )
+        ) : price !== undefined ? (
+          /* Buyable — double-tap the price */
+          <button
+            onClick={handlePriceTap}
+            disabled={insufficientFunds && !confirming}
+            className={`block text-left text-[10px] font-bold transition-all ${
+              confirming
+                ? 'text-white underline-offset-2 underline'
+                : insufficientFunds
+                  ? 'text-muted-foreground opacity-50 cursor-not-allowed'
+                  : 'text-yellow-400 hover:text-yellow-300 active:scale-95'
+            }`}
+          >
+            {confirming ? 'Tap again to confirm' : (priceLabel ?? String(price))}
+          </button>
+        ) : null}
+
+        <p className="text-[9px] text-muted-foreground leading-snug pt-0.5">{desc}</p>
+
+        {tag && (
+          <div className="pt-1">
+            <span className="inline-flex items-center gap-1 text-[8px] uppercase tracking-widest font-black px-2 py-0.5 rounded border border-primary/40 text-primary bg-primary/10">
+              🔥 {tag}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 function ThemePreview({
   t,
@@ -382,7 +568,6 @@ export default function Themes() {
   const [heartsOwned, setHeartsOwned] = useState(() => getConsumableCount(HEARTS_KEY));
   const [activeSkin, setActiveSkin] = useState(getActiveTokenSkin);
   const [ownedSkins, setOwnedSkins] = useState(getOwnedTokenSkins);
-  const [previewSkin, setPreviewSkin] = useState<string | null>(null);
   const [ownedShopCelebIds, setOwnedShopCelebIds] = useState(getOwnedShopCelebrations);
   const [ownedCollabIds, setOwnedCollabIds] = useState(getOwnedCollabs);
   const [ownedVaultIds, setOwnedVaultIds] = useState(getOwnedVaults);
@@ -412,26 +597,6 @@ export default function Themes() {
     setConsumableCount(storageKey, newCount);
     if (storageKey === SKIPS_KEY) setSkipsOwned(newCount);
     else setHeartsOwned(newCount);
-  }
-
-  function handleSkinTap(skinId: string, cost: number, cannotBuy?: boolean) {
-    if (ownedSkins.has(skinId)) {
-      setActiveTokenSkin(skinId);
-      setActiveSkin(skinId);
-      setPreviewSkin(null);
-      return;
-    }
-    if (cannotBuy) return;
-    if (previewSkin === skinId) {
-      if (!spendTokens(cost)) return;
-      addOwnedTokenSkin(skinId);
-      setOwnedSkins((prev) => { const s = new Set(prev); s.add(skinId); return s; });
-      setActiveTokenSkin(skinId);
-      setActiveSkin(skinId);
-      setPreviewSkin(null);
-    } else {
-      setPreviewSkin(skinId);
-    }
   }
 
   function handleBuyShopCelebration(id: string, cost: number) {
@@ -471,7 +636,7 @@ export default function Themes() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs font-black uppercase tracking-widest text-primary">
-              🔗 Stacks — Consumables
+              Stacks — Consumables
             </p>
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
               Buy in bundles · bulk is cheaper per unit
@@ -480,7 +645,6 @@ export default function Themes() {
           <div className="flex items-center gap-1">
             <Coins className="w-3.5 h-3.5 text-primary" />
             <span className="text-sm font-black">{tokens.toLocaleString()}</span>
-            <span className="text-[10px] text-muted-foreground uppercase tracking-widest ml-0.5">Tokens</span>
           </div>
         </div>
 
@@ -527,21 +691,15 @@ export default function Themes() {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs font-black uppercase tracking-widest text-primary">🔗 Token Skins</p>
+            <p className="text-xs font-black uppercase tracking-widest text-primary">Token Skins</p>
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
-              Tap to preview · tap again to buy
+              Tap preview to animate · tap price to buy
             </p>
           </div>
           <div className="flex items-center gap-1">
             <Coins className="w-3.5 h-3.5 text-primary" />
             <span className="text-sm font-black">{tokens.toLocaleString()}</span>
-            <span className="text-[10px] text-muted-foreground uppercase tracking-widest ml-0.5">Tokens</span>
           </div>
-        </div>
-
-        <div className="rounded-xl border border-border bg-card/50 p-3 text-[10px] text-muted-foreground leading-relaxed">
-          Appearance and effect ship bundled for now. They are stored as separate fields,
-          so they can be split into independent pickers later without resetting what you own.
         </div>
 
         <Accordion type="multiple" defaultValue={['classic', 'lingu']} className="space-y-2">
@@ -550,37 +708,31 @@ export default function Themes() {
               Classic Coins
             </AccordionTrigger>
             <AccordionContent className="px-4 pb-4">
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-3">
                 {TOKEN_SKINS.filter((s) => s.section === 'classic').map((skin) => {
                   const owned = ownedSkins.has(skin.id);
                   const active = activeSkin === skin.id;
-                  const isPreviewing = previewSkin === skin.id;
+                  const isFree = skin.cost === 0;
                   return (
-                    <button
+                    <ShopCard
                       key={skin.id}
-                      onClick={() => handleSkinTap(skin.id, skin.cost)}
-                      className={`rounded-xl border-2 p-3 text-left transition-all ${
-                        active
-                          ? 'border-primary bg-primary/10'
-                          : isPreviewing
-                            ? 'border-amber-400 bg-amber-400/10'
-                            : owned
-                              ? 'border-border bg-card hover:border-primary/50'
-                              : 'border-border bg-card opacity-80 hover:opacity-100 hover:border-primary/30'
-                      }`}
-                    >
-                      <div className="text-2xl mb-1">🪙</div>
-                      <p className="font-black text-[10px] uppercase tracking-wide leading-tight">{skin.name}</p>
-                      {active ? (
-                        <p className="text-[9px] text-primary font-bold mt-0.5">✓ Active</p>
-                      ) : owned ? (
-                        <p className="text-[9px] text-muted-foreground mt-0.5">tap to equip</p>
-                      ) : isPreviewing ? (
-                        <p className="text-[9px] text-amber-400 font-bold mt-0.5">tap again — {skin.cost} tokens</p>
-                      ) : (
-                        <p className="text-[9px] text-primary mt-0.5">{skin.cost === 0 ? 'Free' : `${skin.cost} tokens`}</p>
-                      )}
-                    </button>
+                      preview={<CoinPreview skinId={skin.id} />}
+                      name={skin.name}
+                      price={owned ? undefined : skin.cost}
+                      priceLabel={isFree ? 'Free' : String(skin.cost)}
+                      desc={skin.desc}
+                      owned={owned}
+                      active={active}
+                      onSetActive={() => { setActiveTokenSkin(skin.id); setActiveSkin(skin.id); }}
+                      onBuy={() => {
+                        if (!spendTokens(skin.cost)) return;
+                        addOwnedTokenSkin(skin.id);
+                        setOwnedSkins((p) => { const s = new Set(p); s.add(skin.id); return s; });
+                        setActiveTokenSkin(skin.id);
+                        setActiveSkin(skin.id);
+                      }}
+                      insufficientFunds={!owned && tokens < skin.cost}
+                    />
                   );
                 })}
               </div>
@@ -592,40 +744,35 @@ export default function Themes() {
               Lingu Collection
             </AccordionTrigger>
             <AccordionContent className="px-4 pb-4">
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-3">
                 {TOKEN_SKINS.filter((s) => s.section === 'lingu').map((skin) => {
                   const owned = ownedSkins.has(skin.id);
                   const active = activeSkin === skin.id;
-                  const isPreviewing = previewSkin === skin.id;
                   return (
-                    <button
+                    <ShopCard
                       key={skin.id}
-                      onClick={() => handleSkinTap(skin.id, skin.cost, skin.cannotBuy)}
-                      disabled={skin.cannotBuy && !owned}
-                      className={`rounded-xl border-2 p-3 text-left transition-all disabled:cursor-default ${
-                        active
-                          ? 'border-primary bg-primary/10'
-                          : isPreviewing
-                            ? 'border-amber-400 bg-amber-400/10'
-                            : owned
-                              ? 'border-border bg-card hover:border-primary/50'
-                              : 'border-border bg-card opacity-70'
-                      }`}
-                    >
-                      <div className="text-2xl mb-1">{skin.id === 'baguette' ? '🥖' : '🍣'}</div>
-                      <p className="font-black text-[10px] uppercase tracking-wide leading-tight">{skin.name}</p>
-                      {active ? (
-                        <p className="text-[9px] text-primary font-bold mt-0.5">✓ Active</p>
-                      ) : owned ? (
-                        <p className="text-[9px] text-muted-foreground mt-0.5">tap to equip</p>
-                      ) : skin.cannotBuy ? (
-                        <p className="text-[9px] text-muted-foreground mt-0.5 leading-snug">earn: {skin.earnCondition}</p>
-                      ) : isPreviewing ? (
-                        <p className="text-[9px] text-amber-400 font-bold mt-0.5">tap again — {skin.cost} tokens</p>
-                      ) : (
-                        <p className="text-[9px] text-primary mt-0.5">{skin.cost} tokens</p>
-                      )}
-                    </button>
+                      preview={<CoinPreview skinId={skin.id} />}
+                      name={skin.name}
+                      price={skin.cannotBuy ? null : owned ? undefined : skin.cost}
+                      priceLabel={
+                        skin.cannotBuy
+                          ? `earn: ${skin.earnCondition}`
+                          : String(skin.cost)
+                      }
+                      desc={skin.desc}
+                      owned={owned}
+                      active={active}
+                      earnOnly={skin.cannotBuy}
+                      onSetActive={owned ? () => { setActiveTokenSkin(skin.id); setActiveSkin(skin.id); } : undefined}
+                      onBuy={!skin.cannotBuy ? () => {
+                        if (!spendTokens(skin.cost)) return;
+                        addOwnedTokenSkin(skin.id);
+                        setOwnedSkins((p) => { const s = new Set(p); s.add(skin.id); return s; });
+                        setActiveTokenSkin(skin.id);
+                        setActiveSkin(skin.id);
+                      } : undefined}
+                      insufficientFunds={!owned && !skin.cannotBuy && tokens < skin.cost}
+                    />
                   );
                 })}
               </div>
@@ -639,50 +786,27 @@ export default function Themes() {
         <div>
           <p className="text-xs font-black uppercase tracking-widest text-primary">Celebrations</p>
           <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
-            Cosmetics · Applied on correct answers
+            Cosmetics · Tap preview · tap price to buy
           </p>
         </div>
         <div className="grid grid-cols-2 gap-3">
           {SHOP_CELEBRATIONS.map((item) => {
             const owned = ownedShopCelebIds.has(item.id);
+            const active = activeCelebrationId === item.id;
             return (
-              <div key={item.id} className="rounded-xl border border-border overflow-hidden">
-                <div
-                  className="h-24 flex items-center justify-center text-5xl"
-                  style={{ background: item.bgColor }}
-                >
-                  {item.emoji}
-                </div>
-                <div className="p-3 space-y-1.5 bg-card">
-                  <p className="font-black text-xs uppercase tracking-wide">{item.name}</p>
-                  {!owned && <p className="text-[10px] font-bold text-yellow-400">{item.price}</p>}
-                  <p className="text-[9px] text-muted-foreground leading-snug">{item.desc}</p>
-                  {owned ? (
-                    <button
-                      onClick={() => handleSetActiveCelebration(item.id)}
-                      className={`w-full rounded-lg py-1.5 text-[10px] font-black uppercase tracking-widest transition-all ${
-                        activeCelebrationId === item.id
-                          ? 'bg-primary text-primary-foreground cursor-default'
-                          : 'bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30 active:scale-95'
-                      }`}
-                    >
-                      {activeCelebrationId === item.id ? '✓ Active' : 'Set Active'}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => handleBuyShopCelebration(item.id, item.price)}
-                      disabled={tokens < item.price}
-                      className={`w-full rounded-lg py-1.5 text-[10px] font-black uppercase tracking-widest transition-all ${
-                        tokens < item.price
-                          ? 'bg-muted text-muted-foreground border border-border opacity-50 cursor-not-allowed'
-                          : 'bg-primary text-primary-foreground hover:brightness-110 active:scale-95'
-                      }`}
-                    >
-                      {item.price} tokens
-                    </button>
-                  )}
-                </div>
-              </div>
+              <ShopCard
+                key={item.id}
+                preview={<EmojiPreview emoji={item.emoji} bgColor={item.bgColor} />}
+                name={item.name}
+                price={owned ? undefined : item.price}
+                priceLabel={String(item.price)}
+                desc={item.desc}
+                owned={owned}
+                active={active}
+                onSetActive={() => handleSetActiveCelebration(item.id)}
+                onBuy={() => handleBuyShopCelebration(item.id, item.price)}
+                insufficientFunds={!owned && tokens < item.price}
+              />
             );
           })}
         </div>
@@ -699,29 +823,17 @@ export default function Themes() {
               {COLLAB_ITEMS.map((item) => {
                 const owned = ownedCollabIds.has(item.id);
                 return (
-                  <div key={item.id} className="rounded-xl border border-border overflow-hidden">
-                    <div className="h-20 flex items-center justify-center text-4xl bg-gradient-to-br from-card to-muted">
-                      {item.emoji}
-                    </div>
-                    <div className="p-3 space-y-1.5 bg-card">
-                      <p className="font-black text-xs uppercase tracking-wide">{item.name}</p>
-                      {!owned && <p className="text-[10px] font-bold text-yellow-400">{item.price}</p>}
-                      <p className="text-[9px] text-muted-foreground leading-snug">{item.desc}</p>
-                      <button
-                        onClick={() => handleBuyCollab(item.id, item.price)}
-                        disabled={owned || tokens < item.price}
-                        className={`w-full rounded-lg py-1.5 text-[10px] font-black uppercase tracking-widest transition-all ${
-                          owned
-                            ? 'bg-primary/20 text-primary border border-primary/30 cursor-default'
-                            : tokens < item.price
-                              ? 'bg-muted text-muted-foreground border border-border opacity-50 cursor-not-allowed'
-                              : 'bg-primary text-primary-foreground hover:brightness-110 active:scale-95'
-                        }`}
-                      >
-                        {owned ? '✓ Owned' : `${item.price} tokens`}
-                      </button>
-                    </div>
-                  </div>
+                  <ShopCard
+                    key={item.id}
+                    preview={<EmojiPreview emoji={item.emoji} />}
+                    name={item.name}
+                    price={owned ? undefined : item.price}
+                    priceLabel={String(item.price)}
+                    desc={item.desc}
+                    owned={owned}
+                    onBuy={() => handleBuyCollab(item.id, item.price)}
+                    insufficientFunds={!owned && tokens < item.price}
+                  />
                 );
               })}
             </div>
@@ -736,26 +848,26 @@ export default function Themes() {
             <div className="grid grid-cols-2 gap-3">
               {VAULT_ITEMS.map((item) => {
                 const owned = ownedVaultIds.has(item.id);
-                const cantBuy = item.price === null;
+                const levelGated = item.price === null;
                 return (
-                  <div key={item.id} className="rounded-xl border border-border bg-card p-3 space-y-2">
-                    <div className="text-3xl">🏛️</div>
-                    <p className="font-black text-xs uppercase tracking-wide leading-tight">{item.name}</p>
-                    {item.requiredLevel && (
-                      <p className="text-[9px] text-primary font-bold">Lv {item.requiredLevel}</p>
-                    )}
-                    {!owned && item.price !== null && (
-                      <p className="text-[10px] font-bold text-yellow-400">{item.price}</p>
-                    )}
-                    <p className="text-[9px] text-muted-foreground leading-snug">{item.desc}</p>
-                    <span className="inline-block text-[8px] uppercase tracking-widest font-bold px-1.5 py-0.5 rounded border border-primary/40 text-primary">
-                      {item.tag}
-                    </span>
-                    {/* Vault mechanics (coin-pile rendering) are in development */}
-                    <div className="mt-1 rounded-lg py-1.5 text-[10px] font-bold uppercase tracking-widest text-center text-muted-foreground border border-border/50 bg-muted/30">
-                      Coming next update
-                    </div>
-                  </div>
+                  <ShopCard
+                    key={item.id}
+                    preview={<CoinPreview skinId="classic" />}
+                    name={item.name}
+                    price={levelGated ? null : owned ? undefined : item.price!}
+                    priceLabel={
+                      item.requiredLevel
+                        ? `Lv ${item.requiredLevel}`
+                        : item.price !== null
+                          ? String(item.price)
+                          : undefined
+                    }
+                    desc={item.desc}
+                    tag={item.tag}
+                    owned={owned}
+                    onBuy={!levelGated ? () => handleBuyVault(item.id, item.price!) : undefined}
+                    insufficientFunds={!levelGated && !owned && item.price !== null && tokens < item.price!}
+                  />
                 );
               })}
             </div>

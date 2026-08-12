@@ -317,6 +317,21 @@ export default function Home() {
                 </div>
               </div>
 
+              {/* Settings page link */}
+              <button
+                onClick={() => {
+                  setShowProfile(false);
+                  setLocation('/settings');
+                }}
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg border border-border hover:border-primary/40 hover:bg-accent transition-all text-left"
+              >
+                <div className="flex items-center space-x-2">
+                  <Settings className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Settings</span>
+                </div>
+                <span className="text-xs text-muted-foreground font-mono">Display &amp; Audio</span>
+              </button>
+
               {/* Footer */}
               <div className="border-t border-border pt-4 mt-auto">
                 <p className="text-[10px] text-muted-foreground">
