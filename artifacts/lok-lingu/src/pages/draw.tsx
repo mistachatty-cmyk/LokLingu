@@ -94,6 +94,7 @@ export default function Draw() {
   const [tokenLabel, setTokenLabel] = useState<{ key: number; text: string }>({ key: 0, text: '' });
 
   const canvasRef = useRef<DrawCanvasHandle>(null);
+  const lifetimeBase = useRef(parseInt(localStorage.getItem('lok-lingu-lifetime-tokens') || '0'));
 
   // Refs for stale-closure safety inside the speech onResult callback
   const statusRef = useRef(status);
@@ -323,6 +324,9 @@ export default function Draw() {
 
           <div className="relative text-right">
             <TokenEarnedLabel animKey={tokenLabel.key} label={tokenLabel.text} />
+            <span className="text-[10px] font-mono tracking-widest opacity-50 mb-0.5 select-none block">
+              🪙 {(lifetimeBase.current + celebration.tokensEarnedRef.current).toLocaleString()}
+            </span>
             <div className="flex items-center justify-end gap-2">
               <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Streak</span>
               {celebration.boostActive && (
