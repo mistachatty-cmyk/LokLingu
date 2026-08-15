@@ -72,26 +72,71 @@ export function TokenEarnedLabel({ animKey, label, skinOverride, contained = fal
     );
   }
 
-  // Preview mode: centered, with spinning and fade animation
+  // Preview mode: centered, same animation as game
   if (contained) {
+    const coinScale = skin.scale * (isMilestone ? 1.4 : 1);
+
     return (
       <AnimatePresence mode="wait">
         {animKey > 0 && (
           <motion.div
             key={animKey}
             className="pointer-events-none absolute inset-0 z-20 flex select-none items-center justify-center flex-col gap-0.5"
-            initial={{ opacity: 1, scale: 1, rotateY: 0 }}
-            animate={{ opacity: 0, scale: 0.6, rotateY: 720 }}
+            style={{ perspective: '300px' }}
+            initial={{ opacity: 1, scale: 1 }}
+            animate={{ opacity: 0, scale: 0.6 }}
             transition={{ duration: skin.duration, ease: 'easeOut' }}
-            style={{ transformStyle: 'preserve-3d' }}
             aria-hidden
           >
             <div className="relative flex items-center justify-center">
-              <span className="text-3xl" style={{ textShadow: skin.outline }}>
+              {/* Halo */}
+              {skin.halo && (
+                <motion.span
+                  className="absolute rounded-full"
+                  style={{ width: 56, height: 56, backgroundImage: skin.halo, opacity: 0.55 }}
+                  initial={{ scale: 0.4 }}
+                  animate={{ scale: 1.6, opacity: 0 }}
+                  transition={{ duration: skin.duration, ease: 'easeOut' }}
+                />
+              )}
+
+              {/* Burst ring */}
+              {particles.map((p) => (
+                <motion.span
+                  key={p.id}
+                  className="absolute h-1.5 w-1.5 rounded-full"
+                  style={{ backgroundColor: 'var(--word-color)' }}
+                  initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
+                  animate={{ x: p.x * 34, y: p.y * 34, opacity: 0, scale: 0.3 }}
+                  transition={{ duration: 0.45, ease: 'easeOut' }}
+                />
+              ))}
+
+              {/* The coin itself - same as game */}
+              <motion.div
+                initial={{ rotateY: 0, scale: coinScale * 0.6 }}
+                animate={{ rotateY: isMilestone ? 1080 : 720, scale: coinScale }}
+                transition={{ duration: skin.duration * 0.9, ease: 'easeOut' }}
+                style={{
+                  display: 'inline-block',
+                  transformStyle: 'preserve-3d',
+                  textShadow: skin.outline,
+                }}
+                className="text-3xl leading-none"
+              >
                 {skin.glyph}
-              </span>
+              </motion.div>
             </div>
-            <span className="text-[10px] font-bold text-center">{label}</span>
+
+            <motion.span
+              initial={{ opacity: 0, scale: 0.7 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.15, delay: 0.05 }}
+              className="text-[10px] font-bold uppercase leading-none tracking-widest text-center"
+              style={{ color: 'var(--word-color)', textShadow: skin.outline }}
+            >
+              {label}
+            </motion.span>
           </motion.div>
         )}
       </AnimatePresence>

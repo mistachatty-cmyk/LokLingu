@@ -417,8 +417,11 @@ export default function Draw() {
         </div>
       </div>
 
+      {/* ── Top rod indicator ─────────────────────────────────────────────── */}
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-primary to-primary/50 opacity-30" />
+
       {/* ── Main game area ────────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-20">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 pt-6 pb-20">
         <AnimatePresence mode="wait">
           {!gameOver ? (
             <motion.div
@@ -426,11 +429,11 @@ export default function Draw() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className={`w-full space-y-4 transition-all duration-300 ${expanded ? 'max-w-2xl' : 'max-w-sm'}`}
+              className={`w-full space-y-6 transition-all duration-300 ${expanded ? 'max-w-2xl' : 'max-w-md'}`}
             >
               {/* Word display */}
               <div
-                className={`text-center space-y-1 transition-all duration-300 ${
+                className={`text-center space-y-2 transition-all duration-300 ${
                   status === 'error' ? 'animate-[shake_0.3s_ease-in-out]' : ''
                 }`}
                 style={{
@@ -463,11 +466,14 @@ export default function Draw() {
               {/* Canvas */}
               <motion.div
                 key={shakeKey}
-                animate={shakeKey > 0 ? { x: [-14, 14, -10, 10, -6, 6, 0] } : { x: 0 }}
-                transition={{ duration: 0.35, ease: 'easeInOut' }}
+                animate={shakeKey > 0 ? {
+                  x: [-20, 20, -18, 18, -12, 12, -8, 8, -4, 4, 0],
+                  rotate: [-2, 2, -1.5, 1.5, -1, 1, 0]
+                } : { x: 0, rotate: 0 }}
+                transition={{ duration: 0.5, ease: 'easeInOut' }}
                 className={`relative rounded-xl border-2 overflow-hidden transition-colors duration-300 ${
                   status === 'error'
-                    ? 'border-destructive'
+                    ? 'border-destructive shadow-lg shadow-destructive/50'
                     : status === 'success'
                       ? 'border-primary'
                       : isRecognizing
