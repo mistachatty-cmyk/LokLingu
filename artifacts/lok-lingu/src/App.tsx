@@ -68,7 +68,10 @@ function Router() {
         <Route path="/roadmap" component={Roadmap} />
         <Route path="/journal" component={JournalPage} />
         <Route path="/canvas-design" component={CanvasDesignPage} />
-        <Route path="/onboarding" component={OnboardingPage} />
+        {/* Wrapped rather than passed directly: wouter hands a component
+            router props, which don't match the optional onDone prop used
+            when the tour is overlaid on home. */}
+        <Route path="/onboarding">{() => <OnboardingPage />}</Route>
         <Route component={NotFound} />
       </Switch>
       {/* Sibling of the Switch, like LiquidGlassCursor — this is the one

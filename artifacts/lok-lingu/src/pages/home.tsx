@@ -56,6 +56,7 @@ import { detectCapabilities } from '@/lib/speech/capabilities';
 import { isDevMode, setDevMode } from '@/lib/dev-mode';
 import { useSettings, type ResponseSpeed } from '@/hooks/use-settings';
 import { onboardingComplete } from '@/lib/journal';
+import { OnboardingPage } from './onboarding';
 
 /**
  * A category button that tells the truth about how complete its word list
@@ -165,11 +166,13 @@ export default function Home() {
   const languagesData = useMemo(() => normalizeLanguagesData(apiLanguagesData), [apiLanguagesData]);
   const createUser = useCreateUser();
 
-  useEffect(() => {
-    if (!onboardingComplete()) {
-      setLocation('/onboarding');
-    }
-  }, [setLocation]);
+  /**
+   * The tour renders *over* home rather than navigating away to /onboarding.
+   * As its own route there was nothing behind it, so the steps described a
+   * screen the player couldn't see. Overlaid, the home screen shows through
+   * the translucent backdrop while each step explains it.
+   */
+  const [showOnboarding, setShowOnboarding] = useState(() => !onboardingComplete());
 
   const selectedLang = languagesData.find((l) => l.code === language);
   const categories = selectedLang?.categories ?? ['numbers'];
@@ -258,6 +261,19 @@ export default function Home() {
 
   return (
     <div className="relative min-h-[100dvh] flex flex-col overflow-hidden">
+      {showOnboarding && (
+        <OnboardingPage
+          onDone={() => {
+            setShowOnboarding(false);
+            // The tour collects a name and a language; pick them up so the
+            // home screen reflects the choices immediately.
+            const saved = localStorage.getItem('lok-lingu-username');
+            if (saved) setLocalUsername(saved);
+            setLanguage(localStorage.getItem('lok-lingu-lang') || 'es');
+          }}
+        />
+      )}
+
       {/* ── Profile Drawer overlay ───────────────────────────────────── */}
       <AnimatePresence>
         {showProfile && (

@@ -49,6 +49,31 @@ const INK_COLORS = [
 ];
 
 const VOICE_CONFIRM_KEY = 'lok-lingu-draw-voice-confirm';
+const WORD_DISPLAY_KEY = 'lok-lingu-draw-word-display';
+
+/** 'above' = heading only · 'canvas' = trace guide only · 'both' */
+type WordDisplay = 'above' | 'canvas' | 'both';
+
+const WORD_DISPLAY_LABEL: Record<WordDisplay, string> = {
+  above: 'Word above',
+  canvas: 'Trace guide',
+  both: 'Word + guide',
+};
+
+/** Cycles above → both → canvas → above. */
+const NEXT_WORD_DISPLAY: Record<WordDisplay, WordDisplay> = {
+  above: 'both',
+  both: 'canvas',
+  canvas: 'above',
+};
+
+/**
+ * Vertical space the page needs around the canvas: word block, ink row,
+ * action buttons and padding. The canvas is capped so that the sum fits the
+ * viewport instead of pushing the word off the top.
+ */
+const CHROME_WITH_WORD = 350;
+const CHROME_WITHOUT_WORD = 250;
 
 export default function Draw() {
   const [, setLocation] = useLocation();
@@ -86,7 +111,24 @@ export default function Draw() {
   const [gameOver, setGameOver] = useState(false);
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [inkColor, setInkColor] = useState(INK_COLORS[0].value);
-  const [showGuide, setShowGuide] = useState(true);
+  /**
+   * Where the word you're drawing is shown.
+   *
+   * The canvas is `w-full` at a 4:5 ratio, so on a phone it resolves to
+   * roughly 500px tall. Stacked with the word, the ink row, the action
+   * buttons and the page padding that overflows the viewport — and because
+   * the game area is `justify-center` inside an `overflow-hidden` root, the
+   * overflow was silently clipped off the *top*, taking the word with it.
+   * That's why the canvas looked like a big box with no word above it.
+   *
+   * The canvas is now bounded by available height rather than width alone,
+   * and this setting controls where the word appears.
+   */
+  const [wordDisplay, setWordDisplay] = useState<WordDisplay>(
+    () => (localStorage.getItem(WORD_DISPLAY_KEY) as WordDisplay) || 'both',
+  );
+  const showWordAbove = wordDisplay === 'above' || wordDisplay === 'both';
+  const showGhost = wordDisplay === 'canvas' || wordDisplay === 'both';
   const [wordPopActive, setWordPopActive] = useState(false);
   const [shakeKey, setShakeKey] = useState(0);
   /** Visual recognition in-flight */
@@ -476,8 +518,8 @@ export default function Draw() {
               {/* Word display */}
               <div
                 className={`text-center space-y-2 transition-all duration-300 ${
-                  status === 'error' ? 'animate-[shake_0.3s_ease-in-out]' : ''
-                }`}
+                  showWordAbove ? '' : 'hidden'
+                } ${status === 'error' ? 'animate-[shake_0.3s_ease-in-out]' : ''}`}
                 style={{
                   '--word-size-mobile': wordFontSize.mobile,
                   '--word-size-desktop': wordFontSize.desktop,
@@ -513,7 +555,7 @@ export default function Draw() {
                   rotate: [-2, 2, -1.5, 1.5, -1, 1, 0]
                 } : { x: 0, rotate: 0 }}
                 transition={{ duration: 0.5, ease: 'easeInOut' }}
-                className={`relative rounded-xl border-2 overflow-hidden transition-colors duration-300 ${
+                className={`relative rounded-xl border-2 overflow-hidden transition-colors duration-300 mx-auto w-full ${
                   status === 'error'
                     ? 'border-destructive shadow-lg shadow-destructive/50'
                     : status === 'success'
@@ -522,12 +564,22 @@ export default function Draw() {
                         ? 'border-primary/60'
                         : 'border-border'
                 }`}
+                style={{
+                  // Height is width × 1.25 (the canvas is 4:5), so capping
+                  // width by the leftover viewport height is what keeps the
+                  // whole column on screen. Without this the canvas grows to
+                  // the container width and shoves the word out of view.
+                  maxWidth: `calc((100dvh - ${
+                    showWordAbove ? CHROME_WITH_WORD : CHROME_WITHOUT_WORD
+                  }px) / 1.25)`,
+                }}
               >
                 <DrawCanvas
                   ref={canvasRef}
                   color={inkColor}
                   bg="hsl(var(--card))"
-                  ghostText={showGuide ? currentWord.word : undefined}
+                  ghostText={showGhost ? currentWord.word : undefined}
+                  ghostOpacity={wordDisplay === 'canvas' ? 0.16 : 0.09}
                 />
                 {isRecognizing && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/60 backdrop-blur-sm pointer-events-none gap-2">
@@ -573,9 +625,22 @@ export default function Draw() {
                 >
                   <Volume2 className="w-4 h-4" /> Listen
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => setShowGuide(!showGuide)} className="gap-2">
-                  {showGuide ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  Guide
+                {/* Cycles where the word appears: above the canvas, as a
+                    trace guide on it, or both. The label states the current
+                    mode rather than making you discover it by tapping. */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const next = NEXT_WORD_DISPLAY[wordDisplay];
+                    setWordDisplay(next);
+                    localStorage.setItem(WORD_DISPLAY_KEY, next);
+                  }}
+                  className="gap-2"
+                  title="Where the word is shown"
+                >
+                  {showWordAbove ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                  {WORD_DISPLAY_LABEL[wordDisplay]}
                 </Button>
                 <Button
                   variant="outline"

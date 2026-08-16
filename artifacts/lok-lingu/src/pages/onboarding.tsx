@@ -209,31 +209,49 @@ const STEPS: {
   },
 ];
 
-export function OnboardingPage() {
+export function OnboardingPage({ onDone }: { onDone?: () => void } = {}) {
   const [, navigate] = useLocation();
   const [step, setStep] = useState(0);
   const [data, setData] = useState({ username: '', language: 'es' });
 
   const current = STEPS[step];
-  const canNext = step < STEPS.length - 1 && (step > 1 || data.username.trim().length > 0);
+  /**
+   * Only the username step (index 1) requires input. The old condition was
+   * `step > 1 || username`, which is false on step *0* as well — so the
+   * welcome screen's Next button was disabled before the player had any
+   * chance to type a name, and the whole flow was unreachable.
+   */
+  const usernameStep = STEPS.findIndex((s) => s.id === 'username');
+  const canNext = step !== usernameStep || data.username.trim().length > 0;
   const isLast = step === STEPS.length - 1;
 
-  const handleNext = () => {
-    if (isLast) {
-      setOnboardingComplete();
-      navigate('/');
-    } else {
-      setStep(Math.min(step + 1, STEPS.length - 1));
+  /**
+   * When mounted as an overlay on home, finishing dismisses the overlay.
+   * As a standalone route there is nowhere to dismiss to, so it navigates.
+   */
+  const finish = () => {
+    setOnboardingComplete();
+    if (data.username.trim()) {
+      localStorage.setItem('lok-lingu-username', data.username.trim());
     }
+    localStorage.setItem('lok-lingu-lang', data.language);
+    if (onDone) onDone();
+    else navigate('/');
   };
 
-  const handleSkip = () => {
-    setOnboardingComplete();
-    navigate('/');
+  const handleNext = () => {
+    if (isLast) finish();
+    else setStep(Math.min(step + 1, STEPS.length - 1));
   };
+
+  const handleSkip = () => finish();
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    // Translucent rather than an opaque page, so the home screen stays
+    // visible behind the tour and you can see what's being described.
+    // The card itself keeps a high-opacity ground so the text stays fully
+    // readable against whatever is underneath.
+    <div className="fixed inset-0 z-50 bg-background/70 backdrop-blur-md flex items-center justify-center p-4">
       <AnimatePresence mode="wait">
         <motion.div
           key={step}
@@ -243,7 +261,7 @@ export function OnboardingPage() {
           className="w-full max-w-md"
         >
           {/* Card */}
-          <div className="relative rounded-xl bg-card border border-border shadow-lg p-6 sm:p-8">
+          <div className="relative rounded-xl bg-card/95 border border-border shadow-2xl p-6 sm:p-8">
             {/* Close button */}
             <button
               onClick={handleSkip}
@@ -289,7 +307,7 @@ export function OnboardingPage() {
               >
                 Back
               </Button>
-              <Button onClick={handleNext} disabled={!canNext && !isLast} className="flex-1">
+              <Button onClick={handleNext} disabled={!canNext} className="flex-1">
                 {isLast ? 'Start Playing' : 'Next'} <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             </div>
