@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { geoPath, geoOrthographic, geoMercator, geoEquirectangular } from 'd3-geo';
 import { feature } from 'topojson-client';
 import { Plus, Minus, Maximize2 } from 'lucide-react';
@@ -11,6 +11,23 @@ const MAX_ZOOM = 4;
 
 function clampZoom(k: number): number {
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, k));
+}
+
+/**
+ * Keeps the map from being dragged off-screen. At k<=1 there is nothing to
+ * pan to, so translation is pinned to 0; above that the map may move by at
+ * most half the overflow in each axis, which always leaves the viewport
+ * covered. Without this you can fling the world away with no route back
+ * except the Reset button.
+ */
+function clampPan(x: number, y: number, k: number, w: number, h: number): { x: number; y: number } {
+  if (k <= 1) return { x: 0, y: 0 };
+  const maxX = ((k - 1) * w) / 2;
+  const maxY = ((k - 1) * h) / 2;
+  return {
+    x: Math.max(-maxX, Math.min(maxX, x)),
+    y: Math.max(-maxY, Math.min(maxY, y)),
+  };
 }
 
 function dist(a: { x: number; y: number }, b: { x: number; y: number }): number {
@@ -45,7 +62,7 @@ export function ChoroplethMap({
   width = 800,
   height = 500,
 }: Props) {
-  const [countries, setCountries] = useState<CountryFeature[]>([]);
+  const [rawFeatures, setRawFeatures] = useState<any[]>([]);
   const [hovered, setHovered] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -60,18 +77,18 @@ export function ChoroplethMap({
   const zoomBy = useCallback((factor: number) => {
     setTransform((t) => {
       const k = clampZoom(t.k * factor);
-      return { ...t, k };
+      return { k, ...clampPan(t.x, t.y, k, width, height) };
     });
-  }, []);
+  }, [width, height]);
 
   const handleWheel = useCallback((e: React.WheelEvent<SVGSVGElement>) => {
     e.preventDefault();
     const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
     setTransform((t) => {
       const k = clampZoom(t.k * factor);
-      return { ...t, k };
+      return { k, ...clampPan(t.x, t.y, k, width, height) };
     });
-  }, []);
+  }, [width, height]);
 
   const handlePointerDown = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
     if (transform.k <= 1) return;
@@ -80,9 +97,15 @@ export function ChoroplethMap({
   }, [transform.k, transform.x, transform.y]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
-    if (!dragState.current) return;
-    setTransform((t) => ({ ...t, x: e.clientX - dragState.current!.x, y: e.clientY - dragState.current!.y }));
-  }, []);
+    // Read the ref into locals BEFORE calling setTransform. The updater runs
+    // during React's render phase, by which point a pointerup/leave may have
+    // already nulled the ref — dereferencing it in there crashes the page.
+    const origin = dragState.current;
+    if (!origin) return;
+    const nextX = e.clientX - origin.x;
+    const nextY = e.clientY - origin.y;
+    setTransform((t) => ({ ...t, ...clampPan(nextX, nextY, t.k, width, height) }));
+  }, [width, height]);
 
   const handlePointerUp = useCallback(() => {
     dragState.current = null;
@@ -99,48 +122,67 @@ export function ChoroplethMap({
   }, [transform.k]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent<SVGSVGElement>) => {
-    if (e.touches.length === 2 && pinchState.current) {
-      e.preventDefault();
-      const [a, b] = [e.touches[0], e.touches[1]];
-      const newDist = dist({ x: a.clientX, y: a.clientY }, { x: b.clientX, y: b.clientY });
-      const scale = newDist / pinchState.current.dist;
-      setTransform((t) => ({ ...t, k: clampZoom(pinchState.current!.k * scale) }));
-    }
-  }, []);
+    if (e.touches.length !== 2) return;
+    // Same hazard as handlePointerMove: lifting one finger nulls the ref, and
+    // the setTransform updater runs after that. Capture first, then update.
+    const pinch = pinchState.current;
+    if (!pinch) return;
+    e.preventDefault();
+    const [a, b] = [e.touches[0], e.touches[1]];
+    const newDist = dist({ x: a.clientX, y: a.clientY }, { x: b.clientX, y: b.clientY });
+    const nextK = clampZoom(pinch.k * (newDist / pinch.dist));
+    setTransform((t) => ({ k: nextK, ...clampPan(t.x, t.y, nextK, width, height) }));
+  }, [width, height]);
 
   const handleTouchEnd = useCallback(() => {
     pinchState.current = null;
   }, []);
 
+  // Geometry is fetched and decoded ONCE. Previously this effect also depended
+  // on width/height, so every resize tick re-imported and re-parsed the whole
+  // topojson — the real cost on this page, far more than the transform.
   useEffect(() => {
-    async function loadData() {
+    let cancelled = false;
+    (async () => {
       try {
         const mod = await import('world-atlas/countries-110m.json');
         const world = mod as any;
-        const countries = feature(world, world.objects.countries) as any;
-        const proj = projType === 'orthographic' ? geoOrthographic().fitSize([width, height], { type: 'Sphere' } as any)
-          : projType === 'mercator' ? geoMercator().fitSize([width, height], { type: 'Sphere' } as any)
-          : geoEquirectangular().fitSize([width, height], { type: 'Sphere' } as any);
-
-        const cf: CountryFeature[] = countries.features
-          .filter((f: any) => f.id != null && f.geometry != null)
-          .map((f: any) => ({
-            // TopoJSON ids are ISO numeric; the language tables are alpha-3.
-            countryCode: numericToAlpha3(f.id) ?? String(f.id),
-            name: f.properties?.name ?? String(f.id),
-            path: geoPath().projection(proj)(f) ?? '',
-          }))
-          .filter((c: CountryFeature) => c.path.length > 0);
-
-        setCountries(cf);
+        const collection = feature(world, world.objects.countries) as any;
+        if (cancelled) return;
+        setRawFeatures(
+          collection.features.filter((f: any) => f.id != null && f.geometry != null),
+        );
       } catch (e) {
-        setError(String(e));
+        if (!cancelled) setError(String(e));
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
-    }
-    loadData();
-  }, [projType, width, height]);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Projection is cheap by comparison and is the only thing that needs to
+  // react to size/projection changes.
+  const countries = useMemo<CountryFeature[]>(() => {
+    if (!rawFeatures.length) return [];
+    const proj =
+      projType === 'orthographic'
+        ? geoOrthographic().fitSize([width, height], { type: 'Sphere' } as any)
+        : projType === 'mercator'
+          ? geoMercator().fitSize([width, height], { type: 'Sphere' } as any)
+          : geoEquirectangular().fitSize([width, height], { type: 'Sphere' } as any);
+    const path = geoPath().projection(proj);
+    return rawFeatures
+      .map((f: any) => ({
+        // TopoJSON ids are ISO numeric; the language tables are alpha-3.
+        countryCode: numericToAlpha3(f.id) ?? String(f.id),
+        name: f.properties?.name ?? String(f.id),
+        path: path(f) ?? '',
+      }))
+      .filter((c: CountryFeature) => c.path.length > 0);
+  }, [rawFeatures, projType, width, height]);
 
   const getCountryColor = useCallback((countryCode: string): string => {
     try {
@@ -202,9 +244,16 @@ export function ChoroplethMap({
         </defs>
         <rect width={width} height={height} fill="url(#ocean-grad)" rx={12} />
 
+        {/* Scale about the centre explicitly. Setting `transform-origin` in CSS
+            while the transform itself is an SVG *attribute* mixes two different
+            systems and is unreliable; baking the origin into the matrix is not. */}
         <g
-          transform={`translate(${transform.x} ${transform.y}) scale(${transform.k})`}
-          style={{ transformOrigin: `${width / 2}px ${height / 2}px` }}
+          transform={
+            `translate(${transform.x} ${transform.y}) ` +
+            `translate(${width / 2} ${height / 2}) ` +
+            `scale(${transform.k}) ` +
+            `translate(${-width / 2} ${-height / 2})`
+          }
         >
           {countries.map((cf) => {
             const lang = getLanguageForCountry(cf.countryCode);
@@ -273,28 +322,9 @@ export function ChoroplethMap({
         </button>
       </div>
 
-      {hovered && (() => {
-        const cf = countries.find((c) => c.countryCode === hovered);
-        if (!cf) return null;
-        const lang = getLanguageForCountry(cf.countryCode);
-        const lc = lang ? getLanguageCountry(lang) : null;
-        return (
-          <div className="absolute pointer-events-none z-10 bg-card border border-border rounded-lg px-3 py-2 shadow-xl backdrop-blur-sm"
-            style={{ left: '50%', top: -10, transform: 'translate(-50%, -100%)' }}
-          >
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-bold">{cf.name}</span>
-              {lc ? (
-                <span className="text-[10px] font-mono uppercase tracking-widest text-primary">
-                  {lc.flag} {lc.name}
-                </span>
-              ) : (
-                <span className="text-[10px] font-mono text-muted-foreground">Not available</span>
-              )}
-            </div>
-          </div>
-        );
-      })()}
+      {/* The hover label lives in explore.tsx's <HoverReadout>. A second one
+          here was pinned to a fixed spot so it never tracked the cursor, and
+          it duplicated the same information — removed. */}
     </div>
   );
 }
