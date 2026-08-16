@@ -39,6 +39,7 @@ import { getCoverage, coverageOpacity, coverageSymbol } from '@/lib/word-coverag
 import { detectCapabilities } from '@/lib/speech/capabilities';
 import { isDevMode, setDevMode } from '@/lib/dev-mode';
 import { useSettings, type ResponseSpeed } from '@/hooks/use-settings';
+import { onboardingComplete } from '@/lib/journal';
 
 /**
  * A category button that tells the truth about how complete its word list
@@ -142,6 +143,12 @@ export default function Home() {
   } = useGetLanguages();
   const languagesData = useMemo(() => normalizeLanguagesData(apiLanguagesData), [apiLanguagesData]);
   const createUser = useCreateUser();
+
+  useEffect(() => {
+    if (!onboardingComplete()) {
+      setLocation('/onboarding');
+    }
+  }, [setLocation]);
 
   const selectedLang = languagesData.find((l) => l.code === language);
   const categories = selectedLang?.categories ?? ['numbers'];
