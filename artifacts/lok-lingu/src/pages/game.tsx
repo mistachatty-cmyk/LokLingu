@@ -32,6 +32,7 @@ import {
   type SessionEntry,
 } from '@/lib/review';
 import { SessionSummaryCard } from '@/components/session-summary';
+import { TokenPhysicsLayer, spawnTokenAt } from '@/components/token-physics-layer';
 
 type NormalWord = { word: string; translation: string; pronunciation?: string };
 
@@ -192,6 +193,8 @@ export default function Game() {
   /* The last few indices served, so the scheduler doesn't hand back the
      word that is already on screen. */
   const recentRef = useRef<number[]>([]);
+  /* The HUD element physics tokens launch from. */
+  const tokenAnchorRef = useRef<HTMLDivElement>(null);
 
   /**
    * Counting is ordinal, so infinite/number rounds keep stepping forward.
@@ -291,6 +294,9 @@ export default function Game() {
       const rate = boostActiveRef.current ? 4 : 2;
       const labelText = milestoneHit && tokenBonus > 0 ? `+${tokenBonus} 🎁` : `+${rate}`;
       setTokenLabel((prev) => ({ key: prev.key + 1, text: labelText }));
+      // Physics tokens launch from wherever the counter actually sits, so
+      // they read as coming out of the HUD rather than from nowhere.
+      spawnTokenAt(tokenAnchorRef.current);
       setTimeout(() => {
         advanceWordRef.current();
         setFeedback('idle');
@@ -506,6 +512,7 @@ export default function Game() {
           rather than inside the streak counter. Renders nothing unless
           that skin is equipped. */}
       <TokenVaultLayer animKey={tokenLabel.key} />
+      <TokenPhysicsLayer />
 
       {summary && (
         <SessionSummaryCard
@@ -548,7 +555,7 @@ export default function Game() {
             </span>
           )}
         </div>
-        <div className="relative flex flex-col items-end">
+        <div ref={tokenAnchorRef} className="relative flex flex-col items-end">
           <TokenEarnedLabel animKey={tokenLabel.key} label={tokenLabel.text} />
           <span className="text-sm tracking-widest uppercase opacity-70">Streak</span>
           <span className="text-4xl font-bold tabular-nums" style={{ color: 'var(--word-color)' }}>

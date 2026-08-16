@@ -26,6 +26,7 @@ import { GlitchText } from '@/components/glitch-text';
 import { useTheme } from '@/hooks/use-theme';
 import { TokenEarnedLabel } from '@/components/token-earned-label';
 import { TokenVaultLayer } from '@/components/token-vault-layer';
+import { TokenPhysicsLayer, spawnTokenAt } from '@/components/token-physics-layer';
 import { FALLBACK_WORDS, saveLocalScore } from '@/lib/offline-data';
 import { gameWordFontSize } from '@/lib/word-sizing';
 import { speakWord, matchWord } from '@/lib/speech-utils';
@@ -121,6 +122,8 @@ export default function Draw() {
      indices served so the scheduler doesn't repeat the word on screen. */
   const sessionLogRef = useRef<SessionEntry[]>([]);
   const recentRef = useRef<number[]>([]);
+  /* The HUD element physics tokens launch from. */
+  const tokenAnchorRef = useRef<HTMLDivElement>(null);
   // Same clamp-based responsive sizing as the voice game's word — draw mode
   // used to pin a fixed text-3xl that fought .game-word's own font-size
   // rule at equal specificity, capping the word far below what /game shows.
@@ -147,6 +150,7 @@ export default function Draw() {
     const rate = celebration.boostActive ? 4 : 2;
     const labelText = milestoneHit && tokenBonus > 0 ? `+${tokenBonus} 🎁` : `+${rate}`;
     setTokenLabel((prev) => ({ key: prev.key + 1, text: labelText }));
+    spawnTokenAt(tokenAnchorRef.current);
     // Promote this word up a Leitner box before advancing.
     const drawn = currentWordRef.current?.word;
     if (drawn) {
@@ -372,6 +376,7 @@ export default function Draw() {
       {/* Draw mode never mounted this, so equipping a Vault skin here
           silently rendered nothing at all. */}
       <TokenVaultLayer animKey={tokenLabel.key} />
+      <TokenPhysicsLayer />
 
       {wordPopActive && <WordPop onComplete={() => setWordPopActive(false)} />}
 
@@ -427,7 +432,7 @@ export default function Draw() {
             </TooltipContent>
           </Tooltip>
 
-          <div className="relative text-right">
+          <div ref={tokenAnchorRef} className="relative text-right">
             <TokenEarnedLabel animKey={tokenLabel.key} label={tokenLabel.text} />
             <div className="flex items-center justify-end gap-2">
               <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Streak</span>

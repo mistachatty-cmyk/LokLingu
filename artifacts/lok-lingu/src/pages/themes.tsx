@@ -16,6 +16,13 @@ import { flagEmojiFromLanguageOrCountry } from './theme-emoji';
 import { readableOn } from '@/lib/contrast';
 import { SEASONS, getOwnedSeasons, grantSeason, ownsSeason, activeSeason, pinSeason } from '@/lib/seasons';
 import { announceSeasonChange } from '@/components/season-layer';
+import {
+  TOKEN_MOTIONS,
+  getOwnedMotions,
+  getSelectedMotion,
+  ownsMotion,
+  purchaseMotion,
+} from '@/lib/token-motions';
 
 // Pre-computed particle directions so animations are stable across renders.
 const HOVER_PARTICLES = Array.from({ length: 8 }, (_, i) => {
@@ -796,6 +803,112 @@ function TokenSkinShop() {
  * rest are token-purchasable. Buying equips immediately and pins the
  * season, so the effect is visible the moment you leave the shop.
  */
+/**
+ * Token motions — the "how it moves" axis, bought and equipped separately
+ * from the glyph. Splitting these apart is what turns a flat list of
+ * near-identical skins into a look × motion cross-product.
+ */
+function MotionShop() {
+  const { balance } = useEconomy();
+  const [owned, setOwned] = useState<string[]>(getOwnedMotions);
+  const [selected, setSelected] = useState(() => getSelectedMotion().id);
+  const [note, setNote] = useState<{ id: string; text: string; ok: boolean } | null>(null);
+
+  const handleCard = (motion: (typeof TOKEN_MOTIONS)[number]) => {
+    const had = ownsMotion(motion.id);
+    if (!purchaseMotion(motion.id)) {
+      setNote({ id: motion.id, text: `Needs ${motion.cost} tokens — keep playing.`, ok: false });
+      window.setTimeout(() => setNote(null), 1600);
+      return;
+    }
+    setOwned(getOwnedMotions());
+    setSelected(motion.id);
+    setNote({
+      id: motion.id,
+      text: had ? 'Equipped.' : 'Unlocked and equipped!',
+      ok: true,
+    });
+    window.setTimeout(() => setNote(null), 1600);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2 font-black text-sm uppercase tracking-widest text-cyan-400">
+            <Zap className="w-4 h-4" />
+            <span>Token Motion</span>
+          </div>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-0.5">
+            How your coins move · Mixes with any skin
+          </p>
+        </div>
+        <div className="flex items-center gap-1 text-amber-400 font-mono font-black text-sm">
+          <Coins className="w-4 h-4" />
+          {balance}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        {TOKEN_MOTIONS.map((m) => {
+          const isOwned = owned.includes(m.id);
+          const isSelected = selected === m.id;
+          return (
+            <button
+              key={m.id}
+              onClick={() => handleCard(m)}
+              className={`relative rounded-xl border p-3 text-left transition-all ${
+                isSelected
+                  ? 'border-primary bg-primary/10'
+                  : 'border-border bg-card hover:border-primary/40'
+              }`}
+            >
+              {isSelected && <Check className="absolute top-2 right-2 w-3.5 h-3.5 text-primary" />}
+              <div className="flex items-center gap-1.5">
+                <span className="font-bold text-xs uppercase tracking-wide">{m.name}</span>
+                {m.ultimate && <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />}
+              </div>
+              <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">{m.blurb}</p>
+              {/* Surfacing the physics makes the differences legible rather
+                  than something you only discover after buying. */}
+              <div className="flex flex-wrap gap-1 mt-1.5">
+                {m.physics.gravity === 0 && <Tag>zero-g</Tag>}
+                {m.physics.bounces > 0 && <Tag>{m.physics.bounces} bounces</Tag>}
+                {m.physics.trail > 0 && <Tag>trail</Tag>}
+                {m.physics.fragments ? <Tag>{m.physics.fragments} frags</Tag> : null}
+                {m.physics.count > 1 && <Tag>×{m.physics.count}</Tag>}
+                {m.random && <Tag>random</Tag>}
+              </div>
+              <div className="mt-2 text-[10px] font-mono uppercase tracking-widest">
+                {isOwned ? (
+                  <span className="text-emerald-400">
+                    {isSelected ? 'Equipped' : 'Owned · Tap to equip'}
+                  </span>
+                ) : (
+                  <span className="text-amber-400">{m.cost} tokens</span>
+                )}
+              </div>
+              {note?.id === m.id && (
+                <p className={`text-[10px] mt-1 ${note.ok ? 'text-emerald-400' : 'text-destructive'}`}>
+                  {note.text}
+                </p>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function Tag({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="px-1.5 py-0.5 rounded bg-muted text-[9px] font-mono uppercase tracking-wider text-muted-foreground">
+      {children}
+    </span>
+  );
+}
+
 function SeasonShop() {
   const { balance } = useEconomy();
   const [owned, setOwned] = useState<string[]>(getOwnedSeasons);
@@ -915,6 +1028,10 @@ export default function Themes() {
 
       <div className="border-t border-border pt-6">
         <TokenSkinShop />
+      </div>
+
+      <div className="border-t border-border pt-6">
+        <MotionShop />
       </div>
 
       <div className="border-t border-border pt-6">
