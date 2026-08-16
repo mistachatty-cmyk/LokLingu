@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { setOnboardingComplete } from '@/lib/journal';
 import { useLocation } from 'wouter';
 
-const STEPS = [
+interface OnboardingData {
+  username: string;
+  language: string;
+}
+
+const STEPS: {
+  id: string;
+  title: string;
+  description: string;
+  content: (data: OnboardingData, setData: (data: OnboardingData) => void) => ReactNode;
+}[] = [
   {
     id: 'welcome',
     title: 'Welcome to LokLingu',
@@ -233,11 +243,11 @@ export function OnboardingPage() {
           className="w-full max-w-md"
         >
           {/* Card */}
-          <div className="rounded-xl bg-card border border-border shadow-lg p-6 sm:p-8">
+          <div className="relative rounded-xl bg-card border border-border shadow-lg p-6 sm:p-8">
             {/* Close button */}
             <button
               onClick={handleSkip}
-              className="absolute top-4 right-4 p-1 hover:bg-muted rounded transition"
+              className="absolute top-4 right-4 p-1 hover:bg-muted rounded transition z-10"
               aria-label="Skip onboarding"
             >
               <X className="w-4 h-4 text-muted-foreground" />

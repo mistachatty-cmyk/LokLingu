@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
-import { RotateCcw, Download } from 'lucide-react';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import { RotateCcw, Check, X as XIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DrawCanvas } from '@/components/draw-canvas';
+import { DrawCanvas, type DrawCanvasHandle } from '@/components/draw-canvas';
 
 type Mode = 'freeform' | 'practice' | 'gallery';
 
@@ -17,13 +17,60 @@ const LANGUAGES = [
 
 const CATEGORIES = ['animals', 'food', 'colors', 'greetings'];
 
+// Small built-in practice pool so the warmup space works standalone,
+// independent of the online word API.
+const PRACTICE_WORDS: Record<string, Record<string, string[]>> = {
+  es: {
+    animals: ['gato', 'perro', 'pájaro', 'pez', 'caballo'],
+    food: ['manzana', 'pan', 'queso', 'agua', 'huevo'],
+    colors: ['rojo', 'azul', 'verde', 'amarillo', 'negro'],
+    greetings: ['hola', 'adiós', 'gracias', 'por favor', 'buenos días'],
+  },
+  fr: {
+    animals: ['chat', 'chien', 'oiseau', 'poisson', 'cheval'],
+    food: ['pomme', 'pain', 'fromage', 'eau', 'œuf'],
+    colors: ['rouge', 'bleu', 'vert', 'jaune', 'noir'],
+    greetings: ['bonjour', 'au revoir', 'merci', "s'il vous plaît", 'bonsoir'],
+  },
+  de: {
+    animals: ['Katze', 'Hund', 'Vogel', 'Fisch', 'Pferd'],
+    food: ['Apfel', 'Brot', 'Käse', 'Wasser', 'Ei'],
+    colors: ['rot', 'blau', 'grün', 'gelb', 'schwarz'],
+    greetings: ['hallo', 'auf Wiedersehen', 'danke', 'bitte', 'guten Morgen'],
+  },
+  ja: {
+    animals: ['猫', '犬', '鳥', '魚', '馬'],
+    food: ['りんご', 'パン', 'チーズ', '水', '卵'],
+    colors: ['赤', '青', '緑', '黄色', '黒'],
+    greetings: ['こんにちは', 'さようなら', 'ありがとう', 'お願いします', 'おはよう'],
+  },
+  pt: {
+    animals: ['gato', 'cachorro', 'pássaro', 'peixe', 'cavalo'],
+    food: ['maçã', 'pão', 'queijo', 'água', 'ovo'],
+    colors: ['vermelho', 'azul', 'verde', 'amarelo', 'preto'],
+    greetings: ['olá', 'adeus', 'obrigado', 'por favor', 'bom dia'],
+  },
+  zh: {
+    animals: ['猫', '狗', '鸟', '鱼', '马'],
+    food: ['苹果', '面包', '奶酪', '水', '鸡蛋'],
+    colors: ['红色', '蓝色', '绿色', '黄色', '黑色'],
+    greetings: ['你好', '再见', '谢谢', '请', '早上好'],
+  },
+};
+
+function pickWord(lang: string, category: string): string {
+  const pool = PRACTICE_WORDS[lang]?.[category] ?? PRACTICE_WORDS.es.animals;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 export function CanvasDesignPage() {
   const [mode, setMode] = useState<Mode>('freeform');
   const [selectedLang, setSelectedLang] = useState('es');
   const [selectedCategory, setSelectedCategory] = useState('animals');
   const [warmupStreak, setWarmupStreak] = useState(0);
   const [bestStreakEver, setBestStreakEver] = useState(0);
-  const canvasRef = useRef<HTMLDivElement>(null);
+  const [targetWord, setTargetWord] = useState(() => pickWord('es', 'animals'));
+  const canvasRef = useRef<DrawCanvasHandle>(null);
 
   useEffect(() => {
     // Load streak from localStorage
@@ -33,6 +80,10 @@ export function CanvasDesignPage() {
     setBestStreakEver(best);
   }, []);
 
+  useEffect(() => {
+    setTargetWord(pickWord(selectedLang, selectedCategory));
+  }, [selectedLang, selectedCategory]);
+
   const updateStreak = (correct: boolean) => {
     const newStreak = correct ? warmupStreak + 1 : 0;
     setWarmupStreak(newStreak);
@@ -41,12 +92,12 @@ export function CanvasDesignPage() {
       setBestStreakEver(newStreak);
       localStorage.setItem('lok-lingu-warmup-streak-best', String(newStreak));
     }
+    canvasRef.current?.clear();
+    setTargetWord(pickWord(selectedLang, selectedCategory));
   };
 
   const clearCanvas = () => {
-    // Signal canvas to clear
-    const event = new CustomEvent('clearCanvas');
-    window.dispatchEvent(event);
+    canvasRef.current?.clear();
   };
 
   return (
@@ -130,34 +181,29 @@ export function CanvasDesignPage() {
         {mode === 'freeform' && (
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">Sketch freely without pressure. No scoring, just practice.</p>
-            <div className="border-2 border-dashed border-border rounded-lg overflow-hidden bg-card aspect-video">
-              <div ref={canvasRef} className="w-full h-full">
-                <DrawCanvas
-                  lang={selectedLang}
-                  category={selectedCategory}
-                  score={false}
-                  targetWord={null}
-                />
-              </div>
+            <div className="border-2 border-dashed border-border rounded-lg overflow-hidden bg-card aspect-video flex items-center justify-center">
+              <DrawCanvas ref={canvasRef} />
             </div>
           </div>
         )}
 
         {mode === 'practice' && (
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Draw the target word. Get feedback on correctness but keep your streak going!
-            </p>
-            <div className="border-2 border-dashed border-border rounded-lg overflow-hidden bg-card aspect-video">
-              <div ref={canvasRef} className="w-full h-full">
-                <DrawCanvas
-                  lang={selectedLang}
-                  category={selectedCategory}
-                  score={false}
-                  targetWord="Practice"
-                  onStreakUpdate={updateStreak}
-                />
-              </div>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                Draw <span className="font-bold text-foreground">{targetWord}</span>. Self-report when you're done — no penalty for missing it.
+              </p>
+            </div>
+            <div className="border-2 border-dashed border-border rounded-lg overflow-hidden bg-card aspect-video flex items-center justify-center">
+              <DrawCanvas ref={canvasRef} ghostText={targetWord} ghostOpacity={0.12} />
+            </div>
+            <div className="flex gap-2 justify-center">
+              <Button variant="outline" size="sm" onClick={() => updateStreak(false)}>
+                <XIcon className="w-4 h-4 mr-1" /> Missed it
+              </Button>
+              <Button size="sm" onClick={() => updateStreak(true)}>
+                <Check className="w-4 h-4 mr-1" /> Got it
+              </Button>
             </div>
           </div>
         )}

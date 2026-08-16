@@ -33,6 +33,7 @@ import { FontPicker } from '@/components/font-picker';
 import { SavePanel } from '@/components/save-panel';
 import { VaultExplainer } from '@/components/vault-explainer';
 import { DevSettings } from '@/components/dev-settings';
+import { FallingBlossoms, type ParticleType } from '@/components/falling-blossoms';
 
 import { normalizeLanguagesData } from '@/lib/offline-data';
 import { getCoverage, coverageOpacity, coverageSymbol } from '@/lib/word-coverage';
@@ -132,6 +133,12 @@ export default function Home() {
   );
   const [showFonts, setShowFonts] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [blossomsEnabled, setBlossomsEnabled] = useState(
+    () => localStorage.getItem('lok-lingu-blossoms-enabled') === 'true',
+  );
+  const [particleType] = useState<ParticleType>(
+    () => (localStorage.getItem('lok-lingu-particle-type') as ParticleType) || 'blossoms',
+  );
   const [devMode, setDevModeState] = useState(isDevMode);
   const { responseSpeed, set: setSetting } = useSettings();
   const usernameInputRef = useRef<HTMLInputElement>(null);
@@ -237,6 +244,7 @@ export default function Home() {
 
   return (
     <div className="relative min-h-[100dvh] flex flex-col overflow-hidden">
+      <FallingBlossoms isActive={blossomsEnabled} intensity="medium" particleType={particleType} />
       {/* ── Profile Drawer overlay ───────────────────────────────────── */}
       <AnimatePresence>
         {showProfile && (
@@ -795,6 +803,26 @@ export default function Home() {
                     />
                   </div>
 
+                  {/* Falling Blossoms toggle */}
+                  <div className="flex items-center justify-between px-1">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-base leading-none">🌸</span>
+                      <div>
+                        <span className="text-sm font-medium">Falling Blossoms</span>
+                        <span className="text-[9px] text-muted-foreground font-mono ml-1.5 uppercase tracking-wider">
+                          Home screen
+                        </span>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={blossomsEnabled}
+                      onCheckedChange={(v) => {
+                        setBlossomsEnabled(v);
+                        localStorage.setItem('lok-lingu-blossoms-enabled', String(v));
+                      }}
+                    />
+                  </div>
+
                   {/* Nav Style */}
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
@@ -881,6 +909,23 @@ export default function Home() {
                               <span className="text-sm font-medium">Celebrations</span>
                             </div>
                             <span className="text-xs text-muted-foreground font-mono uppercase tracking-wider">🎉</span>
+                          </button>
+
+                          {/* Canvas Design link (experimental sketch practice space) */}
+                          <button
+                            onClick={() => setLocation('/canvas-design')}
+                            className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg border border-border hover:border-primary/40 hover:bg-accent transition-all text-left"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <Pencil className="w-4 h-4 text-muted-foreground" />
+                              <div>
+                                <span className="text-sm font-medium">Canvas Design</span>
+                                <span className="text-[9px] text-muted-foreground font-mono ml-1.5 uppercase tracking-wider">
+                                  Experimental
+                                </span>
+                              </div>
+                            </div>
+                            <span className="text-xs text-muted-foreground font-mono">✏️</span>
                           </button>
 
                           {/* Dev Settings */}

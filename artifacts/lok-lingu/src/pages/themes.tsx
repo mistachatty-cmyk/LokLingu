@@ -14,6 +14,7 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { THEMES, type ThemeDef } from './themes-data';
 import { flagEmojiFromLanguageOrCountry } from './theme-emoji';
 import { readableOn } from '@/lib/contrast';
+import { PARTICLE_EFFECTS, getOwnedEffects, getSelectedEffect, purchaseEffect } from '@/lib/particle-effects';
 
 // Pre-computed particle directions so animations are stable across renders.
 const HOVER_PARTICLES = Array.from({ length: 8 }, (_, i) => {
@@ -789,6 +790,85 @@ function TokenSkinShop() {
   );
 }
 
+/**
+ * Ambient particle effects — the falling layer behind the home screen.
+ * Cherry Blossoms is free; the rest are token-purchasable.
+ */
+function ParticleShop() {
+  const { balance } = useEconomy();
+  const [owned, setOwned] = useState<string[]>(getOwnedEffects);
+  const [selected, setSelected] = useState(getSelectedEffect);
+  const [note, setNote] = useState<{ id: string; text: string; ok: boolean } | null>(null);
+
+  const handleCard = (effect: (typeof PARTICLE_EFFECTS)[number]) => {
+    const isOwned = owned.includes(effect.id);
+    if (!purchaseEffect(effect.id)) {
+      setNote({ id: effect.id, text: `Needs ${effect.cost} tokens — keep playing.`, ok: false });
+      window.setTimeout(() => setNote(null), 1600);
+      return;
+    }
+    setOwned(getOwnedEffects());
+    setSelected(effect.id);
+    setNote({ id: effect.id, text: isOwned ? 'Equipped.' : 'Unlocked and equipped!', ok: true });
+    window.setTimeout(() => setNote(null), 1600);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2 font-black text-sm uppercase tracking-widest text-pink-400">
+            <Sparkles className="w-4 h-4" />
+            <span>Ambient Effects</span>
+          </div>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-0.5">
+            Falling particles on the home screen
+          </p>
+        </div>
+        <div className="flex items-center gap-1 text-amber-400 font-mono font-black text-sm">
+          <Coins className="w-4 h-4" />
+          {balance}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        {PARTICLE_EFFECTS.map((effect) => {
+          const isOwned = owned.includes(effect.id);
+          const isSelected = selected === effect.id;
+          return (
+            <button
+              key={effect.id}
+              onClick={() => handleCard(effect)}
+              className={`relative rounded-xl border p-3 text-left transition-all ${
+                isSelected
+                  ? 'border-primary bg-primary/10'
+                  : 'border-border bg-card hover:border-primary/40'
+              }`}
+            >
+              {isSelected && <Check className="absolute top-2 right-2 w-3.5 h-3.5 text-primary" />}
+              <div className="text-2xl mb-1">{effect.sample}</div>
+              <div className="font-bold text-xs uppercase tracking-wide">{effect.name}</div>
+              <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">{effect.blurb}</p>
+              <div className="mt-2 text-[10px] font-mono uppercase tracking-widest">
+                {isOwned ? (
+                  <span className="text-emerald-400">{isSelected ? 'Equipped' : 'Owned · Tap to equip'}</span>
+                ) : (
+                  <span className="text-amber-400">{effect.cost} tokens</span>
+                )}
+              </div>
+              {note?.id === effect.id && (
+                <p className={`text-[10px] mt-1 ${note.ok ? 'text-emerald-400' : 'text-destructive'}`}>
+                  {note.text}
+                </p>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function Themes() {
   const { theme, setTheme } = useTheme();
 
@@ -810,6 +890,10 @@ export default function Themes() {
 
       <div className="border-t border-border pt-6">
         <TokenSkinShop />
+      </div>
+
+      <div className="border-t border-border pt-6">
+        <ParticleShop />
       </div>
 
       <div className="border-t border-border pt-6 space-y-1">
