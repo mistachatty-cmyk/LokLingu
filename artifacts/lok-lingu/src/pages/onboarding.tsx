@@ -14,6 +14,17 @@ interface OnboardingData {
   language: string;
 }
 
+/**
+ * Welcome, name and modes are everything a new player actually needs
+ * before their first round. The steps after that — levels, prestige, shop,
+ * roadmap, journal — are useful reference but not prerequisites, and
+ * nine screens before you can play is a lot of screens.
+ *
+ * So the third step is a fork rather than a waypoint: start playing now,
+ * or carry on through the rest.
+ */
+const ESSENTIAL_STEPS = 3;
+
 const STEPS: {
   id: string;
   title: string;
@@ -237,6 +248,8 @@ export function OnboardingPage({ onDone }: { onDone?: () => void } = {}) {
   const usernameStep = STEPS.findIndex((s) => s.id === 'username');
   const canNext = step !== usernameStep || data.username.trim().length > 0;
   const isLast = step === STEPS.length - 1;
+  /** The step where the essentials are done and playing becomes an option. */
+  const atFork = step === ESSENTIAL_STEPS - 1;
 
   /**
    * When mounted as an overlay on home, finishing dismisses the overlay.
@@ -335,35 +348,72 @@ export function OnboardingPage({ onDone }: { onDone?: () => void } = {}) {
               {typeof current.content === 'function' ? current.content(data, setData) : current.content}
             </div>
 
-            {/* Progress */}
+            {/* Progress. Measured against the three essential steps, not
+                all nine — showing "3 of 9" at the point where you're free
+                to leave would imply six more are required. */}
             <div className="mb-6">
               <div className="h-1 bg-muted rounded-full overflow-hidden">
                 <motion.div
                   className="h-full bg-primary"
                   initial={{ width: 0 }}
-                  animate={{ width: `${((step + 1) / STEPS.length) * 100}%` }}
+                  animate={{
+                    width: `${Math.min(1, (step + 1) / ESSENTIAL_STEPS) * 100}%`,
+                  }}
                   transition={{ duration: 0.3 }}
                 />
               </div>
               <p className="text-xs text-muted-foreground mt-2 text-center">
-                {step + 1} of {STEPS.length}
+                {step + 1 <= ESSENTIAL_STEPS
+                  ? `${step + 1} of ${ESSENTIAL_STEPS}`
+                  : `Extra ${step + 1 - ESSENTIAL_STEPS} of ${STEPS.length - ESSENTIAL_STEPS}`}
               </p>
             </div>
 
-            {/* Buttons */}
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setStep(Math.max(0, step - 1))}
-                disabled={step === 0}
-                className="flex-1"
-              >
-                Back
-              </Button>
-              <Button onClick={handleNext} disabled={!canNext} className="flex-1">
-                {isLast ? 'Start Playing' : 'Next'} <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
-            </div>
+            {/* Buttons. At the fork, playing is the primary action and the
+                rest of the tour is the quieter option — the essentials are
+                covered by this point and nobody should have to click
+                through six more screens to start. */}
+            {atFork ? (
+              <div className="space-y-2">
+                <p className="text-[11px] text-muted-foreground text-center">
+                  That’s everything you need. The rest is optional — and it’s
+                  always in Settings.
+                </p>
+                <Button onClick={finish} className="w-full">
+                  Start playing
+                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    onClick={() => setStep(Math.max(0, step - 1))}
+                    className="flex-1 text-muted-foreground"
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleNext}
+                    className="flex-1"
+                  >
+                    See the rest <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setStep(Math.max(0, step - 1))}
+                  disabled={step === 0}
+                  className="flex-1"
+                >
+                  Back
+                </Button>
+                <Button onClick={handleNext} disabled={!canNext} className="flex-1">
+                  {isLast ? 'Start Playing' : 'Next'} <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
+            )}
           </div>
         </motion.div>
       </AnimatePresence>
