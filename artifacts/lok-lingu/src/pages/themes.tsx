@@ -16,6 +16,7 @@ import { flagEmojiFromLanguageOrCountry } from './theme-emoji';
 import { readableOn } from '@/lib/contrast';
 import { SEASONS, getOwnedSeasons, grantSeason, ownsSeason, activeSeason, pinSeason } from '@/lib/seasons';
 import { announceSeasonChange } from '@/components/season-layer';
+import { SectionNav, type NavSection } from '@/components/section-nav';
 import {
   TOKEN_MOTIONS,
   getOwnedMotions,
@@ -23,6 +24,16 @@ import {
   ownsMotion,
   purchaseMotion,
 } from '@/lib/token-motions';
+
+const SHOP_SECTIONS: NavSection[] = [
+  { id: 'shop-stacks', label: 'Stacks' },
+  { id: 'shop-tokens', label: 'Tokens' },
+  { id: 'shop-motion', label: 'Motion' },
+  { id: 'shop-seasons', label: 'Seasons' },
+  { id: 'shop-themes', label: 'Themes' },
+  { id: 'shop-passport', label: 'Passport' },
+  { id: 'shop-fonts', label: 'Fonts' },
+];
 
 // Pre-computed particle directions so animations are stable across renders.
 const HOVER_PARTICLES = Array.from({ length: 8 }, (_, i) => {
@@ -517,6 +528,10 @@ function TokenSkinShop() {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
     coins: true,
     lingu: true,
+    // 'collab' was omitted here, so it read as undefined and the group
+    // silently defaulted to collapsed with no way to tell it apart from a
+    // deliberate choice.
+    collab: true,
     vault: false,
   });
 
@@ -1024,21 +1039,27 @@ export default function Themes() {
         </p>
       </div>
 
-      <StackShop />
+      {/* Jump bar. The shop is ~1000 lines of sections; scrolling to the
+          fonts at the bottom was a long trip with no signposting. */}
+      <SectionNav sections={SHOP_SECTIONS} />
 
-      <div className="border-t border-border pt-6">
+      <section id="shop-stacks" className="scroll-mt-20">
+        <StackShop />
+      </section>
+
+      <section id="shop-tokens" className="border-t border-border pt-6 scroll-mt-20">
         <TokenSkinShop />
-      </div>
+      </section>
 
-      <div className="border-t border-border pt-6">
+      <section id="shop-motion" className="border-t border-border pt-6 scroll-mt-20">
         <MotionShop />
-      </div>
+      </section>
 
-      <div className="border-t border-border pt-6">
+      <section id="shop-seasons" className="border-t border-border pt-6 scroll-mt-20">
         <SeasonShop />
-      </div>
+      </section>
 
-      <div className="border-t border-border pt-6 space-y-1">
+      <div id="shop-themes" className="border-t border-border pt-6 space-y-1 scroll-mt-20">
         <h2 className="text-lg font-black uppercase tracking-tighter">Themes</h2>
         <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
           Cosmetics · Applied everywhere in the app
@@ -1094,7 +1115,7 @@ export default function Themes() {
         );
       })}
 
-      <div className="space-y-3 pt-6 border-t border-border">
+      <div id="shop-passport" className="space-y-3 pt-6 border-t border-border scroll-mt-20">
         <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">
           Lock Passport Ecosystem
         </h3>
@@ -1155,7 +1176,7 @@ export default function Themes() {
         </div>
       </div>
 
-      <div className="space-y-2 pt-4 border-t border-border">
+      <div id="shop-fonts" className="space-y-2 pt-4 border-t border-border scroll-mt-20">
         <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">
           Included Font Styles
         </h3>
