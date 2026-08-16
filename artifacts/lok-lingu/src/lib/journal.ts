@@ -11,6 +11,10 @@ export interface WordNote {
   starred: boolean;         // quick flag for review priority
   attempts: number;         // total times played/attempted
   correctCount: number;     // successful tries
+  /** Leitner box, 0 (just missed) to 4 (mastered). See lib/review.ts. */
+  box?: number;
+  /** Timestamp of the most recent attempt, for due-date scheduling. */
+  lastSeen?: number;
 }
 
 export interface StudySet {
@@ -92,13 +96,19 @@ export function deleteWordNote(lang: string, word: string): void {
 }
 
 /**
- * Update attempt counts for a word when it's played.
+ * @deprecated Use `recordAttempt` from `lib/review.ts`.
+ *
+ * This version silently did nothing unless the word already had a note,
+ * so it could never record a *first* attempt — the only one that exists
+ * for a word the player has never seen. It also had no caller anywhere in
+ * the app. Kept as a thin forward so nothing breaks if it is referenced.
  */
 export function recordWordAttempt(lang: string, word: string, correct: boolean): void {
   const note = getWordNote(lang, word);
   if (note) {
     note.attempts += 1;
     if (correct) note.correctCount += 1;
+    note.lastSeen = Date.now();
     saveWordNote(note);
   }
 }

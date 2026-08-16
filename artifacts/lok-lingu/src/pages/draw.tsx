@@ -25,10 +25,18 @@ import { WordPop } from '@/components/word-pop';
 import { GlitchText } from '@/components/glitch-text';
 import { useTheme } from '@/hooks/use-theme';
 import { TokenEarnedLabel } from '@/components/token-earned-label';
+import { TokenVaultLayer } from '@/components/token-vault-layer';
 import { FALLBACK_WORDS, saveLocalScore } from '@/lib/offline-data';
 import { gameWordFontSize } from '@/lib/word-sizing';
 import { speakWord, matchWord } from '@/lib/speech-utils';
 import { useSpeechEngine } from '@/hooks/use-speech-engine';
+import {
+  recordAttempt,
+  pickNextIndex,
+  shouldSchedule,
+  summarise,
+  type SessionEntry,
+} from '@/lib/review';
 
 const INK_COLORS = [
   { label: 'Primary', value: 'hsl(var(--primary))' },
@@ -109,6 +117,10 @@ export default function Draw() {
   // Must be declared before the effects below to avoid TDZ errors.
   const currentWord = words?.[wordIndex];
   const currentWordRef = useRef(currentWord);
+  /* Review scheduling: what was attempted this run, and the last few
+     indices served so the scheduler doesn't repeat the word on screen. */
+  const sessionLogRef = useRef<SessionEntry[]>([]);
+  const recentRef = useRef<number[]>([]);
   // Same clamp-based responsive sizing as the voice game's word — draw mode
   // used to pin a fixed text-3xl that fought .game-word's own font-size
   // rule at equal specificity, capping the word far below what /game shows.
@@ -135,10 +147,24 @@ export default function Draw() {
     const rate = celebration.boostActive ? 4 : 2;
     const labelText = milestoneHit && tokenBonus > 0 ? `+${tokenBonus} 🎁` : `+${rate}`;
     setTokenLabel((prev) => ({ key: prev.key + 1, text: labelText }));
+    // Promote this word up a Leitner box before advancing.
+    const drawn = currentWordRef.current?.word;
+    if (drawn) {
+      recordAttempt(language, drawn, true);
+      sessionLogRef.current.push({ word: drawn, correct: true });
+    }
     canvasRef.current?.fadeOut(900);
     setTimeout(() => {
       if (!words) return;
-      setWordIndex((prev) => (prev + 1) % words.length);
+      // Round-robin taught position, not vocabulary. Outside of ordinal
+      // categories the next word is now drawn by the review scheduler.
+      if (shouldSchedule(category) && words.length > 1) {
+        const next = pickNextIndex(language, words.map((w: any) => w.word ?? String(w)), recentRef.current);
+        recentRef.current = [...recentRef.current, next].slice(-4);
+        setWordIndex(next);
+      } else {
+        setWordIndex((prev) => (prev + 1) % words.length);
+      }
       setStatus('idle');
     }, 1000);
   }, [status, gameOver, words, celebration, language, category]);
@@ -150,6 +176,13 @@ export default function Draw() {
     setIsRecognizing(false);
     setShakeKey((k) => k + 1);
     navigator.vibrate?.([80, 40, 140]);
+    // Drops the word to box 0 so it resurfaces soon rather than waiting
+    // for the round-robin to come all the way back around.
+    const drawn = currentWordRef.current?.word;
+    if (drawn) {
+      recordAttempt(language, drawn, false);
+      sessionLogRef.current.push({ word: drawn, correct: false });
+    }
     const newLives = lives - 1;
     setLives(newLives);
     setTimeout(() => {
@@ -336,6 +369,10 @@ export default function Draw() {
       className="relative min-h-screen w-full bg-background overflow-hidden flex flex-col select-none"
       style={{ touchAction: 'none', overscrollBehavior: 'none' } as React.CSSProperties}
     >
+      {/* Draw mode never mounted this, so equipping a Vault skin here
+          silently rendered nothing at all. */}
+      <TokenVaultLayer animKey={tokenLabel.key} />
+
       {wordPopActive && <WordPop onComplete={() => setWordPopActive(false)} />}
 
       {celebration.milestone && (
@@ -700,6 +737,30 @@ export default function Draw() {
                   {count}
                 </div>
               </div>
+
+              {/* The words that cost lives, so the run ends with something
+                  actionable rather than just a number. */}
+              {(() => {
+                const s = summarise(sessionLogRef.current);
+                if (s.missed.length === 0) return null;
+                return (
+                  <div className="bg-card border border-border rounded-xl p-4 text-left space-y-2">
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Worth another look
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {s.missed.slice(0, 10).map((w) => (
+                        <span key={w} className="px-2 py-1 rounded-md bg-muted text-xs font-medium">
+                          {w}
+                        </span>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground leading-snug">
+                      These will come back sooner than words you already know.
+                    </p>
+                  </div>
+                );
+              })()}
               {!userId && (
                 <p className="text-sm text-muted-foreground text-center">
                   <span className="font-semibold text-foreground">Sign in</span> to save your score to the leaderboard.
@@ -716,6 +777,8 @@ export default function Draw() {
                     setWordIndex(0);
                     setStatus('idle');
                     setGameOver(false);
+                    sessionLogRef.current = [];
+                    recentRef.current = [];
                     canvasRef.current?.clear();
                   }}
                 >

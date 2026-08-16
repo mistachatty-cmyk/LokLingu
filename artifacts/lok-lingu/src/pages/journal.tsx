@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Download, Upload, Plus, Trash2, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -7,9 +7,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getAllNotes, getAllStudySets, createStudySet, deleteStudySet, addWordToSet, removeWordFromSet, saveWordNote, deleteWordNote, exportJournal, importJournal } from '@/lib/journal';
 import type { WordNote, StudySet } from '@/lib/journal';
+import { getWeakWords } from '@/lib/review';
 
 export function JournalPage() {
-  const [tab, setTab] = useState<'notes' | 'sets' | 'import'>('notes');
+  const [tab, setTab] = useState<'notes' | 'review' | 'sets' | 'import'>('notes');
   const [notes, setNotes] = useState<WordNote[]>([]);
   const [sets, setSets] = useState<StudySet[]>([]);
   const [filterLang, setFilterLang] = useState<string>('');
@@ -17,6 +18,8 @@ export function JournalPage() {
   const [newSetName, setNewSetName] = useState('');
   const [newSetLang, setNewSetLang] = useState('es');
   const [expandedSet, setExpandedSet] = useState<string | null>(null);
+
+  const weakWords = useMemo(() => getWeakWords(notes), [notes]);
 
   useEffect(() => {
     loadData();
@@ -94,7 +97,7 @@ export function JournalPage() {
 
         {/* Tabs */}
         <div className="flex gap-2 mb-6 border-b border-border">
-          {(['notes', 'sets', 'import'] as const).map((t) => (
+          {(['notes', 'review', 'sets', 'import'] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -108,6 +111,62 @@ export function JournalPage() {
             </button>
           ))}
         </div>
+
+        {/* Review Tab — the words the player keeps getting wrong. This is
+            the first place the attempt data recorded during play surfaces. */}
+        {tab === 'review' && (
+          <div className="space-y-4">
+            {weakWords.length === 0 ? (
+              <div className="text-center py-16 text-muted-foreground">
+                <p className="text-4xl mb-3">🎯</p>
+                <p className="font-medium mb-1">Nothing to review yet</p>
+                <p className="text-sm">
+                  Play a round — any word you miss shows up here and comes back
+                  sooner in your next session.
+                </p>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Ranked by how often you miss them. These are weighted to
+                  reappear more frequently while you play.
+                </p>
+                <div className="space-y-2">
+                  {weakWords.map((w) => {
+                    const pct = Math.round(w.accuracy * 100);
+                    return (
+                      <div
+                        key={`${w.lang}-${w.word}`}
+                        className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline gap-2">
+                            <span className="font-semibold truncate">{w.word}</span>
+                            <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                              {w.lang}
+                            </span>
+                          </div>
+                          <div className="mt-1.5 h-1.5 rounded-full bg-muted overflow-hidden">
+                            <div
+                              className={`h-full ${pct < 40 ? 'bg-destructive' : pct < 70 ? 'bg-amber-400' : 'bg-emerald-400'}`}
+                              style={{ width: `${Math.max(pct, 4)}%` }}
+                            />
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <div className="text-sm font-mono font-bold">{pct}%</div>
+                          <div className="text-[10px] text-muted-foreground">
+                            {w.correctCount}/{w.attempts}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         {/* Notes Tab */}
         {tab === 'notes' && (

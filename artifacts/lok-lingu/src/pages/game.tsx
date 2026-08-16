@@ -24,6 +24,14 @@ import { TokenEarnedLabel } from '@/components/token-earned-label';
 import { TokenVaultLayer } from '@/components/token-vault-layer';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import {
+  recordAttempt,
+  pickNextIndex,
+  shouldSchedule,
+  summarise,
+  type SessionEntry,
+} from '@/lib/review';
+import { SessionSummaryCard } from '@/components/session-summary';
 
 type NormalWord = { word: string; translation: string; pronunciation?: string };
 
@@ -95,6 +103,7 @@ export default function Game() {
 
   const [wordIndex, setWordIndex] = useState(0);
   const [streak, setStreak] = useState(0);
+  const [summary, setSummary] = useState<ReturnType<typeof summarise> | null>(null);
   const [feedback, setFeedback] = useState<'idle' | 'hit' | 'miss'>('idle');
   const [isActive, setIsActive] = useState(false);
   const isActiveRef = useRef(isActive);
@@ -173,6 +182,40 @@ export default function Game() {
   categoryRef.current = category;
   const lockedRef = useRef(false);
 
+  /* ── review scheduling ──────────────────────────────────────────
+     Everything attempted this run, for the end-of-session summary. */
+  const sessionLogRef = useRef<SessionEntry[]>([]);
+  /* Recognition fires repeatedly while a player retries the same word;
+     without this a single stuck word would log dozens of misses and
+     skew its accuracy to near zero. Cleared on every advance. */
+  const missLoggedRef = useRef<Set<string>>(new Set());
+  /* The last few indices served, so the scheduler doesn't hand back the
+     word that is already on screen. */
+  const recentRef = useRef<number[]>([]);
+
+  /**
+   * Counting is ordinal, so infinite/number rounds keep stepping forward.
+   * Everything else is drawn by the Leitner scheduler, which weights
+   * words the player keeps missing far more heavily than mastered ones.
+   */
+  const advanceWord = useCallback(() => {
+    missLoggedRef.current.clear();
+    if (infinite || !shouldSchedule(categoryRef.current) || words.length < 2) {
+      setWordIndex((i) => i + 1);
+      return;
+    }
+    const next = pickNextIndex(
+      languageRef.current,
+      words.map((w) => w.word),
+      recentRef.current,
+    );
+    recentRef.current = [...recentRef.current, next].slice(-4);
+    setWordIndex(next);
+  }, [infinite, words]);
+
+  const advanceWordRef = useRef(advanceWord);
+  advanceWordRef.current = advanceWord;
+
   const { userId } = useUser();
   const submitScore = useSubmitScore({
     mutation: {
@@ -237,6 +280,10 @@ export default function Game() {
       abortSessionRef.current();
       setFeedback('hit');
       setStreak((s) => s + 1);
+      // Promotes the word up a Leitner box and stamps lastSeen. This is the
+      // record every review mechanic reads from.
+      recordAttempt(languageRef.current, target, true);
+      sessionLogRef.current.push({ word: target, correct: true });
       // incrementMatch handles lifetime tracking internally, so a separate
       // incrementLifetimeWords call is not needed here (it would double-count).
       const { milestoneHit, tokenBonus } = celebrationRef.current.incrementMatch(languageRef.current);
@@ -245,7 +292,7 @@ export default function Game() {
       const labelText = milestoneHit && tokenBonus > 0 ? `+${tokenBonus} 🎁` : `+${rate}`;
       setTokenLabel((prev) => ({ key: prev.key + 1, text: labelText }));
       setTimeout(() => {
-        setWordIndex((i) => i + 1);
+        advanceWordRef.current();
         setFeedback('idle');
         lockedRef.current = false;
       }, timing.hitMs);
@@ -254,6 +301,13 @@ export default function Game() {
 
     if (isFinal) {
       setFeedback('miss');
+      // A miss used to vanish without trace. Now it drops the word to box 0,
+      // which makes it far likelier to be drawn again shortly.
+      if (!missLoggedRef.current.has(target)) {
+        missLoggedRef.current.add(target);
+        recordAttempt(languageRef.current, target, false);
+        sessionLogRef.current.push({ word: target, correct: false });
+      }
       setTimeout(() => setFeedback('idle'), 500);
     }
   }, []);
@@ -339,9 +393,27 @@ export default function Game() {
       stopListening();
       commitRun();
       setStreak(0);
+      // Stopping the mic is the closest thing voice mode has to a round
+      // ending, so it's where the run gets reflected back to the player.
+      // Only worth showing if they actually attempted something.
+      if (sessionLogRef.current.length > 0) {
+        setSummary(summarise(sessionLogRef.current));
+      }
       return;
     }
     setMicError(null);
+    setIsActive(true);
+    startListening();
+  };
+
+  const dismissSummary = () => {
+    sessionLogRef.current = [];
+    missLoggedRef.current.clear();
+    setSummary(null);
+  };
+
+  const resumeFromSummary = () => {
+    dismissSummary();
     setIsActive(true);
     startListening();
   };
@@ -434,6 +506,14 @@ export default function Game() {
           rather than inside the streak counter. Renders nothing unless
           that skin is equipped. */}
       <TokenVaultLayer animKey={tokenLabel.key} />
+
+      {summary && (
+        <SessionSummaryCard
+          summary={summary}
+          onRedo={resumeFromSummary}
+          onDismiss={dismissSummary}
+        />
+      )}
 
       <div className="flex justify-between items-start p-6 w-full absolute top-0 z-10">
         <div className="flex flex-col gap-1">
