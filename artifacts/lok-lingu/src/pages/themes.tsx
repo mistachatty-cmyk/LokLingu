@@ -18,6 +18,17 @@ import { SEASONS, getOwnedSeasons, grantSeason, ownsSeason, activeSeason, pinSea
 import { announceSeasonChange } from '@/components/season-layer';
 import { SectionNav, type NavSection } from '@/components/section-nav';
 import {
+  TIERS as ENTITLEMENT_TIERS,
+  currentTier,
+  currentPeriod,
+  hasTier,
+  annualSaving,
+  beginCheckout,
+  ENTITLEMENT_EVENT,
+  type TierId,
+  type BillingPeriod,
+} from '@/lib/entitlements';
+import {
   TOKEN_MOTIONS,
   getOwnedMotions,
   getSelectedMotion,
@@ -924,6 +935,153 @@ function Tag({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Subscription tiers. These cards previously had no onClick at all and no
+ * entitlement state existed anywhere in the codebase — they were purely
+ * decorative. They now read and reflect real tier state.
+ *
+ * No payment processor is connected, so `beginCheckout` reports back that
+ * checkout is unavailable and the UI says so plainly rather than quietly
+ * unlocking anything.
+ */
+function PassportShop() {
+  const [tier, setTier] = useState(currentTier);
+  const [period, setPeriod] = useState<BillingPeriod>(currentPeriod);
+  const [pending, setPending] = useState<TierId | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    const refresh = () => setTier(currentTier());
+    window.addEventListener(ENTITLEMENT_EVENT, refresh);
+    return () => window.removeEventListener(ENTITLEMENT_EVENT, refresh);
+  }, []);
+
+  const upgrade = async (target: TierId) => {
+    setPending(target);
+    setNotice(null);
+    const result = await beginCheckout(target, period);
+    setPending(null);
+    if (!result.ok) {
+      setNotice(
+        result.reason === 'unconfigured'
+          ? 'Checkout isn’t connected yet — no payment was taken.'
+          : 'Could not start checkout.',
+      );
+      window.setTimeout(() => setNotice(null), 4000);
+    }
+  };
+
+  const paid = ENTITLEMENT_TIERS.filter((t) => t.id !== 'free');
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">
+          Lok Passport Ecosystem
+        </h3>
+        <p className="text-[10px] text-muted-foreground mt-1 leading-snug">
+          Every language, every word, and all review features are free —
+          permanently. Subscriptions buy cosmetics and convenience, never
+          the parts that help you learn.
+        </p>
+      </div>
+
+      {/* Monthly / annual switch */}
+      <div className="grid grid-cols-2 gap-1.5">
+        {(['monthly', 'annual'] as const).map((p) => (
+          <button
+            key={p}
+            onClick={() => setPeriod(p)}
+            className={`px-3 py-1.5 rounded-lg border text-xs font-bold capitalize transition-all ${
+              period === p
+                ? 'border-primary bg-primary/15 text-primary'
+                : 'border-border text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {p}
+            {p === 'annual' && <span className="ml-1 text-[9px] opacity-80">save ~30%</span>}
+          </button>
+        ))}
+      </div>
+
+      <div className="space-y-2">
+        {paid.map((t) => {
+          const owned = hasTier(t.id);
+          const saving = annualSaving(t);
+          const price =
+            t.oneTime != null
+              ? `$${t.oneTime}`
+              : period === 'annual'
+                ? `$${t.annual}/yr`
+                : `$${t.monthly}/mo`;
+          return (
+            <div
+              key={t.id}
+              className={`rounded-xl border p-4 ${
+                t.highlight
+                  ? 'border-primary/50 bg-primary/5'
+                  : t.id === 'lifetime'
+                    ? 'border-border bg-gradient-to-br from-card to-muted/40'
+                    : 'border-border bg-card'
+              }`}
+            >
+              <div className="flex justify-between items-start mb-1">
+                <span
+                  className={`font-black text-sm uppercase tracking-wide ${t.highlight ? 'text-primary' : ''}`}
+                >
+                  {t.highlight && <Star className="w-3 h-3 inline mr-1 fill-primary text-primary" />}
+                  {t.name}
+                </span>
+                <div className="text-right">
+                  <span className="font-mono font-black text-sm block">{price}</span>
+                  {period === 'annual' && saving != null && (
+                    <span className="text-[9px] font-mono text-emerald-400">save {saving}%</span>
+                  )}
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground leading-snug mb-2">{t.blurb}</p>
+              <ul className="space-y-0.5 mb-3">
+                {t.perks.map((perk) => (
+                  <li key={perk} className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
+                    <Check className="w-3 h-3 mt-0.5 shrink-0 text-emerald-400" />
+                    <span>{perk}</span>
+                  </li>
+                ))}
+              </ul>
+              <Button
+                variant={t.highlight ? 'default' : 'outline'}
+                size="sm"
+                disabled={owned || pending === t.id}
+                onClick={() => upgrade(t.id)}
+                className="w-full text-xs font-bold uppercase tracking-widest"
+              >
+                {owned
+                  ? 'Active'
+                  : pending === t.id
+                    ? 'Starting…'
+                    : t.id === 'lifetime'
+                      ? 'Acquire Legacy'
+                      : `Get ${t.name}`}
+              </Button>
+            </div>
+          );
+        })}
+      </div>
+
+      {notice && (
+        <p className="text-[11px] text-amber-400 text-center leading-snug">{notice}</p>
+      )}
+
+      <p className="text-[10px] text-muted-foreground text-center">
+        Current plan:{' '}
+        <span className="font-bold text-foreground">
+          {ENTITLEMENT_TIERS.find((t) => t.id === tier)?.name ?? 'Free'}
+        </span>
+      </p>
+    </div>
+  );
+}
+
 function SeasonShop() {
   const { balance } = useEconomy();
   const [owned, setOwned] = useState<string[]>(getOwnedSeasons);
@@ -1115,65 +1273,8 @@ export default function Themes() {
         );
       })}
 
-      <div id="shop-passport" className="space-y-3 pt-6 border-t border-border scroll-mt-20">
-        <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">
-          Lock Passport Ecosystem
-        </h3>
-
-        <div className="space-y-2">
-          {[
-            {
-              name: 'Lock Pass',
-              price: '$2.99/mo',
-              desc: 'Remove browser ads. General customization unlock.',
-              highlight: false,
-            },
-            {
-              name: 'Lock Passport',
-              price: '$10/mo',
-              desc: 'Unlock all premium features for Lock Services applications. Ecosystem-wide access.',
-              highlight: true,
-            },
-            {
-              name: 'Lifetime Passport',
-              price: '$200',
-              desc: 'Permanent premium for all current & future apps. No recurring fees. Legacy status.',
-              highlight: false,
-              lifetime: true,
-            },
-          ].map((p) => (
-            <div
-              key={p.name}
-              className={`rounded-xl border p-4 ${
-                p.highlight
-                  ? 'border-primary/50 bg-primary/5'
-                  : p.lifetime
-                    ? 'border-border bg-gradient-to-br from-card to-muted/40'
-                    : 'border-border bg-card'
-              }`}
-            >
-              <div className="flex justify-between items-start mb-1">
-                <span
-                  className={`font-black text-sm uppercase tracking-wide ${p.highlight ? 'text-primary' : ''}`}
-                >
-                  {p.highlight && (
-                    <Star className="w-3 h-3 inline mr-1 fill-primary text-primary" />
-                  )}
-                  {p.name}
-                </span>
-                <span className="font-mono font-black text-sm">{p.price}</span>
-              </div>
-              <p className="text-xs text-muted-foreground leading-snug mb-3">{p.desc}</p>
-              <Button
-                variant={p.highlight ? 'default' : 'outline'}
-                size="sm"
-                className="w-full text-xs font-bold uppercase tracking-widest"
-              >
-                {p.lifetime ? 'Acquire Legacy' : p.highlight ? 'Upgrade to Passport' : 'Subscribe'}
-              </Button>
-            </div>
-          ))}
-        </div>
+      <div id="shop-passport" className="pt-6 border-t border-border scroll-mt-20">
+        <PassportShop />
       </div>
 
       <div id="shop-fonts" className="space-y-2 pt-4 border-t border-border scroll-mt-20">
