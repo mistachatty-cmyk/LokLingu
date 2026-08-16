@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { setOnboardingComplete } from '@/lib/journal';
 import { useLocation } from 'wouter';
+import { useCreateUser } from '@workspace/api-client-react';
+import { useUser } from '@/hooks/use-user';
 
 interface OnboardingData {
   username: string;
@@ -38,13 +40,22 @@ const STEPS: {
     content: (data, setData) => (
       <div className="space-y-4">
         <div>
-          <label className="text-sm font-medium block mb-2">Player Name</label>
+          <label htmlFor="onboarding-name" className="text-sm font-medium block mb-2">
+            Player Name
+          </label>
           <Input
+            id="onboarding-name"
             value={data.username}
             onChange={(e) => setData({ ...data, username: e.target.value })}
             placeholder="Your name here"
+            maxLength={32}
             autoFocus
           />
+          <p className="text-[11px] text-muted-foreground mt-1.5">
+            {data.username.trim()
+              ? 'This is what shows on the leaderboard.'
+              : 'Pick any name — it’s what shows on the leaderboard.'}
+          </p>
         </div>
         <div>
           <label className="text-sm font-medium block mb-2">Starting Language</label>
@@ -211,6 +222,8 @@ const STEPS: {
 
 export function OnboardingPage({ onDone }: { onDone?: () => void } = {}) {
   const [, navigate] = useLocation();
+  const { userId, saveUser } = useUser();
+  const createUser = useCreateUser();
   const [step, setStep] = useState(0);
   const [data, setData] = useState({ username: '', language: 'es' });
 
@@ -228,15 +241,46 @@ export function OnboardingPage({ onDone }: { onDone?: () => void } = {}) {
   /**
    * When mounted as an overlay on home, finishing dismisses the overlay.
    * As a standalone route there is nowhere to dismiss to, so it navigates.
+   *
+   * This also *creates the profile* rather than merely stashing the name.
+   * Writing `lok-lingu-username` alone left the player with a name but no
+   * `lok-lingu-userid`, and everything that reports a score is guarded on
+   * that id — so runs silently failed to reach the leaderboard and local
+   * scores were filed under a hardcoded fallback id.
    */
   const finish = () => {
     setOnboardingComplete();
-    if (data.username.trim()) {
-      localStorage.setItem('lok-lingu-username', data.username.trim());
-    }
     localStorage.setItem('lok-lingu-lang', data.language);
-    if (onDone) onDone();
-    else navigate('/');
+    const name = data.username.trim();
+
+    const close = () => {
+      if (onDone) onDone();
+      else navigate('/');
+    };
+
+    if (!name) {
+      // Skipped without naming themselves — nothing to create.
+      close();
+      return;
+    }
+
+    // Write the profile synchronously with a local id, then dismiss. Doing
+    // this before the network call means the tour never hangs on a slow or
+    // absent backend, and the home screen can read the name the instant it
+    // takes over.
+    const localId = userId || Math.floor(Math.random() * 899999) + 100000;
+    saveUser(localId, name);
+    close();
+
+    // Reconcile with the server id in the background. Failure is fine —
+    // the local profile above already stands on its own.
+    createUser.mutate(
+      { data: { username: name } },
+      {
+        onSuccess: (user) => saveUser(user.id, user.username),
+        onError: () => {},
+      },
+    );
   };
 
   const handleNext = () => {
@@ -260,8 +304,17 @@ export function OnboardingPage({ onDone }: { onDone?: () => void } = {}) {
           exit={{ opacity: 0, y: -10 }}
           className="w-full max-w-md"
         >
-          {/* Card */}
-          <div className="relative rounded-xl bg-card/95 border border-border shadow-2xl p-6 sm:p-8">
+          {/* Card. Enter advances, so typing a name and hitting return
+              moves on rather than stranding you on the field. */}
+          <div
+            className="relative rounded-xl bg-card/95 border border-border shadow-2xl p-6 sm:p-8"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && canNext) {
+                e.preventDefault();
+                handleNext();
+              }
+            }}
+          >
             {/* Close button */}
             <button
               onClick={handleSkip}
