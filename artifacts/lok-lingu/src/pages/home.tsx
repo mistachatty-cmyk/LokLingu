@@ -33,7 +33,22 @@ import { FontPicker } from '@/components/font-picker';
 import { SavePanel } from '@/components/save-panel';
 import { VaultExplainer } from '@/components/vault-explainer';
 import { DevSettings } from '@/components/dev-settings';
-import { FallingBlossoms, type ParticleType } from '@/components/falling-blossoms';
+import { announceSeasonChange } from '@/components/season-layer';
+import {
+  SEASONS,
+  activeSeason,
+  isSeasonEnabled,
+  setSeasonEnabled,
+  seasonsInGame,
+  setSeasonsInGame,
+  getSeasonMode,
+  setSeasonMode,
+  pinSeason,
+  getIntensity,
+  setIntensity,
+  ownsSeason,
+  type SeasonIntensity,
+} from '@/lib/seasons';
 
 import { normalizeLanguagesData } from '@/lib/offline-data';
 import { getCoverage, coverageOpacity, coverageSymbol } from '@/lib/word-coverage';
@@ -133,12 +148,11 @@ export default function Home() {
   );
   const [showFonts, setShowFonts] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [blossomsEnabled, setBlossomsEnabled] = useState(
-    () => localStorage.getItem('lok-lingu-blossoms-enabled') === 'true',
-  );
-  const [particleType] = useState<ParticleType>(
-    () => (localStorage.getItem('lok-lingu-particle-type') as ParticleType) || 'blossoms',
-  );
+  const [seasonOn, setSeasonOn] = useState(isSeasonEnabled);
+  const [seasonInPlay, setSeasonInPlay] = useState(seasonsInGame);
+  const [seasonMode, setSeasonModeState] = useState(getSeasonMode);
+  const [seasonId, setSeasonId] = useState(() => activeSeason().id);
+  const [seasonIntensity, setSeasonIntensityState] = useState<SeasonIntensity>(getIntensity);
   const [devMode, setDevModeState] = useState(isDevMode);
   const { responseSpeed, set: setSetting } = useSettings();
   const usernameInputRef = useRef<HTMLInputElement>(null);
@@ -244,7 +258,6 @@ export default function Home() {
 
   return (
     <div className="relative min-h-[100dvh] flex flex-col overflow-hidden">
-      <FallingBlossoms isActive={blossomsEnabled} intensity="medium" particleType={particleType} />
       {/* ── Profile Drawer overlay ───────────────────────────────────── */}
       <AnimatePresence>
         {showProfile && (
@@ -803,24 +816,123 @@ export default function Home() {
                     />
                   </div>
 
-                  {/* Falling Blossoms toggle */}
-                  <div className="flex items-center justify-between px-1">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-base leading-none">🌸</span>
-                      <div>
-                        <span className="text-sm font-medium">Falling Blossoms</span>
-                        <span className="text-[9px] text-muted-foreground font-mono ml-1.5 uppercase tracking-wider">
-                          Home screen
+                  {/* ── Seasons ─────────────────────────────────────── */}
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between px-1">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-base leading-none">
+                          {SEASONS.find((s) => s.id === seasonId)?.glyphs[0] ?? '🌸'}
                         </span>
+                        <div>
+                          <span className="text-sm font-medium">Seasons</span>
+                          <span className="text-[9px] text-muted-foreground font-mono ml-1.5 uppercase tracking-wider">
+                            Ambient weather
+                          </span>
+                        </div>
                       </div>
+                      <Switch
+                        checked={seasonOn}
+                        onCheckedChange={(v) => {
+                          setSeasonOn(v);
+                          setSeasonEnabled(v);
+                          announceSeasonChange();
+                        }}
+                      />
                     </div>
-                    <Switch
-                      checked={blossomsEnabled}
-                      onCheckedChange={(v) => {
-                        setBlossomsEnabled(v);
-                        localStorage.setItem('lok-lingu-blossoms-enabled', String(v));
-                      }}
-                    />
+
+                    {seasonOn && (
+                      <div className="space-y-2.5 pl-1">
+                        {/* Auto follows the calendar; pinned holds one season. */}
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {(['auto', 'pinned'] as const).map((m) => (
+                            <button
+                              key={m}
+                              onClick={() => {
+                                setSeasonModeState(m);
+                                setSeasonMode(m);
+                                if (m === 'auto') setSeasonId(activeSeason().id);
+                                announceSeasonChange();
+                              }}
+                              className={`px-3 py-1.5 rounded-lg border text-xs font-bold capitalize transition-all ${
+                                seasonMode === m
+                                  ? 'border-primary bg-primary/15 text-primary'
+                                  : 'border-border text-muted-foreground hover:text-foreground'
+                              }`}
+                            >
+                              {m === 'auto' ? 'Follow calendar' : 'Pick one'}
+                            </button>
+                          ))}
+                        </div>
+
+                        {seasonMode === 'pinned' && (
+                          <div className="grid grid-cols-3 gap-1.5">
+                            {SEASONS.map((s) => {
+                              const owned = ownsSeason(s.id);
+                              return (
+                                <button
+                                  key={s.id}
+                                  disabled={!owned}
+                                  onClick={() => {
+                                    setSeasonId(s.id);
+                                    pinSeason(s.id);
+                                    announceSeasonChange();
+                                  }}
+                                  title={owned ? s.blurb : `${s.name} — locked`}
+                                  className={`px-1.5 py-2 rounded-lg border text-[10px] font-bold transition-all ${
+                                    seasonId === s.id
+                                      ? 'border-primary bg-primary/15 text-primary'
+                                      : owned
+                                        ? 'border-border text-muted-foreground hover:text-foreground'
+                                        : 'border-border opacity-40'
+                                  }`}
+                                >
+                                  <span className="block text-base leading-none mb-1">
+                                    {owned ? s.glyphs[0] : '🔒'}
+                                  </span>
+                                  {s.name.split(' ')[0]}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {(['low', 'medium', 'high'] as const).map((i) => (
+                            <button
+                              key={i}
+                              onClick={() => {
+                                setSeasonIntensityState(i);
+                                setIntensity(i);
+                                announceSeasonChange();
+                              }}
+                              className={`px-2 py-1.5 rounded-lg border text-[10px] font-bold capitalize transition-all ${
+                                seasonIntensity === i
+                                  ? 'border-primary bg-primary/15 text-primary'
+                                  : 'border-border text-muted-foreground hover:text-foreground'
+                              }`}
+                            >
+                              {i}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Off during play by default — the word on screen
+                            should never compete with drifting petals. */}
+                        <div className="flex items-center justify-between px-1">
+                          <span className="text-xs text-muted-foreground">
+                            Keep during games
+                          </span>
+                          <Switch
+                            checked={seasonInPlay}
+                            onCheckedChange={(v) => {
+                              setSeasonInPlay(v);
+                              setSeasonsInGame(v);
+                              announceSeasonChange();
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Nav Style */}

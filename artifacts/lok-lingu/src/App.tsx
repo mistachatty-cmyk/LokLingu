@@ -20,6 +20,7 @@ import { JournalPage } from './pages/journal';
 import { CanvasDesignPage } from './pages/canvas-design';
 import { OnboardingPage } from './pages/onboarding';
 import { LiquidGlassCursor } from '@/components/liquid-glass-cursor';
+import { SeasonLayer } from '@/components/season-layer';
 import { useCursorCosmetics } from '@/hooks/use-cursor-cosmetics';
 import { useTheme } from '@/hooks/use-theme';
 import { useCustomFonts } from '@/hooks/use-custom-fonts';
@@ -70,6 +71,10 @@ function Router() {
         <Route path="/onboarding" component={OnboardingPage} />
         <Route component={NotFound} />
       </Switch>
+      {/* Sibling of the Switch, like LiquidGlassCursor — this is the one
+          position that still renders on /game and /draw, where Layout
+          early-returns a bare fragment. */}
+      <SeasonLayer />
       <LiquidGlassCursor glassId={glassId} trailId={trailId} isActive={isActive} />
       <DevOverlay />
     </Layout>

@@ -14,7 +14,8 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { THEMES, type ThemeDef } from './themes-data';
 import { flagEmojiFromLanguageOrCountry } from './theme-emoji';
 import { readableOn } from '@/lib/contrast';
-import { PARTICLE_EFFECTS, getOwnedEffects, getSelectedEffect, purchaseEffect } from '@/lib/particle-effects';
+import { SEASONS, getOwnedSeasons, grantSeason, ownsSeason, activeSeason, pinSeason } from '@/lib/seasons';
+import { announceSeasonChange } from '@/components/season-layer';
 
 // Pre-computed particle directions so animations are stable across renders.
 const HOVER_PARTICLES = Array.from({ length: 8 }, (_, i) => {
@@ -791,26 +792,39 @@ function TokenSkinShop() {
 }
 
 /**
- * Ambient particle effects — the falling layer behind the home screen.
- * Cherry Blossoms is free; the rest are token-purchasable.
+ * Seasons — the ambient weather layer. Cherry Blossoms ships free; the
+ * rest are token-purchasable. Buying equips immediately and pins the
+ * season, so the effect is visible the moment you leave the shop.
  */
-function ParticleShop() {
+function SeasonShop() {
   const { balance } = useEconomy();
-  const [owned, setOwned] = useState<string[]>(getOwnedEffects);
-  const [selected, setSelected] = useState(getSelectedEffect);
+  const [owned, setOwned] = useState<string[]>(getOwnedSeasons);
+  const [selected, setSelected] = useState(() => activeSeason().id);
   const [note, setNote] = useState<{ id: string; text: string; ok: boolean } | null>(null);
 
-  const handleCard = (effect: (typeof PARTICLE_EFFECTS)[number]) => {
-    const isOwned = owned.includes(effect.id);
-    if (!purchaseEffect(effect.id)) {
-      setNote({ id: effect.id, text: `Needs ${effect.cost} tokens — keep playing.`, ok: false });
-      window.setTimeout(() => setNote(null), 1600);
+  const flash = (id: string, text: string, ok: boolean) => {
+    setNote({ id, text, ok });
+    window.setTimeout(() => setNote(null), 1600);
+  };
+
+  const handleCard = (season: (typeof SEASONS)[number]) => {
+    if (ownsSeason(season.id)) {
+      pinSeason(season.id);
+      setSelected(season.id);
+      announceSeasonChange();
+      flash(season.id, 'Equipped.', true);
       return;
     }
-    setOwned(getOwnedEffects());
-    setSelected(effect.id);
-    setNote({ id: effect.id, text: isOwned ? 'Equipped.' : 'Unlocked and equipped!', ok: true });
-    window.setTimeout(() => setNote(null), 1600);
+    if (!spendTokens(season.cost)) {
+      flash(season.id, `Needs ${season.cost} tokens — keep playing.`, false);
+      return;
+    }
+    grantSeason(season.id);
+    pinSeason(season.id);
+    setOwned(getOwnedSeasons());
+    setSelected(season.id);
+    announceSeasonChange();
+    flash(season.id, 'Unlocked and equipped!', true);
   };
 
   return (
@@ -819,10 +833,10 @@ function ParticleShop() {
         <div>
           <div className="flex items-center gap-2 font-black text-sm uppercase tracking-widest text-pink-400">
             <Sparkles className="w-4 h-4" />
-            <span>Ambient Effects</span>
+            <span>Seasons</span>
           </div>
           <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-0.5">
-            Falling particles on the home screen
+            Ambient weather · Tap to equip
           </p>
         </div>
         <div className="flex items-center gap-1 text-amber-400 font-mono font-black text-sm">
@@ -832,13 +846,13 @@ function ParticleShop() {
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        {PARTICLE_EFFECTS.map((effect) => {
-          const isOwned = owned.includes(effect.id);
-          const isSelected = selected === effect.id;
+        {SEASONS.map((season) => {
+          const isOwned = owned.includes(season.id);
+          const isSelected = selected === season.id;
           return (
             <button
-              key={effect.id}
-              onClick={() => handleCard(effect)}
+              key={season.id}
+              onClick={() => handleCard(season)}
               className={`relative rounded-xl border p-3 text-left transition-all ${
                 isSelected
                   ? 'border-primary bg-primary/10'
@@ -846,17 +860,23 @@ function ParticleShop() {
               }`}
             >
               {isSelected && <Check className="absolute top-2 right-2 w-3.5 h-3.5 text-primary" />}
-              <div className="text-2xl mb-1">{effect.sample}</div>
-              <div className="font-bold text-xs uppercase tracking-wide">{effect.name}</div>
-              <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">{effect.blurb}</p>
+              <div className="text-2xl mb-1 flex gap-0.5">
+                {season.glyphs.slice(0, 3).map((g, i) => (
+                  <span key={i} style={{ opacity: 1 - i * 0.28 }}>{g}</span>
+                ))}
+              </div>
+              <div className="font-bold text-xs uppercase tracking-wide">{season.name}</div>
+              <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">{season.blurb}</p>
               <div className="mt-2 text-[10px] font-mono uppercase tracking-widest">
                 {isOwned ? (
-                  <span className="text-emerald-400">{isSelected ? 'Equipped' : 'Owned · Tap to equip'}</span>
+                  <span className="text-emerald-400">
+                    {isSelected ? 'Equipped' : 'Owned · Tap to equip'}
+                  </span>
                 ) : (
-                  <span className="text-amber-400">{effect.cost} tokens</span>
+                  <span className="text-amber-400">{season.cost} tokens</span>
                 )}
               </div>
-              {note?.id === effect.id && (
+              {note?.id === season.id && (
                 <p className={`text-[10px] mt-1 ${note.ok ? 'text-emerald-400' : 'text-destructive'}`}>
                   {note.text}
                 </p>
@@ -865,6 +885,11 @@ function ParticleShop() {
           );
         })}
       </div>
+
+      <p className="text-[10px] text-muted-foreground leading-snug">
+        Seasons can follow the real calendar automatically, or stay pinned to
+        one you pick. Toggle the layer and its density in Settings.
+      </p>
     </div>
   );
 }
@@ -893,7 +918,7 @@ export default function Themes() {
       </div>
 
       <div className="border-t border-border pt-6">
-        <ParticleShop />
+        <SeasonShop />
       </div>
 
       <div className="border-t border-border pt-6 space-y-1">
