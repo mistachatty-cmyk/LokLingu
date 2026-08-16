@@ -4,13 +4,37 @@ export interface LanguageCountry {
   countryCodes: string[];
   flag: string;
   color: string;
+  /**
+   * Combined population of the countries where this language is official,
+   * in **whole people**. Note this is a different unit from the two
+   * speaker counts below, and a different measure — it counts everyone in
+   * those countries, including people who don't speak the language.
+   *
+   * The UI previously rendered this alongside `nativeSpeakers` as though
+   * they were comparable, which produced nonsense like "485M native
+   * speakers" sitting under a "460M population".
+   */
   population: number;
+  /** Native speakers, in **millions**. */
   nativeSpeakers: number;
+  /** Native + second-language speakers, in **millions**. */
   totalSpeakers: number;
   writingSystem: string;
   officialIn: string[];
   difficulty: 1 | 2 | 3 | 4 | 5;
   languageFamily: string;
+}
+
+const MILLION = 1_000_000;
+
+/** Native speakers as a whole number, for display next to `population`. */
+export function nativeSpeakersAbsolute(lc: LanguageCountry): number {
+  return lc.nativeSpeakers * MILLION;
+}
+
+/** Total speakers as a whole number. */
+export function totalSpeakersAbsolute(lc: LanguageCountry): number {
+  return lc.totalSpeakers * MILLION;
 }
 
 export const LANGUAGE_COUNTRIES: LanguageCountry[] = [
@@ -254,15 +278,43 @@ export const LANGUAGE_COUNTRIES: LanguageCountry[] = [
   },
 ];
 
-const COUNTRY_TO_LANG = new Map<string, string>();
+/**
+ * Countries frequently have more than one of our languages — Belgium is
+ * Dutch and French, Switzerland is German, French and Italian.
+ *
+ * This used to be a `Map<string, string>` written in catalog order, so
+ * every multilingual country silently resolved to whichever language
+ * happened to be declared last. Belgium came out as Dutch-only and
+ * Switzerland lost French and Italian entirely; the map was quietly
+ * lying about a dozen countries.
+ *
+ * Now every language a country speaks is retained. The map still needs a
+ * single colour per country, so `getLanguageForCountry` returns the first
+ * in catalog order — but callers that can handle ambiguity (like a click
+ * handler offering a choice) get the full list.
+ */
+const COUNTRY_TO_LANGS = new Map<string, string[]>();
 for (const lc of LANGUAGE_COUNTRIES) {
   for (const cc of lc.countryCodes) {
-    COUNTRY_TO_LANG.set(cc, lc.code);
+    const existing = COUNTRY_TO_LANGS.get(cc);
+    if (existing) existing.push(lc.code);
+    else COUNTRY_TO_LANGS.set(cc, [lc.code]);
   }
 }
 
+/** Every language we support that is spoken in this country. */
+export function getLanguagesForCountry(countryCode: string): string[] {
+  return COUNTRY_TO_LANGS.get(countryCode) ?? [];
+}
+
+/** True when a country speaks more than one language we support. */
+export function isMultilingual(countryCode: string): boolean {
+  return getLanguagesForCountry(countryCode).length > 1;
+}
+
+/** The language used to colour the country on the map. */
 export function getLanguageForCountry(countryCode: string): string | undefined {
-  return COUNTRY_TO_LANG.get(countryCode);
+  return COUNTRY_TO_LANGS.get(countryCode)?.[0];
 }
 
 export function getLanguageCountry(code: string): LanguageCountry | undefined {

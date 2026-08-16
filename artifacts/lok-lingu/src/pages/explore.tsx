@@ -5,8 +5,68 @@ import { useCelebration } from '@/hooks/use-celebration';
 import { ChoroplethMap } from '@/components/choropleth-map';
 import { LanguageRadar } from '@/components/language-radar';
 import { LANGUAGE_COUNTRIES, getLanguageCountry } from '@/data/language-countries';
-import { normalizeLanguagesData } from '@/lib/offline-data';
+import { normalizeLanguagesData, FALLBACK_LANGUAGES, FALLBACK_WORDS } from '@/lib/offline-data';
 import { readableOn } from '@/lib/contrast';
+import { wordCount } from '@/lib/word-coverage';
+import { getAllNotes } from '@/lib/journal';
+import { accuracy, boxOf } from '@/lib/review';
+
+const ALL_CATEGORIES = ['numbers', 'colors', 'greetings', 'animals', 'food'];
+
+/**
+ * How much of a language the player has actually touched: how many of its
+ * words they have seen, and how many they have driven to a high box.
+ *
+ * Explore previously showed only abstract facts about languages — speaker
+ * counts, a difficulty integer with no stated basis — none of which say
+ * anything about the person looking at the screen. `word-coverage.ts`
+ * already existed and this page never called it.
+ */
+function languageProgress(code: string) {
+  const notes = getAllNotes(code);
+  const total = ALL_CATEGORIES.reduce((sum, c) => sum + wordCount(code, c), 0);
+  const seen = notes.length;
+  const mastered = notes.filter((n) => boxOf(n) >= 3).length;
+  const struggling = notes.filter((n) => n.attempts > 0 && accuracy(n) < 0.6).length;
+  return { total, seen, mastered, struggling };
+}
+
+/**
+ * The category most worth practising: lowest mastery first, where mastery
+ * is (words driven to a high Leitner box) / (words in the category).
+ *
+ * Notes don't carry a category, so membership is resolved by looking the
+ * word up in that category's list.
+ */
+function weakestCategory(code: string): string {
+  const cats = FALLBACK_LANGUAGES.find((l) => l.code === code)?.categories ?? ALL_CATEGORIES;
+  const notes = getAllNotes(code);
+  // A plain record rather than a Map: `Map` in this module resolves to the
+  // lucide-react icon of that name, not the built-in.
+  const noteByWord: Record<string, (typeof notes)[number]> = {};
+  for (const n of notes) noteByWord[n.word] = n;
+
+  let worst = cats[0] ?? 'numbers';
+  let worstScore = Infinity;
+
+  for (const cat of cats) {
+    const size = wordCount(code, cat);
+    if (size === 0) continue;
+    const entries = FALLBACK_WORDS[code]?.[cat] ?? [];
+    let mastered = 0;
+    for (const entry of entries) {
+      const word = typeof entry === 'string' ? entry : (entry as any)?.word;
+      const note = word ? noteByWord[word] : undefined;
+      if (note && boxOf(note) >= 3) mastered++;
+    }
+    const score = mastered / size;
+    if (score < worstScore) {
+      worstScore = score;
+      worst = cat;
+    }
+  }
+  return worst;
+}
 
 /**
  * Approximate card background. Themes vary, but every one of them is a dark
@@ -121,6 +181,8 @@ export default function Explore() {
   const [view, setView] = useState<View>('map');
   const [showAll, setShowAll] = useState(false);
   const [compareMode, setCompareMode] = useState(false);
+  /** Set when a clicked country speaks more than one supported language. */
+  const [ambiguous, setAmbiguous] = useState<{ countryName: string; codes: string[] } | null>(null);
   const [compareLangs, setCompareLangs] = useState<string[]>([]);
   // Live readout for whatever the cursor is over on the map.
   const [hover, setHover] = useState<{ lang: string | null; country: string | null }>({
@@ -213,19 +275,34 @@ export default function Explore() {
     return () => resizeObserver.disconnect();
   }, []);
 
-  const handleSelectLanguage = (code: string) => {
+  const handleSelectLanguage = (code: string, allCodes: string[] = [], countryName = '') => {
     if (compareMode) {
       setCompareLangs((prev) =>
         prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code],
       );
-    } else {
-      setSelectedLang(code === selectedLang ? null : code);
+      return;
     }
+    // Belgium is Dutch *and* French; Switzerland is German, French and
+    // Italian. Rather than silently picking one, offer the choice.
+    const supported = allCodes.filter((c) => supportedCodes.includes(c));
+    if (supported.length > 1) {
+      setAmbiguous({ countryName, codes: supported });
+      return;
+    }
+    setSelectedLang(code === selectedLang ? null : code);
   };
 
-  const handlePlay = () => {
-    if (!selectedLang) return;
-    localStorage.setItem('lok-lingu-lang', selectedLang);
+  /**
+   * Starts a session in the language's *weakest* category rather than
+   * whatever the player last used. Previously this set only the language
+   * key and left `lok-lingu-cat` untouched, so picking Japanese on the map
+   * could drop you into Spanish numbers.
+   */
+  const handlePlay = (code?: string) => {
+    const lang = code ?? selectedLang;
+    if (!lang) return;
+    localStorage.setItem('lok-lingu-lang', lang);
+    localStorage.setItem('lok-lingu-cat', weakestCategory(lang));
     setLocation('/game');
   };
 
@@ -316,6 +393,61 @@ export default function Explore() {
           </button>
         </div>
       </div>
+
+      {/* Multilingual country picker. Clicking Belgium used to resolve
+          silently to whichever language the catalog listed last. */}
+      <AnimatePresence>
+        {ambiguous && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+              onClick={() => setAmbiguous(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.97 }}
+              transition={{ type: 'spring', damping: 26, stiffness: 320 }}
+              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[min(22rem,90vw)] rounded-2xl bg-card border border-border p-5 shadow-2xl space-y-4"
+            >
+              <div>
+                <h3 className="font-black uppercase tracking-tight">{ambiguous.countryName}</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Speaks more than one language you can learn. Which one?
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                {ambiguous.codes.map((c) => {
+                  const lc = getLanguageCountry(c);
+                  if (!lc) return null;
+                  return (
+                    <button
+                      key={c}
+                      onClick={() => {
+                        setSelectedLang(c);
+                        setAmbiguous(null);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg border border-border hover:border-primary/50 hover:bg-accent transition-all text-left"
+                    >
+                      <span className="text-xl">{lc.flag}</span>
+                      <span className="text-sm font-semibold flex-1">{lc.name}</span>
+                      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                        {languageProgress(c).seen} seen
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <Button variant="outline" className="w-full" onClick={() => setAmbiguous(null)}>
+                Cancel
+              </Button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Map / List */}
       <AnimatePresence mode="wait">
@@ -504,12 +636,18 @@ export default function Explore() {
 
               {/* Stats grid */}
               <div className="grid grid-cols-2 gap-2">
+                {/* This tile used to read "Population", showing everyone
+                    living in the countries where the language is official.
+                    Sat next to "Native", it produced 485M native speakers
+                    above a 460M population — both correct, but the pairing
+                    read as a bug, and neither number helps a learner decide
+                    anything. Replaced with the one number that does. */}
                 <div className="bg-muted/50 rounded-xl p-2.5 space-y-0.5">
                   <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground">
-                    Population
+                    Words here
                   </span>
                   <span className="text-sm font-bold block">
-                    {formatCompact(selected.population)}
+                    {ALL_CATEGORIES.reduce((n, c) => n + wordCount(selected.code, c), 0)}
                   </span>
                 </div>
                 <div className="bg-muted/50 rounded-xl p-2.5 space-y-0.5">
@@ -577,26 +715,52 @@ export default function Explore() {
                 </div>
               </div>
 
-              {/* Small radar vs average */}
-              {selectedRadarData.length > 0 && (
-                <div>
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground block mb-1">
-                    vs Average
-                  </span>
-                  <div className="flex justify-center">
-                    <LanguageRadar
-                      data={selectedRadarData}
-                      metrics={RADAR_METRICS}
-                      size={200}
-                    />
+              {/* Your progress. This replaced a 4-axis radar comparing the
+                  language against the average of all languages — a chart
+                  about languages in the abstract, which told the player
+                  nothing about themselves. */}
+              {(() => {
+                const p = languageProgress(selected.code);
+                const pct = p.total > 0 ? Math.round((p.seen / p.total) * 100) : 0;
+                return (
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground block">
+                      Your progress
+                    </span>
+                    <div className="h-2 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full bg-primary transition-all"
+                        style={{ width: `${Math.max(pct, p.seen > 0 ? 3 : 0)}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-[11px]">
+                      <span className="text-muted-foreground">
+                        {p.seen} of {p.total} words seen
+                      </span>
+                      <span className="font-mono font-bold">{pct}%</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <div className="rounded-lg bg-card border border-border px-2.5 py-2">
+                        <div className="text-lg font-black text-emerald-400">{p.mastered}</div>
+                        <div className="text-[9px] uppercase tracking-widest text-muted-foreground">
+                          Mastered
+                        </div>
+                      </div>
+                      <div className="rounded-lg bg-card border border-border px-2.5 py-2">
+                        <div className="text-lg font-black text-amber-400">{p.struggling}</div>
+                        <div className="text-[9px] uppercase tracking-widest text-muted-foreground">
+                          Still tricky
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Actions */}
               <div className="flex gap-2 pt-1">
                 <Button
-                  onClick={handlePlay}
+                  onClick={() => handlePlay()}
                   size="lg"
                   className="flex-1 h-12 text-base font-bold uppercase tracking-widest gap-2"
                 >

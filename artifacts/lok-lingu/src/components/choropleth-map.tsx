@@ -3,7 +3,11 @@ import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { geoPath, geoOrthographic, geoMercator, geoEquirectangular } from 'd3-geo';
 import { feature } from 'topojson-client';
 import { Plus, Minus, Maximize2 } from 'lucide-react';
-import { getLanguageForCountry, getLanguageCountry } from '@/data/language-countries';
+import {
+  getLanguageForCountry,
+  getLanguagesForCountry,
+  getLanguageCountry,
+} from '@/data/language-countries';
 import { numericToAlpha3 } from '@/data/iso-country-codes';
 
 const MIN_ZOOM = 0.8;
@@ -37,7 +41,12 @@ function dist(a: { x: number; y: number }, b: { x: number; y: number }): number 
 type ProjectionType = 'equirectangular' | 'mercator' | 'orthographic';
 
 interface Props {
-  onSelectLanguage?: (code: string) => void;
+  /**
+   * Fires with every language the clicked country speaks, not just one.
+   * Multilingual countries are genuinely ambiguous and the caller is
+   * better placed to resolve that than a silent pick here.
+   */
+  onSelectLanguage?: (code: string, allCodes: string[], countryName: string) => void;
   /** Fires with the language of the country under the cursor, or null. */
   onHoverLanguage?: (code: string | null, countryName: string | null) => void;
   selectedLanguage?: string | null;
@@ -285,7 +294,7 @@ export function ChoroplethMap({
                 onClick={() => {
                   try {
                     if (lang && onSelectLanguage) {
-                      onSelectLanguage(lang);
+                      onSelectLanguage(lang, getLanguagesForCountry(cf.countryCode), cf.name);
                     }
                   } catch (e) {
                     console.error('Error selecting language', e);
