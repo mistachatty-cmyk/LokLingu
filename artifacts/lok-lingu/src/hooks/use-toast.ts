@@ -2,7 +2,16 @@ import * as React from 'react';
 import type { ToastActionElement, ToastProps } from '@/components/ui/toast';
 
 const TOAST_LIMIT = 1;
-const TOAST_REMOVE_DELAY = 1000000;
+// How long a toast is removed from the DOM after it closes — just enough
+// for the exit animation, not a display duration.
+const TOAST_REMOVE_DELAY = 300;
+// How long a toast stays visible before dismissing itself. The ADD_TOAST
+// action below never scheduled this at all — dismiss() only ever ran when
+// something called it manually, and nothing did, so a toast fired once
+// (e.g. "Profile Saved" on Home) stayed mounted forever. Toaster is mounted
+// once globally in App.tsx, so that toast rode along into /game and /draw
+// and sat over the word indefinitely.
+const TOAST_AUTO_DISMISS_MS = 4000;
 
 type ToasterToast = ToastProps & {
   id: string;
@@ -154,6 +163,12 @@ function toast({ ...props }: Toast) {
       },
     },
   });
+
+  // Self-dismisses after a few seconds. Pass `duration: Infinity` to opt a
+  // specific toast out (none currently need to).
+  if (props.duration !== Infinity) {
+    setTimeout(dismiss, typeof props.duration === 'number' ? props.duration : TOAST_AUTO_DISMISS_MS);
+  }
 
   return {
     id: id,
