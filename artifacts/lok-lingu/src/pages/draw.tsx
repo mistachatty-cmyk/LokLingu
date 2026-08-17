@@ -66,10 +66,29 @@ export default function Draw() {
     query: { enabled: true, queryKey: ['words', language, category] },
   });
 
-  const words = useMemo(
-    () => apiWords || FALLBACK_WORDS[language]?.[category] || FALLBACK_WORDS['es']['numbers'],
-    [apiWords, language, category],
-  );
+  /**
+   * THE bug that made the word invisible, and it was never about layout.
+   *
+   * vercel.json rewrites `/(.*)` to `/index.html`, which also swallows API
+   * paths. So in production `GET /words/es/numbers` returns 200 with
+   * `text/html` — the app's own shell. custom-fetch infers "text" from that
+   * content-type and hands back the raw HTML *string*; `response.ok` is true
+   * so nothing throws and react-query records a success.
+   *
+   * The old `apiWords || FALLBACK_WORDS[...]` then did the damage: a
+   * non-empty string is truthy, so the fallback never ran. Indexing a string
+   * yields a single character, `"<".word` is undefined, and GameWord
+   * rendered an empty <h1> — zero height, no crash, no word. Voice mode was
+   * unaffected because it never calls this API at all.
+   *
+   * Note `[] || fallback` is broken for the same family of reason (an empty
+   * array is also truthy), so this checks shape *and* content rather than
+   * truthiness.
+   */
+  const words = useMemo(() => {
+    const fromApi = Array.isArray(apiWords) && apiWords.length > 0 ? apiWords : null;
+    return fromApi ?? FALLBACK_WORDS[language]?.[category] ?? FALLBACK_WORDS['es']['numbers'];
+  }, [apiWords, language, category]);
 
   const submitScore = useSubmitScore({
     mutation: {
@@ -144,7 +163,10 @@ export default function Draw() {
   voiceConfirmRef.current = voiceConfirmEnabled;
 
   // Must be declared before the effects below to avoid TDZ errors.
-  const currentWord = words?.[wordIndex];
+  // Bounded the way game.tsx does — pickNextIndex's result is not clamped to
+  // the list length, so a raw lookup could fall off the end and hand back
+  // undefined, which this file then dereferences unguarded.
+  const currentWord = words?.length ? words[wordIndex % words.length] : undefined;
   const currentWordRef = useRef(currentWord);
   /* Review scheduling: what was attempted this run, and the last few
      indices served so the scheduler doesn't repeat the word on screen. */
@@ -402,6 +424,27 @@ export default function Draw() {
   }, [wordIndex, currentWord, language, autoSpeak]);
 
   // ── render ─────────────────────────────────────────────────────────────────
+  // Mirrors game.tsx. Without it, an empty word list white-screens the page,
+  // because everything below dereferences currentWord.word unguarded.
+  if (!currentWord) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center gap-6 bg-background px-8 text-center">
+        <Sparkles className="w-12 h-12 text-muted-foreground opacity-60" />
+        <div className="space-y-2">
+          <p className="text-lg font-black uppercase tracking-widest text-foreground">No words found</p>
+          <p className="text-sm text-muted-foreground font-mono">
+            No word list for <span className="text-foreground font-bold">{language}</span> /{' '}
+            <span className="text-foreground font-bold">{category}</span>.
+            <br />Try a different language or category.
+          </p>
+        </div>
+        <Button size="lg" onClick={() => setLocation('/')} className="gap-2">
+          <Home className="w-5 h-5" /> Home
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div
       className="relative min-h-screen w-full bg-background overflow-hidden flex flex-col select-none"
@@ -571,7 +614,12 @@ export default function Draw() {
                   rotate: [-2, 2, -1.5, 1.5, -1, 1, 0]
                 } : { x: 0, rotate: 0 }}
                 transition={{ duration: 0.5, ease: 'easeInOut' }}
-                className={`relative rounded-xl border-2 overflow-hidden transition-colors duration-300 mx-auto w-full ${
+                // `w-fit`, not `w-full`: the canvas now sizes itself from
+                // viewport height, so the frame shrinks to whatever it needs.
+                // The previous `maxWidth: min(100%, 60vh)` here was inert on
+                // phones — it capped *width*, and 60vh never binds on a column
+                // only ~400px wide, so it constrained nothing at all.
+                className={`relative rounded-xl border-2 overflow-hidden transition-colors duration-300 mx-auto w-fit ${
                   status === 'error'
                     ? 'border-destructive shadow-lg shadow-destructive/50'
                     : status === 'success'
@@ -580,15 +628,6 @@ export default function Draw() {
                         ? 'border-primary/60'
                         : 'border-border'
                 }`}
-                style={{
-                  // A generous ceiling only — the column scrolls now, so the
-                  // canvas no longer has to be squeezed to a guessed budget
-                  // to keep the word on screen. The previous `calc()` against
-                  // a hardcoded chrome constant was always going to be wrong:
-                  // the real chrome varies with how many rows the button bar
-                  // wraps to.
-                  maxWidth: 'min(100%, 60vh)',
-                }}
               >
                 <DrawCanvas
                   ref={canvasRef}
@@ -631,21 +670,49 @@ export default function Draw() {
                 </div>
               )}
 
-              {/* Action buttons */}
-              <div className="flex flex-wrap items-center justify-center gap-3">
+              {/* Primary actions FIRST and in their own row.
+                  These used to sit last in a single flex-wrap row, so on a
+                  phone the three secondary buttons filled row one and Clear
+                  and Done wrapped to row two — straight off the bottom of the
+                  screen, with `touch-action: none` on the root meaning they
+                  could not even be scrolled to. The two controls the game
+                  cannot be played without now come first and never wrap. */}
+              <div className="flex items-center justify-center gap-3">
                 <Button
-                  variant="default"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleClear}
+                  className="gap-2 flex-1 max-w-[10rem]"
+                >
+                  <Eraser className="w-4 h-4" /> Clear
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => void handleDone()}
+                  className="gap-2 flex-1 max-w-[10rem]"
+                  disabled={status === 'success' || status === 'error' || isRecognizing}
+                >
+                  {isRecognizing ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Check className="w-4 h-4" />
+                  )}
+                  {isRecognizing ? 'Checking…' : 'Done'}
+                </Button>
+              </div>
+
+              {/* Secondary controls — safe to wrap or be scrolled past. */}
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <Button
+                  variant="ghost"
                   size="sm"
                   onClick={() => currentWord && speakMuted(currentWord.word)}
                   className="gap-2"
                 >
                   <Volume2 className="w-4 h-4" /> Listen
                 </Button>
-                {/* Cycles where the word appears: above the canvas, as a
-                    trace guide on it, or both. The label states the current
-                    mode rather than making you discover it by tapping. */}
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
                   onClick={() => {
                     const next = !showGhost;
@@ -659,7 +726,7 @@ export default function Draw() {
                   Trace guide
                 </Button>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
                   onClick={() => setAutoSpeak((v) => !v)}
                   className="gap-2"
@@ -669,7 +736,7 @@ export default function Draw() {
                   Quip
                 </Button>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
                   onClick={() => setExpanded((v) => !v)}
                   className="gap-2"
@@ -677,22 +744,6 @@ export default function Draw() {
                 >
                   {expanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                   {expanded ? 'Collapse' : 'Expand'}
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleClear} className="gap-2">
-                  <Eraser className="w-4 h-4" /> Clear
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => void handleDone()}
-                  className="gap-2"
-                  disabled={status === 'success' || status === 'error' || isRecognizing}
-                >
-                  {isRecognizing ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Check className="w-4 h-4" />
-                  )}
-                  {isRecognizing ? 'Checking…' : 'Done'}
                 </Button>
               </div>
 

@@ -295,6 +295,31 @@ async function parseSuccessBody(
     return null;
   }
 
+  /*
+   * An HTML body on an API call is almost always a misrouted request, not
+   * data — typically a single-page-app catch-all rewrite answering
+   * `/words/es/numbers` with index.html and a 200.
+   *
+   * Left alone it is silently corrupting: `text/html` infers as "text", the
+   * raw markup is returned as the payload, `response.ok` is true, so callers
+   * see a *successful* request whose data is a string. In this app that
+   * produced a draw mode where the word rendered blank, because
+   * `apiWords || fallback` kept the truthy HTML string and indexing it
+   * yielded single characters with no `.word`.
+   *
+   * Failing loudly turns that whole class of bug into an ordinary error the
+   * caller can fall back from. Callers that genuinely want markup can still
+   * ask for it with an explicit `responseType: 'text'`.
+   */
+  if (responseType === 'auto' && getMediaType(response.headers) === 'text/html') {
+    throw new ApiError(
+      response,
+      'Expected API data but received an HTML document. The request was ' +
+        'probably routed to the app shell rather than the API.',
+      requestInfo,
+    );
+  }
+
   const effectiveType = responseType === 'auto' ? inferResponseType(response) : responseType;
 
   switch (effectiveType) {

@@ -239,8 +239,25 @@ export const DrawCanvas = forwardRef<DrawCanvasHandle, DrawCanvasProps>(
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerUp}
         onPointerCancel={handlePointerUp}
-        className="w-full rounded-xl"
+        className="rounded-xl"
         style={{
+          /*
+           * Sized from HEIGHT, not width.
+           *
+           * With `w-full` there was no height term anywhere in the chain, so
+           * height was always 1.25x whatever the column was wide — about 55%
+           * of a phone screen, which pushed the Clear/Done buttons off the
+           * bottom. Capping by viewport height instead lands it near 40%.
+           *
+           * The 4:5 ratio is deliberately preserved rather than squashed:
+           * `pos()` maps pointer coordinates by scaling x and y independently
+           * against the W x H bitmap, so a CSS ratio that disagreed with it
+           * would distort every stroke — and that bitmap is exactly what
+           * snapshotStrokes() hands to the recogniser.
+           */
+          height: 'min(40vh, 100%)',
+          width: 'auto',
+          maxWidth: '100%',
           aspectRatio: '4/5',
           background: bg,
           touchAction: 'none',
