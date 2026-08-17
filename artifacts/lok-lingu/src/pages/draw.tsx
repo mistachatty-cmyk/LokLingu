@@ -528,8 +528,21 @@ export default function Draw() {
       <div className="flex-1 min-h-0 overflow-y-auto flex flex-col items-center justify-start px-4 pt-28 pb-6">
         <AnimatePresence mode="wait">
           {!gameOver ? (
+            // NOT keyed by wordIndex. It was, which meant every word change
+            // remounted this whole subtree — including GameWord below,
+            // which runs its own AnimatePresence internally keyed on the
+            // same wordIndex value. Two AnimatePresence controllers nested
+            // one inside the other, both firing on the identical key change
+            // at the identical moment, is exactly the kind of conflict that
+            // leaves a child stuck at its `initial` (opacity: 0) state
+            // instead of ever animating in — which is why the word was
+            // rendering completely invisible rather than just mis-sized or
+            // clipped. The canvas doesn't need this remount either; it's
+            // cleared explicitly via canvasRef, not by keying. This only
+            // needs to swap for the gameOver screen below, so it keys on
+            // that instead.
             <motion.div
-              key={wordIndex}
+              key="playing"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
