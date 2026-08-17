@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Volume2, Mic, Home, AlertTriangle, SkipForward, Keyboard } from 'lucide-react';
+import { Volume2, Mic, Home, AlertTriangle, SkipForward, Keyboard, Heart, RotateCcw } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useSubmitScore } from '@workspace/api-client-react';
@@ -124,8 +124,19 @@ export default function Game() {
     () => getSelectedEmblem(playerLevel) ?? earnedEmblems(playerLevel).slice(-1)[0] ?? null,
     [playerLevel],
   );
-  const { responseSpeed } = useSettings();
+  const { responseSpeed, heartsMode } = useSettings();
   const timing = SPEED_TIMING[responseSpeed];
+
+  // Voice mode had no survival mechanic at all — a miss flashed red and the
+  // run simply continued until the player stopped the mic themselves. Draw
+  // mode's three hearts are mirrored here so both modes end the same way.
+  const [lives, setLives] = useState(3);
+  const [gameOver, setGameOver] = useState(false);
+  const livesRef = useRef(lives);
+  livesRef.current = lives;
+  const heartsModeRef = useRef(heartsMode);
+  heartsModeRef.current = heartsMode;
+  const stopListeningRef = useRef<() => void>(() => {});
 
   // Stable ref so handleResult can call abortSession without it being in
   // the dependency array. abortSession is declared after useSpeechEngine,
@@ -316,6 +327,22 @@ export default function Game() {
         sessionLogRef.current.push({ word: target, correct: false });
       }
       setTimeout(() => setFeedback('idle'), 500);
+
+      // Survival: mirrors draw mode's three hearts. Off, this is unchanged
+      // endless practice — the run only ever ends when the mic is stopped.
+      if (heartsModeRef.current) {
+        const next = livesRef.current - 1;
+        livesRef.current = next;
+        setLives(next);
+        if (next <= 0) {
+          lockedRef.current = true;
+          abortSessionRef.current();
+          setIsActive(false);
+          stopListeningRef.current();
+          commitRun();
+          setGameOver(true);
+        }
+      }
     }
   }, []);
 
@@ -375,6 +402,9 @@ export default function Game() {
   // being in the useCallback dependency array (which would cause a TDZ crash
   // since abortSession is declared after handleResult in the component body).
   abortSessionRef.current = abortSession;
+  // Same reasoning: handleResult needs to stop listening outright when
+  // hearts run out, and stopListening is only available once this hook runs.
+  stopListeningRef.current = stopListening;
 
   // Repeated empty sessions or repeated not-allowed/network errors are the
   // exact shape a call-stolen mic produces — sessions open and close with
@@ -409,6 +439,9 @@ export default function Game() {
       return;
     }
     setMicError(null);
+    // A fresh mic start is a fresh run — full hearts.
+    setLives(3);
+    livesRef.current = 3;
     setIsActive(true);
     startListening();
   };
@@ -506,6 +539,92 @@ export default function Game() {
     );
   }
 
+  if (gameOver) {
+    // Mirrors draw mode's Game Over screen — same structure, same "worth
+    // another look" missed-words list, so ending a run reads the same way
+    // regardless of which mode it happened in.
+    const runSummary = summarise(sessionLogRef.current);
+    return (
+      <div className="h-screen flex flex-col items-center justify-center bg-background px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center w-full max-w-sm space-y-8"
+        >
+          <div>
+            <h2 className="text-4xl font-black text-destructive uppercase tracking-widest">Game Over</h2>
+            <p className="text-muted-foreground mt-1">
+              {runSummary.correct} word{runSummary.correct !== 1 ? 's' : ''} correct.
+            </p>
+          </div>
+          <div className="bg-card border border-border rounded-xl p-8">
+            <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">
+              Final Score
+            </div>
+            <div className="game-word text-7xl font-black word-glow" style={{ color: 'var(--word-color)' }}>
+              {runSummary.correct}
+            </div>
+          </div>
+
+          {runSummary.missed.length > 0 && (
+            <div className="bg-card border border-border rounded-xl p-4 text-left space-y-2">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                Worth another look
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {runSummary.missed.slice(0, 10).map((w) => (
+                  <span key={w} className="px-2 py-1 rounded-md bg-muted text-xs font-medium">
+                    {w}
+                  </span>
+                ))}
+              </div>
+              <p className="text-[10px] text-muted-foreground leading-snug">
+                These will come back sooner than words you already know.
+              </p>
+            </div>
+          )}
+
+          {!userId && (
+            <p className="text-sm text-muted-foreground text-center">
+              <span className="font-semibold text-foreground">Sign in</span> to save your score to the leaderboard.
+            </p>
+          )}
+
+          <div className="space-y-3">
+            <Button
+              size="lg"
+              className="w-full h-14 text-lg font-bold uppercase tracking-widest"
+              onClick={() => {
+                setLives(3);
+                livesRef.current = 3;
+                setStreak(0);
+                setWordIndex(0);
+                setFeedback('idle');
+                setGameOver(false);
+                sessionLogRef.current = [];
+                missLoggedRef.current.clear();
+                recentRef.current = [];
+                lockedRef.current = false;
+                setIsActive(true);
+                startListening();
+              }}
+            >
+              <RotateCcw className="w-5 h-5 mr-2" /> Play Again
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              className="w-full h-14 text-lg font-bold uppercase tracking-widest bg-transparent"
+              onClick={() => setLocation('/')}
+            >
+              <Home className="w-5 h-5 mr-2" /> Main Menu
+            </Button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative flex flex-col h-screen bg-background text-foreground overflow-hidden">
       {/* The Vault skin draws across the whole screen and outlives any one
@@ -525,6 +644,18 @@ export default function Game() {
 
       <div className="flex justify-between items-start p-6 w-full absolute top-0 z-10">
         <div className="flex flex-col gap-1">
+          {heartsMode && (
+            <div className="flex space-x-1 mb-0.5">
+              {[0, 1, 2].map((i) => (
+                <Heart
+                  key={i}
+                  className={`w-4 h-4 transition-all duration-300 ${
+                    i < lives ? 'text-destructive fill-destructive' : 'opacity-20 text-muted-foreground'
+                  }`}
+                />
+              ))}
+            </div>
+          )}
           <span className="flex items-center gap-1.5 text-[10px] tracking-widest uppercase opacity-70">
             {/* Emblems are a single small element running a transform-only
                 CSS animation, so they are safe to leave on during a match. */}

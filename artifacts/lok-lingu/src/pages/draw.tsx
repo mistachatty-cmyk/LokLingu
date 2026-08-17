@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/tooltip';
 import { DrawCanvas, type DrawCanvasHandle } from '@/components/draw-canvas';
 import { useCelebration, incrementCategoryLifetime } from '@/hooks/use-celebration';
+import { useSettings } from '@/hooks/use-settings';
 import { useCelebrationSound } from '@/hooks/use-celebration-sound';
 import { CelebrationEffect } from '@/components/celebration-effect';
 import { WordPop } from '@/components/word-pop';
@@ -122,6 +123,10 @@ export default function Draw() {
 
   const prefersReducedMotion = useReducedMotion();
   const celebration = useCelebration();
+  // On by default (see hooks/use-settings.ts). Previously this setting was
+  // declared but nothing read it, so draw mode's three lives were always
+  // on with no way to turn them off.
+  const { heartsMode } = useSettings();
   useCelebrationSound(); // keeps audio context alive
   const { theme } = useTheme();
 
@@ -208,10 +213,12 @@ export default function Draw() {
       recordAttempt(language, drawn, false);
       sessionLogRef.current.push({ word: drawn, correct: false });
     }
-    const newLives = lives - 1;
+    // With hearts off this is endless practice — a miss still shakes and
+    // clears the canvas, it just never ends the run.
+    const newLives = heartsMode ? lives - 1 : lives;
     setLives(newLives);
     setTimeout(() => {
-      if (newLives <= 0) {
+      if (heartsMode && newLives <= 0) {
         setGameOver(true);
         saveLocalScore({ userId: userId || 1, language, category, count });
         if (userId) {
@@ -222,7 +229,7 @@ export default function Draw() {
         setStatus('idle');
       }
     }, 600);
-  }, [status, gameOver, lives, userId, language, category, count, submitScore]);
+  }, [status, gameOver, lives, heartsMode, userId, language, category, count, submitScore]);
 
   const handleClear = useCallback(() => {
     canvasRef.current?.clear();
@@ -418,16 +425,18 @@ export default function Draw() {
       {/* ── Header bar ───────────────────────────────────────────────────── */}
       <div className="absolute top-0 left-0 w-full px-6 pt-6 flex justify-between items-start z-10">
         <div className="flex flex-col gap-1">
-          <div className="flex space-x-2">
-            {[0, 1, 2].map((i) => (
-              <Heart
-                key={i}
-                className={`w-8 h-8 transition-all duration-300 ${
-                  i < lives ? 'text-destructive fill-destructive' : 'opacity-20 text-muted-foreground'
-                }`}
-              />
-            ))}
-          </div>
+          {heartsMode && (
+            <div className="flex space-x-2">
+              {[0, 1, 2].map((i) => (
+                <Heart
+                  key={i}
+                  className={`w-8 h-8 transition-all duration-300 ${
+                    i < lives ? 'text-destructive fill-destructive' : 'opacity-20 text-muted-foreground'
+                  }`}
+                />
+              ))}
+            </div>
+          )}
           <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/60">
             {language.toUpperCase()} · {celebration.lifetimeWords(language).toLocaleString()}
           </span>

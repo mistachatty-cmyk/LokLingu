@@ -23,6 +23,7 @@ import {
   Bug,
   Map as MapIcon,
   User as UserIcon,
+  Heart as HeartIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -155,7 +156,7 @@ export default function Home() {
   const [seasonId, setSeasonId] = useState(() => activeSeason().id);
   const [seasonIntensity, setSeasonIntensityState] = useState<SeasonIntensity>(getIntensity);
   const [devMode, setDevModeState] = useState(isDevMode);
-  const { responseSpeed, set: setSetting } = useSettings();
+  const { responseSpeed, heartsMode, set: setSetting } = useSettings();
   const usernameInputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -992,6 +993,28 @@ export default function Home() {
                         setShowTranslation(v);
                         localStorage.setItem('lok-lingu-show-translation', String(v));
                       }}
+                    />
+                  </div>
+
+                  {/* Hearts / survival toggle. Existed as a setting for a
+                      while but neither game page ever read it — draw mode's
+                      three lives were hardcoded on with no way to turn them
+                      off, and voice mode had no lives at all, so a run there
+                      never ended until the player stopped the mic
+                      themselves. Both modes now read this, on by default. */}
+                  <div className="flex items-center justify-between px-1">
+                    <div className="flex items-center space-x-2">
+                      <HeartIcon className="w-4 h-4 text-muted-foreground" />
+                      <div>
+                        <span className="text-sm font-medium">Hearts</span>
+                        <span className="text-[9px] text-muted-foreground font-mono ml-1.5 uppercase tracking-wider">
+                          3 lives · both modes
+                        </span>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={heartsMode}
+                      onCheckedChange={(v) => setSetting('heartsMode', v)}
                     />
                   </div>
 
