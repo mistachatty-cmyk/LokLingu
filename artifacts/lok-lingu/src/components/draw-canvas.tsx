@@ -41,23 +41,45 @@ export const DrawCanvas = forwardRef<DrawCanvasHandle, DrawCanvasProps>(
       return cRef.current?.getContext('2d') ?? null;
     }, []);
 
+    /*
+     * Draws the faint trace-guide watermark.
+     *
+     * The font family has to be resolved in JS first. The canvas 2D `font`
+     * property is not CSS — it does not accept `var()`, and assigning an
+     * unparseable value is a silent no-op that leaves the previous font in
+     * place. This used to be set to
+     * `'bold 48px var(--word-font, sans-serif), sans-serif'`, which every
+     * browser rejected, so the guide was drawn at the 10px sans-serif default
+     * instead of 48px: technically present, far too small to see, and only ~76
+     * pixels of ink on a 400x500 bitmap.
+     */
+    const drawGhost = useCallback(
+      (ctx: CanvasRenderingContext2D) => {
+        if (!ghostText) return;
+        const family =
+          getComputedStyle(document.documentElement)
+            .getPropertyValue('--word-font')
+            .trim() || 'sans-serif';
+        ctx.save();
+        ctx.fillStyle = ghostColor;
+        ctx.globalAlpha = ghostOpacity;
+        ctx.font = `bold 48px ${family}, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(ghostText, W / 2, H / 2);
+        ctx.restore();
+      },
+      [ghostText, ghostColor, ghostOpacity],
+    );
+
     useEffect(() => {
       const canvas = cRef.current;
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
       ctx.clearRect(0, 0, W, H);
-      if (ghostText) {
-        ctx.save();
-        ctx.fillStyle = ghostColor;
-        ctx.globalAlpha = ghostOpacity;
-        ctx.font = 'bold 48px var(--word-font, sans-serif), sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(ghostText, W / 2, H / 2);
-        ctx.restore();
-      }
-    }, [ghostText, ghostColor, ghostOpacity]);
+      drawGhost(ctx);
+    }, [drawGhost]);
 
     useImperativeHandle(ref, () => ({
       snapshot() {
@@ -126,16 +148,7 @@ export const DrawCanvas = forwardRef<DrawCanvasHandle, DrawCanvasProps>(
           const alpha = 1 - t;
 
           ctx.clearRect(0, 0, W, H);
-          if (ghostText) {
-            ctx.save();
-            ctx.fillStyle = ghostColor;
-            ctx.globalAlpha = ghostOpacity;
-            ctx.font = 'bold 48px var(--word-font, sans-serif), sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(ghostText, W / 2, H / 2);
-            ctx.restore();
-          }
+          drawGhost(ctx);
           ctx.globalAlpha = alpha;
           const tempCanvas = document.createElement('canvas');
           tempCanvas.width = W;
@@ -151,16 +164,7 @@ export const DrawCanvas = forwardRef<DrawCanvasHandle, DrawCanvasProps>(
             fadeAnimRef.current = requestAnimationFrame(fade);
           } else {
             ctx.clearRect(0, 0, W, H);
-            if (ghostText) {
-              ctx.save();
-              ctx.fillStyle = ghostColor;
-              ctx.globalAlpha = ghostOpacity;
-              ctx.font = 'bold 48px var(--word-font, sans-serif), sans-serif';
-              ctx.textAlign = 'center';
-              ctx.textBaseline = 'middle';
-              ctx.fillText(ghostText, W / 2, H / 2);
-              ctx.restore();
-            }
+            drawGhost(ctx);
             strokeCount.current = 0;
             allPoints.current = [];
             fadeAnimRef.current = null;
@@ -178,7 +182,7 @@ export const DrawCanvas = forwardRef<DrawCanvasHandle, DrawCanvasProps>(
       getPoints() {
         return allPoints.current;
       },
-    }), [getCtx, bg, ghostText, ghostColor, ghostOpacity]);
+    }), [getCtx, bg, drawGhost]);
 
     const pos = useCallback(
       (e: React.PointerEvent<HTMLCanvasElement>): [number, number] => {
@@ -255,7 +259,18 @@ export const DrawCanvas = forwardRef<DrawCanvasHandle, DrawCanvasProps>(
            * would distort every stroke — and that bitmap is exactly what
            * snapshotStrokes() hands to the recogniser.
            */
-          height: 'min(40vh, 100%)',
+          /*
+           * Plain `40vh`, deliberately NOT `min(40vh, 100%)`. The wrapper is
+           * `w-fit` with auto height, so a percentage height has no definite
+           * basis to resolve against; the whole min() then collapses to auto
+           * and height falls out of width x aspect-ratio instead. Measured on
+           * a 430x900 viewport that produced 492.5px — 54.7% of the screen,
+           * i.e. the original bug, silently unchanged.
+           *
+           * maxWidth below still protects narrow screens: if it binds, the
+           * aspect ratio shrinks height to match rather than overflowing.
+           */
+          height: '40vh',
           width: 'auto',
           maxWidth: '100%',
           aspectRatio: '4/5',
