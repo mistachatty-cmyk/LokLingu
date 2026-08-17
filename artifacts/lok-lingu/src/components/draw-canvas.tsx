@@ -22,8 +22,39 @@ interface DrawCanvasProps {
   ghostOpacity?: number;
 }
 
-const W = 400;
-const H = 500;
+/*
+ * Landscape, because words are written left-to-right. The bitmap was 400x500
+ * — taller than wide — which gave a wide word like "buenas noches" almost no
+ * horizontal room and wasted the vertical space.
+ *
+ * The CSS ratio is NOT hard-coded to match: the canvas is a replaced element,
+ * so with width/height auto and max-width/max-height caps the browser scales
+ * it to fit while preserving this intrinsic ratio. That keeps `pos()` honest
+ * for free — it maps pointer x/y by W/rect.width and H/rect.height, so any
+ * disagreement between the bitmap and the rendered box would skew strokes and
+ * the image handed to the recogniser.
+ */
+const W = 520;
+const H = 390;
+
+/**
+ * Resolve `var(--token)` references to real values.
+ *
+ * The canvas 2D context is not CSS: `strokeStyle`, `fillStyle` and `font` all
+ * reject `var()`, and assigning an unparseable value is a **silent no-op** that
+ * leaves the previous value in place. Passing `hsl(var(--primary))` as an ink
+ * colour therefore drew in the default black, which is why every answer was
+ * marked wrong — black ink on a dark board thresholded to the same white as
+ * the background, so the recogniser received a blank image.
+ */
+function resolveCssValue(value: string): string {
+  if (!value.includes('var(')) return value;
+  const root = getComputedStyle(document.documentElement);
+  return value.replace(/var\(\s*(--[\w-]+)\s*(?:,\s*([^)]*))?\)/g, (_m, name, fallback) => {
+    const resolved = root.getPropertyValue(name).trim();
+    return resolved || (fallback ?? '').trim();
+  });
+}
 
 export const DrawCanvas = forwardRef<DrawCanvasHandle, DrawCanvasProps>(
   function DrawCanvas(
@@ -61,7 +92,7 @@ export const DrawCanvas = forwardRef<DrawCanvasHandle, DrawCanvasProps>(
             .getPropertyValue('--word-font')
             .trim() || 'sans-serif';
         ctx.save();
-        ctx.fillStyle = ghostColor;
+        ctx.fillStyle = resolveCssValue(ghostColor);
         ctx.globalAlpha = ghostOpacity;
         ctx.font = `bold 48px ${family}, sans-serif`;
         ctx.textAlign = 'center';
@@ -88,17 +119,16 @@ export const DrawCanvas = forwardRef<DrawCanvasHandle, DrawCanvasProps>(
         tmp.height = H;
         const x = tmp.getContext('2d');
         if (x) {
-          x.fillStyle = bg;
+          x.fillStyle = resolveCssValue(bg);
           x.fillRect(0, 0, W, H);
           if (cRef.current) x.drawImage(cRef.current, 0, 0);
         }
         return tmp.toDataURL('image/webp', 0.72);
       },
       snapshotStrokes() {
-        // Produce a clean black-on-white image with only the player's strokes.
-        // The ghost guide text sits at opacity 0.08 on a dark background —
-        // its luma is ~30, well below the threshold — so it disappears entirely,
-        // preventing the OCR engine from reading the watermark instead of the drawing.
+        // Produce a clean black-on-white image with only the player's strokes,
+        // excluding the faint guide watermark so the recogniser cannot read it
+        // instead of the drawing.
         const tmp = document.createElement('canvas');
         tmp.width = W;
         tmp.height = H;
@@ -108,20 +138,40 @@ export const DrawCanvas = forwardRef<DrawCanvasHandle, DrawCanvasProps>(
           const fb = document.createElement('canvas');
           fb.width = W; fb.height = H;
           const fx = fb.getContext('2d');
-          if (fx) { fx.fillStyle = bg; fx.fillRect(0, 0, W, H); if (cRef.current) fx.drawImage(cRef.current, 0, 0); }
+          if (fx) { fx.fillStyle = resolveCssValue(bg); fx.fillRect(0, 0, W, H); if (cRef.current) fx.drawImage(cRef.current, 0, 0); }
           return fb.toDataURL('image/webp', 0.72);
         }
-        x.fillStyle = '#ffffff';
-        x.fillRect(0, 0, W, H);
-        if (cRef.current) x.drawImage(cRef.current, 0, 0);
-        const img = x.getImageData(0, 0, W, H);
-        const d = img.data;
-        for (let i = 0; i < d.length; i += 4) {
-          const luma = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-          const v = luma > 80 ? 0 : 255; // bright = ink → black; dark = bg/ghost → white
-          d[i] = v; d[i + 1] = v; d[i + 2] = v; d[i + 3] = 255;
+        /*
+         * Keyed on ALPHA, not brightness.
+         *
+         * This previously composited the board onto white and thresholded
+         * luma > 80 as "ink", which silently assumed the player draws in a
+         * bright colour on a dark background. With the default ink resolving
+         * to black (see resolveCssValue), ink and background both fell on the
+         * dark side of that threshold, both mapped to white, and the recogniser
+         * was handed a blank page — so a perfectly good "uno" scored wrong
+         * every time and cost a heart.
+         *
+         * The visible canvas is cleared to full transparency and only strokes
+         * and the guide are painted onto it, so alpha alone identifies ink
+         * exactly, whatever colour is selected. The cutoff sits above the
+         * guide's ~0.14 alpha (~36) and far below a stroke's 255, which is
+         * what keeps the watermark out of the recogniser's input.
+         */
+        const src = cRef.current;
+        if (!src) return tmp.toDataURL('image/png');
+        const srcCtx = src.getContext('2d');
+        if (!srcCtx) return tmp.toDataURL('image/png');
+
+        const srcData = srcCtx.getImageData(0, 0, W, H).data;
+        const out = x.createImageData(W, H);
+        const o = out.data;
+        const INK_ALPHA_CUTOFF = 90;
+        for (let i = 0; i < srcData.length; i += 4) {
+          const v = srcData[i + 3] > INK_ALPHA_CUTOFF ? 0 : 255;
+          o[i] = v; o[i + 1] = v; o[i + 2] = v; o[i + 3] = 255;
         }
-        x.putImageData(img, 0, 0);
+        x.putImageData(out, 0, 0);
         return tmp.toDataURL('image/png');
       },
       clear() {
@@ -214,7 +264,7 @@ export const DrawCanvas = forwardRef<DrawCanvasHandle, DrawCanvasProps>(
         const ctx = getCtx();
         if (!ctx) return;
         const p = pos(e);
-        ctx.strokeStyle = color;
+        ctx.strokeStyle = resolveCssValue(color);
         ctx.lineWidth = penWidth;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
@@ -243,7 +293,7 @@ export const DrawCanvas = forwardRef<DrawCanvasHandle, DrawCanvasProps>(
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerUp}
         onPointerCancel={handlePointerUp}
-        className="rounded-xl draw-canvas-sized"
+        className="rounded-xl"
         style={{
           /*
            * Sized from HEIGHT, not width.
@@ -260,15 +310,23 @@ export const DrawCanvas = forwardRef<DrawCanvasHandle, DrawCanvasProps>(
            * snapshotStrokes() hands to the recogniser.
            */
           /*
-           * Height comes from the `draw-canvas-sized` class, which fills the
-           * leftover height of its `flex-1` wrapper — see index.css for the
-           * full reasoning, including why width must never be the binding
-           * constraint. Width is derived from that height via aspect-ratio.
+           * `auto` on both axes with max caps on both: a canvas is a replaced
+           * element, so the browser scales it to fit inside the box while
+           * preserving the intrinsic W:H ratio — the same way an <img> behaves.
+           *
+           * That does the fitting arithmetic the layout used to do by hand, and
+           * does it correctly. Deriving one axis from the other via
+           * `aspect-ratio` meant whichever axis was *not* driving could be
+           * clamped independently, breaking the ratio and skewing every
+           * stroke; getting that right by hand needed the column width and
+           * even the wrapper's border width plumbed into a calc(), and it was
+           * measurably wrong twice before this.
            */
           width: 'auto',
+          height: 'auto',
           maxWidth: '100%',
-          aspectRatio: '4/5',
-          background: bg,
+          maxHeight: '100%',
+          background: resolveCssValue(bg),
           touchAction: 'none',
           cursor: 'crosshair',
         }}

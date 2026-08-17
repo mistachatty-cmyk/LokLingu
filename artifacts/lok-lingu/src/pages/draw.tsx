@@ -604,11 +604,6 @@ export default function Draw() {
                  what makes the canvas adapt to the device rather than taking a
                  fixed share of it. */
               className={`w-full h-full flex flex-col gap-3 transition-all duration-300 ${expanded ? 'max-w-2xl' : 'max-w-md'}`}
-              /* Publish the column's width cap so the canvas can bound its
-                 height by the width actually available to it. Kept in step
-                 with the max-w-* class above — if these disagree the canvas
-                 ratio distorts, so they are derived from the same flag. */
-              style={{ ['--draw-col-max' as string]: expanded ? '42rem' : '28rem' }}
             >
               {/* The same component voice mode uses, so the hit/miss
                   reactions are identical by construction. Always rendered —
@@ -644,7 +639,7 @@ export default function Draw() {
                 // the Done row is sticky, so it stays reachable.
                 //
                 // `w-fit`: width follows from the canvas's own aspect ratio.
-                className={`relative rounded-xl border-2 overflow-hidden transition-colors duration-300 mx-auto w-fit flex-1 min-h-[10rem] ${
+                className={`relative rounded-xl border-2 overflow-hidden transition-colors duration-300 mx-auto w-fit max-w-full flex-1 min-h-[10rem] ${
                   status === 'error'
                     ? 'border-destructive shadow-lg shadow-destructive/50'
                     : status === 'success'
