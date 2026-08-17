@@ -51,21 +51,7 @@ const INK_COLORS = [
 const VOICE_CONFIRM_KEY = 'lok-lingu-draw-voice-confirm';
 const WORD_DISPLAY_KEY = 'lok-lingu-draw-word-display';
 
-/** 'above' = heading only · 'canvas' = trace guide only · 'both' */
-type WordDisplay = 'above' | 'canvas' | 'both';
-
-const WORD_DISPLAY_LABEL: Record<WordDisplay, string> = {
-  above: 'Word above',
-  canvas: 'Trace guide',
-  both: 'Word + guide',
-};
-
-/** Cycles above → both → canvas → above. */
-const NEXT_WORD_DISPLAY: Record<WordDisplay, WordDisplay> = {
-  above: 'both',
-  both: 'canvas',
-  canvas: 'above',
-};
+const TRACE_GUIDE_KEY = 'lok-lingu-draw-trace-guide';
 
 export default function Draw() {
   const [, setLocation] = useLocation();
@@ -105,12 +91,24 @@ export default function Draw() {
   /* Mirrors voice mode's word feedback so both modes react identically. */
   const [feedback, setFeedback] = useState<WordFeedback>('idle');
   const [inkColor, setInkColor] = useState(INK_COLORS[0].value);
-  /** Where the word is shown: as a heading, as a trace guide, or both. */
-  const [wordDisplay, setWordDisplay] = useState<WordDisplay>(
-    () => (localStorage.getItem(WORD_DISPLAY_KEY) as WordDisplay) || 'both',
-  );
-  const showWordAbove = wordDisplay === 'above' || wordDisplay === 'both';
-  const showGhost = wordDisplay === 'canvas' || wordDisplay === 'both';
+  /**
+   * The word above the canvas is NOT optional any more.
+   *
+   * It used to be one setting of three ('above' | 'canvas' | 'both'), and
+   * landing on 'canvas' hid the heading entirely — which is exactly how
+   * players ended up staring at a canvas with no word anywhere, since the
+   * on-canvas trace guide is a faint watermark and easy to miss. Knowing
+   * what you're being asked to draw is not a preference.
+   *
+   * Only the trace-guide watermark toggles now.
+   */
+  const [showGhost, setShowGhost] = useState(() => {
+    const explicit = localStorage.getItem(TRACE_GUIDE_KEY);
+    if (explicit !== null) return explicit === 'true';
+    // Migrate the old three-way key: anyone previously on 'above' had the
+    // guide off; every other value had it on.
+    return localStorage.getItem(WORD_DISPLAY_KEY) !== 'above';
+  });
   const [wordPopActive, setWordPopActive] = useState(false);
   const [shakeKey, setShakeKey] = useState(0);
   /** Visual recognition in-flight */
@@ -528,22 +526,20 @@ export default function Draw() {
               exit={{ opacity: 0 }}
               className={`w-full flex flex-col gap-4 transition-all duration-300 ${expanded ? 'max-w-2xl' : 'max-w-md'}`}
             >
-              {/* Word display — the same component voice mode uses, so the
-                  hit/miss reactions are identical by construction. Scaled
-                  down a little because here it shares the screen with a
-                  canvas. */}
-              {showWordAbove && (
-                <div className="shrink-0 text-center">
-                  <GameWord
-                    word={currentWord.word}
-                    translation={currentWord.translation}
-                    pronunciation={(currentWord as any).pronunciation}
-                    feedback={feedback}
-                    animKey={wordIndex}
-                    scale={0.55}
-                  />
-                </div>
-              )}
+              {/* The same component voice mode uses, so the hit/miss
+                  reactions are identical by construction. Always rendered —
+                  never behind a condition. Only the ceiling is pulled in,
+                  because here the word shares the screen with a canvas. */}
+              <div className="shrink-0 text-center">
+                <GameWord
+                  word={currentWord.word}
+                  translation={currentWord.translation}
+                  pronunciation={(currentWord as any).pronunciation}
+                  feedback={feedback}
+                  animKey={wordIndex}
+                  scale={0.65}
+                />
+              </div>
 
               {/* Canvas */}
               <motion.div
@@ -577,7 +573,7 @@ export default function Draw() {
                   color={inkColor}
                   bg="hsl(var(--card))"
                   ghostText={showGhost ? currentWord.word : undefined}
-                  ghostOpacity={wordDisplay === 'canvas' ? 0.16 : 0.09}
+                  ghostOpacity={0.14}
                 />
                 {isRecognizing && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/60 backdrop-blur-sm pointer-events-none gap-2">
@@ -630,15 +626,15 @@ export default function Draw() {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    const next = NEXT_WORD_DISPLAY[wordDisplay];
-                    setWordDisplay(next);
-                    localStorage.setItem(WORD_DISPLAY_KEY, next);
+                    const next = !showGhost;
+                    setShowGhost(next);
+                    localStorage.setItem(TRACE_GUIDE_KEY, String(next));
                   }}
                   className="gap-2"
-                  title="Where the word is shown"
+                  title="Faint outline of the word on the canvas"
                 >
-                  {showWordAbove ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                  {WORD_DISPLAY_LABEL[wordDisplay]}
+                  {showGhost ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                  Trace guide
                 </Button>
                 <Button
                   variant="outline"
