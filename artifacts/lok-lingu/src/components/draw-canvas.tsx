@@ -296,36 +296,27 @@ export const DrawCanvas = forwardRef<DrawCanvasHandle, DrawCanvasProps>(
         className="rounded-xl"
         style={{
           /*
-           * Sized from HEIGHT, not width.
-           *
-           * With `w-full` there was no height term anywhere in the chain, so
-           * height was always 1.25x whatever the column was wide — about 55%
-           * of a phone screen, which pushed the Clear/Done buttons off the
-           * bottom. Capping by viewport height instead lands it near 40%.
-           *
-           * The 4:5 ratio is deliberately preserved rather than squashed:
-           * `pos()` maps pointer coordinates by scaling x and y independently
-           * against the W x H bitmap, so a CSS ratio that disagreed with it
-           * would distort every stroke — and that bitmap is exactly what
-           * snapshotStrokes() hands to the recogniser.
+           * `block`, not the UA default `inline`. An inline replaced element
+           * sits on its containing line's text baseline, which reserves
+           * descender space below it — space that is part of the element's
+           * layout box but never painted. The bordered wrapper is `w-fit`, so
+           * it sized itself to that full layout box, ending up visibly taller
+           * than the canvas's actual pixels and leaving a dead strip inside
+           * the border. `block` removes the baseline participation entirely,
+           * so the wrapper now matches the canvas exactly.
            */
+          display: 'block',
           /*
-           * `auto` on both axes with max caps on both: a canvas is a replaced
-           * element, so the browser scales it to fit inside the box while
-           * preserving the intrinsic W:H ratio — the same way an <img> behaves.
-           *
-           * That does the fitting arithmetic the layout used to do by hand, and
-           * does it correctly. Deriving one axis from the other via
-           * `aspect-ratio` meant whichever axis was *not* driving could be
-           * clamped independently, breaking the ratio and skewing every
-           * stroke; getting that right by hand needed the column width and
-           * even the wrapper's border width plumbed into a calc(), and it was
-           * measurably wrong twice before this.
+           * Plain 100%/100%, not `auto` + `max-*`. The direct parent (the
+           * bordered box in draw.tsx) now sizes itself with
+           * `aspect-[520/390]` — the same ratio as this bitmap — so its
+           * resolved size is definite and these percentages simply fill it
+           * exactly. That parent box IS the canvas's containing block, so
+           * there is no separate box that could disagree with it: the border
+           * always matches the drawing surface exactly, on every screen.
            */
-          width: 'auto',
-          height: 'auto',
-          maxWidth: '100%',
-          maxHeight: '100%',
+          width: '100%',
+          height: '100%',
           background: resolveCssValue(bg),
           touchAction: 'none',
           cursor: 'crosshair',

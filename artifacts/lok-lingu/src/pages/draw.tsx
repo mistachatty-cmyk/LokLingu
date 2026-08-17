@@ -620,58 +620,73 @@ export default function Draw() {
                 />
               </div>
 
-              {/* Canvas */}
-              <motion.div
-                key={shakeKey}
-                animate={shakeKey > 0 ? {
-                  x: [-20, 20, -18, 18, -12, 12, -8, 8, -4, 4, 0],
-                  rotate: [-2, 2, -1.5, 1.5, -1, 1, 0]
-                } : { x: 0, rotate: 0 }}
-                transition={{ duration: 0.5, ease: 'easeInOut' }}
-                // `flex-1` claims whatever height the word and controls leave
-                // over, so the drawing area is as large as each device allows.
-                //
-                // `min-h-[10rem]`, deliberately not `min-h-0`: this wrapper is
-                // `overflow-hidden`, so letting flexbox squeeze it below the
-                // canvas would silently *crop* the drawing surface into a dead
-                // zone you could draw in but never see. With a floor, an
-                // extremely short screen overflows and scrolls instead — and
-                // the Done row is sticky, so it stays reachable.
-                //
-                // `w-fit`: width follows from the canvas's own aspect ratio.
-                className={`relative rounded-xl border-2 overflow-hidden transition-colors duration-300 mx-auto w-fit max-w-full flex-1 min-h-[10rem] ${
-                  status === 'error'
-                    ? 'border-destructive shadow-lg shadow-destructive/50'
-                    : status === 'success'
-                      ? 'border-primary'
-                      : isRecognizing
-                        ? 'border-primary/60'
-                        : 'border-border'
-                }`}
-              >
-                <DrawCanvas
-                  ref={canvasRef}
-                  color={inkColor}
-                  bg="hsl(var(--card))"
-                  ghostText={showGhost ? currentWord.word : undefined}
-                  ghostOpacity={0.14}
-                />
-                {isRecognizing && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/60 backdrop-blur-sm pointer-events-none gap-2">
-                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                    <span className="text-xs font-black uppercase tracking-widest text-primary">
-                      Checking…
-                    </span>
-                  </div>
-                )}
-                {status === 'error' && !isRecognizing && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <span className="text-4xl font-black text-destructive uppercase tracking-widest opacity-80 drop-shadow-lg select-none">
-                      WRONG!
-                    </span>
-                  </div>
-                )}
-              </motion.div>
+              {/*
+                Canvas — a spacer/border split, deliberately two boxes.
+
+                The SPACER (`flex-1 min-h-[10rem]`, centered) is what claims
+                leftover height and makes the drawing area adapt to the
+                device, same as before. It carries no border.
+
+                The BORDER box inside it is capped by `max-w-full max-h-full`
+                against that spacer AND fixed to `aspect-[520/390]` — the
+                bitmap's own ratio — so the browser picks whichever axis
+                actually binds and derives the other from the ratio, instead
+                of stretching one axis independently. That box is the
+                canvas's entire containing block, and the canvas fills it at
+                a flat 100%/100%, so there is no separate measurement that
+                could disagree with what's drawn: the border always matches
+                the canvas exactly, on every screen.
+
+                One box doing both jobs (a single element with `flex-1` AND
+                `aspect-ratio`) does not work: Tailwind's `flex-1` is
+                `flex-basis: 0%`, and flex-grow distributes the container's
+                free space from that zero basis, overriding the aspect ratio's
+                preferred size entirely — measured breaking the ratio to
+                0.599 on a tablet. Splitting the growth from the ratio
+                constraint is what keeps both honest.
+              */}
+              <div className="flex-1 min-h-[10rem] w-full flex items-center justify-center">
+                <motion.div
+                  key={shakeKey}
+                  animate={shakeKey > 0 ? {
+                    x: [-20, 20, -18, 18, -12, 12, -8, 8, -4, 4, 0],
+                    rotate: [-2, 2, -1.5, 1.5, -1, 1, 0]
+                  } : { x: 0, rotate: 0 }}
+                  transition={{ duration: 0.5, ease: 'easeInOut' }}
+                  className={`relative rounded-xl border-2 overflow-hidden transition-colors duration-300 max-w-full max-h-full aspect-[520/390] ${
+                    status === 'error'
+                      ? 'border-destructive shadow-lg shadow-destructive/50'
+                      : status === 'success'
+                        ? 'border-primary'
+                        : isRecognizing
+                          ? 'border-primary/60'
+                          : 'border-border'
+                  }`}
+                >
+                  <DrawCanvas
+                    ref={canvasRef}
+                    color={inkColor}
+                    bg="hsl(var(--card))"
+                    ghostText={showGhost ? currentWord.word : undefined}
+                    ghostOpacity={0.14}
+                  />
+                  {isRecognizing && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/60 backdrop-blur-sm pointer-events-none gap-2">
+                      <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                      <span className="text-xs font-black uppercase tracking-widest text-primary">
+                        Checking…
+                      </span>
+                    </div>
+                  )}
+                  {status === 'error' && !isRecognizing && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <span className="text-4xl font-black text-destructive uppercase tracking-widest opacity-80 drop-shadow-lg select-none">
+                        WRONG!
+                      </span>
+                    </div>
+                  )}
+                </motion.div>
+              </div>
 
               {/* Ink color picker — collapsed in expanded mode to give the canvas more room */}
               {!expanded && (
