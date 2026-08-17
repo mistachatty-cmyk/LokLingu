@@ -32,6 +32,7 @@ import {
   type SessionEntry,
 } from '@/lib/review';
 import { SessionSummaryCard } from '@/components/session-summary';
+import { GameWord } from '@/components/game-word';
 import { TokenPhysicsLayer, spawnTokenAt } from '@/components/token-physics-layer';
 
 type NormalWord = { word: string; translation: string; pronunciation?: string };
@@ -565,56 +566,19 @@ export default function Game() {
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={wordIndex}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.22 }}
-            className="flex flex-col items-center"
-          >
-            <motion.h1
-              className={`game-word font-black tracking-tighter capitalize leading-none transition-colors duration-200 ${
-                feedback === 'hit'
-                  ? 'text-primary'
-                  : feedback === 'miss'
-                    ? 'text-destructive'
-                    : 'word-glow'
-              }`}
-              style={{
-                color: feedback === 'idle' ? 'var(--word-color)' : undefined,
-                // A fixed text-7xl/9xl had no way to fit both "sí" and a
-                // multi-word phrase like "buenas noches" in the same box
-                // across 30+ themes at very different letter widths.
-                // These two vars scale the ceiling down for longer content;
-                // see .game-word's breakpoint rule in index.css and
-                // src/lib/word-sizing.ts for the reasoning.
-                ['--word-size-mobile' as string]: wordFontSize.mobile,
-                ['--word-size-desktop' as string]: wordFontSize.desktop,
-              }}
-              animate={
-                prefersReducedMotion
-                  ? {}
-                  : feedback === 'hit'
-                    ? { scale: [1, 1.12, 1], filter: ['brightness(1)', 'brightness(1.7)', 'brightness(1)'] }
-                    : { scale: 1, filter: 'brightness(1)' }
-              }
-              transition={{ duration: 0.22, ease: 'easeOut' }}
-            >
-              {currentWord.word}
-            </motion.h1>
+        {/* Rendered through the shared component so draw mode is guaranteed
+            to look and react identically — see components/game-word.tsx. */}
+        <GameWord
+          word={currentWord.word}
+          translation={
+            infinite ? `${wordIndex + 1} · ${currentWord.translation}` : currentWord.translation
+          }
+          pronunciation={currentWord.pronunciation}
+          feedback={feedback}
+          animKey={wordIndex}
+        />
 
-            <p className="text-xl md:text-3xl italic opacity-50 mt-5">
-              {infinite ? `${wordIndex + 1} · ${currentWord.translation}` : currentWord.translation || '—'}
-            </p>
-
-            {currentWord.pronunciation && (
-              <p className="text-sm md:text-base font-mono opacity-40 mt-2 tracking-wide">
-                {currentWord.pronunciation}
-              </p>
-            )}
-
+        <div className="flex flex-col items-center">
             <div className="group relative mt-10 flex flex-col items-center">
               <button
                 type="button"
@@ -628,8 +592,7 @@ export default function Game() {
                 Tap to pronounce slowly
               </span>
             </div>
-          </motion.div>
-        </AnimatePresence>
+        </div>
       </div>
 
       {/* What the engine actually heard. Empty-while-listening is the single

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useLocation } from 'wouter';
 import { useGetWords, useSubmitScore } from '@workspace/api-client-react';
 import { recognizeDrawingLocal, primeRecognizer } from '@/lib/draw-recognition-local';
@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import {
   Tooltip,
   TooltipContent,
@@ -22,13 +23,12 @@ import { useCelebration, incrementCategoryLifetime } from '@/hooks/use-celebrati
 import { useCelebrationSound } from '@/hooks/use-celebration-sound';
 import { CelebrationEffect } from '@/components/celebration-effect';
 import { WordPop } from '@/components/word-pop';
-import { GlitchText } from '@/components/glitch-text';
 import { useTheme } from '@/hooks/use-theme';
+import { GameWord, type WordFeedback } from '@/components/game-word';
 import { TokenEarnedLabel } from '@/components/token-earned-label';
 import { TokenVaultLayer } from '@/components/token-vault-layer';
 import { TokenPhysicsLayer, spawnTokenAt } from '@/components/token-physics-layer';
 import { FALLBACK_WORDS, saveLocalScore } from '@/lib/offline-data';
-import { gameWordFontSize } from '@/lib/word-sizing';
 import { speakWord, matchWord } from '@/lib/speech-utils';
 import { useSpeechEngine } from '@/hooks/use-speech-engine';
 import {
@@ -67,14 +67,6 @@ const NEXT_WORD_DISPLAY: Record<WordDisplay, WordDisplay> = {
   canvas: 'above',
 };
 
-/**
- * Vertical space the page needs around the canvas: word block, ink row,
- * action buttons and padding. The canvas is capped so that the sum fits the
- * viewport instead of pushing the word off the top.
- */
-const CHROME_WITH_WORD = 350;
-const CHROME_WITHOUT_WORD = 250;
-
 export default function Draw() {
   const [, setLocation] = useLocation();
   const { userId } = useUser();
@@ -110,20 +102,10 @@ export default function Draw() {
   const [lives, setLives] = useState(3);
   const [gameOver, setGameOver] = useState(false);
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  /* Mirrors voice mode's word feedback so both modes react identically. */
+  const [feedback, setFeedback] = useState<WordFeedback>('idle');
   const [inkColor, setInkColor] = useState(INK_COLORS[0].value);
-  /**
-   * Where the word you're drawing is shown.
-   *
-   * The canvas is `w-full` at a 4:5 ratio, so on a phone it resolves to
-   * roughly 500px tall. Stacked with the word, the ink row, the action
-   * buttons and the page padding that overflows the viewport — and because
-   * the game area is `justify-center` inside an `overflow-hidden` root, the
-   * overflow was silently clipped off the *top*, taking the word with it.
-   * That's why the canvas looked like a big box with no word above it.
-   *
-   * The canvas is now bounded by available height rather than width alone,
-   * and this setting controls where the word appears.
-   */
+  /** Where the word is shown: as a heading, as a trace guide, or both. */
   const [wordDisplay, setWordDisplay] = useState<WordDisplay>(
     () => (localStorage.getItem(WORD_DISPLAY_KEY) as WordDisplay) || 'both',
   );
@@ -140,6 +122,7 @@ export default function Draw() {
     () => localStorage.getItem(VOICE_CONFIRM_KEY) === 'true',
   );
 
+  const prefersReducedMotion = useReducedMotion();
   const celebration = useCelebration();
   useCelebrationSound(); // keeps audio context alive
   const { theme } = useTheme();
@@ -166,14 +149,6 @@ export default function Draw() {
   const recentRef = useRef<number[]>([]);
   /* The HUD element physics tokens launch from. */
   const tokenAnchorRef = useRef<HTMLDivElement>(null);
-  // Same clamp-based responsive sizing as the voice game's word — draw mode
-  // used to pin a fixed text-3xl that fought .game-word's own font-size
-  // rule at equal specificity, capping the word far below what /game shows.
-  const wordFontSize = useMemo(
-    () => gameWordFontSize(currentWord?.word ?? ''),
-    [currentWord?.word],
-  );
-
   // Optional larger canvas — collapses the ink-color row to give the
   // canvas more room, since it already scales via w-full + aspect-ratio.
   const [expanded, setExpanded] = useState(false);
@@ -183,6 +158,7 @@ export default function Draw() {
   const handleSuccess = useCallback(() => {
     if (status !== 'idle' || gameOver) return;
     setStatus('success');
+    setFeedback('hit');
     setAwaitingVoice(false);
     setIsRecognizing(false);
     setWordPopActive(true);
@@ -212,12 +188,17 @@ export default function Draw() {
         setWordIndex((prev) => (prev + 1) % words.length);
       }
       setStatus('idle');
+      setFeedback('idle');
     }, 1000);
   }, [status, gameOver, words, celebration, language, category]);
 
   const handleFailure = useCallback(() => {
     if (status !== 'idle' || gameOver) return;
     setStatus('error');
+    setFeedback('miss');
+    // Voice mode clears a miss at a flat 500ms regardless of the response
+    // speed preset; matched here so the two feel the same.
+    setTimeout(() => setFeedback('idle'), 500);
     setAwaitingVoice(false);
     setIsRecognizing(false);
     setShakeKey((k) => k + 1);
@@ -309,16 +290,22 @@ export default function Draw() {
       (spoken: string, isFinal: boolean) => {
         if (!isFinal) return;
         if (speechMutedRef.current) return;
-        if (!voiceConfirmRef.current) return; // voice mode off — ignore
+        if (!voiceConfirmRef.current) return; // voice answering off — ignore
         if (statusRef.current !== 'idle' || gameOverRef.current) return;
         const target = currentWordRef.current?.word;
         if (!target) return;
-        if ((canvasRef.current?.getStrokes() ?? 0) < 1) return;
+        // No strokes gate. Voice is an *alternative* answer, not a second
+        // step after drawing — previously you had to draw something before
+        // speech counted at all, which made "answer by voice" impossible.
         const pronunciation = currentWordRef.current?.pronunciation as string | undefined;
         if (matchWord(spoken, target, pronunciation ? [pronunciation] : [])) {
           handleSuccess();
         } else {
-          handleFailure();
+          // A wrong *spoken* answer shouldn't cost a life the way a wrong
+          // drawing does — recognition mishears often enough that it would
+          // punish the microphone rather than the player. Let them retry.
+          setFeedback('miss');
+          setTimeout(() => setFeedback('idle'), 500);
         }
       },
       [handleSuccess, handleFailure],
@@ -449,27 +436,42 @@ export default function Draw() {
         </div>
 
         <div className="flex items-start gap-3">
-          {/* Voice confirm toggle */}
+          {/* Voice answering. Off by default; when on, saying the word is a
+              valid answer on its own — you don't have to draw first. */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <button
-                onClick={toggleVoiceConfirm}
-                className={`mt-1 flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-widest transition-all ${
-                  voiceConfirmEnabled
-                    ? 'bg-primary/15 text-primary border border-primary/40'
-                    : 'bg-muted/30 text-muted-foreground border border-border/40'
-                }`}
-                aria-label={voiceConfirmEnabled ? 'Voice confirm on — tap to disable' : 'Voice confirm off — tap to enable'}
-              >
-                {voiceConfirmEnabled ? <Mic className="w-3 h-3" /> : <ScanText className="w-3 h-3" />}
-                {voiceConfirmEnabled ? 'Voice' : 'Vision'}
-              </button>
+              <div className="mt-1 flex items-center gap-1.5">
+                <motion.span
+                  className={voiceConfirmEnabled ? 'text-primary' : 'text-muted-foreground/60'}
+                  // A slow breathing pulse while the mic is live, so it's
+                  // obvious the app is listening. Framer respects the
+                  // reduced-motion check below by simply not animating.
+                  animate={
+                    voiceConfirmEnabled && !prefersReducedMotion
+                      ? { scale: [1, 1.18, 1], opacity: [0.75, 1, 0.75] }
+                      : { scale: 1, opacity: 1 }
+                  }
+                  transition={
+                    voiceConfirmEnabled && !prefersReducedMotion
+                      ? { duration: 1.8, repeat: Infinity, ease: 'easeInOut' }
+                      : { duration: 0.2 }
+                  }
+                >
+                  {voiceConfirmEnabled ? <Mic className="w-3.5 h-3.5" /> : <MicOff className="w-3.5 h-3.5" />}
+                </motion.span>
+                <Switch
+                  checked={voiceConfirmEnabled}
+                  onCheckedChange={toggleVoiceConfirm}
+                  aria-label="Answer by voice"
+                  className="scale-75 origin-left"
+                />
+              </div>
             </TooltipTrigger>
-            <TooltipContent side="left" className="max-w-[180px] text-center">
+            <TooltipContent side="left" className="max-w-[190px] text-center">
               <p className="text-xs">
                 {voiceConfirmEnabled
-                  ? 'Voice mode: draw then say the word. Tap to switch to AI vision.'
-                  : 'Vision mode: draw the word and tap Done — AI checks it. Tap to switch to voice.'}
+                  ? 'Voice answering on — say the word or draw it, whichever you prefer.'
+                  : 'Voice answering off — draw the word and tap Done.'}
               </p>
             </TooltipContent>
           </Tooltip>
@@ -491,9 +493,14 @@ export default function Draw() {
                 </Tooltip>
               )}
             </div>
+            {/* Deliberately NOT `.game-word`. That class sets its font-size
+                from --word-size-* with a 4.5rem/8rem fallback, and it lives
+                in @layer utilities *after* Tailwind's — so `text-5xl` lost
+                and this counter rendered at up to 128px, inflating the
+                absolute header to ~150px tall and covering the word below. */}
             <div
-              className="game-word text-5xl font-black leading-none word-glow"
-              style={{ color: 'var(--word-color)' }}
+              className="text-4xl md:text-5xl font-black leading-none word-glow"
+              style={{ color: 'var(--word-color)', fontFamily: 'var(--word-font)' }}
             >
               {count}
             </div>
@@ -504,8 +511,14 @@ export default function Draw() {
       {/* ── Top rod indicator ─────────────────────────────────────────────── */}
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-primary to-primary/50 opacity-30" />
 
-      {/* ── Main game area ────────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 pt-6 pb-20">
+      {/* ── Main game area ─────────────────────────────────────────────────
+          `justify-start` and scrollable, NOT `justify-center`. Centering a
+          column that overflows splits the excess evenly and the root's
+          `overflow-hidden` then discards the top half — which is where the
+          word lives. That is why the word kept disappearing. Padding-top
+          reserves the absolutely-positioned header's height so nothing
+          renders underneath it. */}
+      <div className="flex-1 min-h-0 overflow-y-auto flex flex-col items-center justify-start px-4 pt-28 pb-6">
         <AnimatePresence mode="wait">
           {!gameOver ? (
             <motion.div
@@ -513,39 +526,24 @@ export default function Draw() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className={`w-full space-y-6 transition-all duration-300 ${expanded ? 'max-w-2xl' : 'max-w-md'}`}
+              className={`w-full flex flex-col gap-4 transition-all duration-300 ${expanded ? 'max-w-2xl' : 'max-w-md'}`}
             >
-              {/* Word display */}
-              <div
-                className={`text-center space-y-2 transition-all duration-300 ${
-                  showWordAbove ? '' : 'hidden'
-                } ${status === 'error' ? 'animate-[shake_0.3s_ease-in-out]' : ''}`}
-                style={{
-                  '--word-size-mobile': wordFontSize.mobile,
-                  '--word-size-desktop': wordFontSize.desktop,
-                } as React.CSSProperties}
-              >
-                {theme === 'theme-ultimate' && status === 'idle' ? (
-                  <GlitchText
-                    text={currentWord.word}
-                    as="h1"
-                    className="game-word font-black capitalize word-glow"
-                    delay={0}
-                    interval={50}
-                    glitchDuration={80}
+              {/* Word display — the same component voice mode uses, so the
+                  hit/miss reactions are identical by construction. Scaled
+                  down a little because here it shares the screen with a
+                  canvas. */}
+              {showWordAbove && (
+                <div className="shrink-0 text-center">
+                  <GameWord
+                    word={currentWord.word}
+                    translation={currentWord.translation}
+                    pronunciation={(currentWord as any).pronunciation}
+                    feedback={feedback}
+                    animKey={wordIndex}
+                    scale={0.55}
                   />
-                ) : (
-                  <h1
-                    className={`game-word font-black capitalize ${
-                      status === 'error' ? 'neon-text-glow-destructive text-destructive' : 'word-glow'
-                    }`}
-                    style={{ color: status === 'error' ? undefined : 'var(--word-color)' }}
-                  >
-                    {currentWord.word}
-                  </h1>
-                )}
-                <p className="text-sm text-muted-foreground font-serif italic">{currentWord.translation}</p>
-              </div>
+                </div>
+              )}
 
               {/* Canvas */}
               <motion.div
@@ -565,13 +563,13 @@ export default function Draw() {
                         : 'border-border'
                 }`}
                 style={{
-                  // Height is width × 1.25 (the canvas is 4:5), so capping
-                  // width by the leftover viewport height is what keeps the
-                  // whole column on screen. Without this the canvas grows to
-                  // the container width and shoves the word out of view.
-                  maxWidth: `calc((100dvh - ${
-                    showWordAbove ? CHROME_WITH_WORD : CHROME_WITHOUT_WORD
-                  }px) / 1.25)`,
+                  // A generous ceiling only — the column scrolls now, so the
+                  // canvas no longer has to be squeezed to a guessed budget
+                  // to keep the word on screen. The previous `calc()` against
+                  // a hardcoded chrome constant was always going to be wrong:
+                  // the real chrome varies with how many rows the button bar
+                  // wraps to.
+                  maxWidth: 'min(100%, 60vh)',
                 }}
               >
                 <DrawCanvas

@@ -12,6 +12,7 @@ import { useUser } from '@/hooks/use-user';
 interface OnboardingData {
   username: string;
   language: string;
+  mode: 'voice' | 'draw';
 }
 
 /**
@@ -34,20 +35,18 @@ const STEPS: {
   {
     id: 'welcome',
     title: 'Welcome to LokLingu',
-    description: 'Learn languages through voice and drawing, one word at a time.',
+    description: 'Speak it or draw it. That’s the whole game.',
     content: () => (
-      <div className="text-center space-y-4">
-        <p className="text-4xl">🌍</p>
-        <p className="text-base text-muted-foreground">
-          Every language skill starts small. Pick your language, speak or draw, and earn levels, achievements, and cosmetics as you progress.
-        </p>
+      <div className="text-center space-y-3 py-2">
+        <p className="text-5xl">🌍</p>
+        <p className="text-sm text-muted-foreground">Three quick things and you’re in.</p>
       </div>
     ),
   },
   {
     id: 'username',
-    title: 'Let\'s Start',
-    description: 'Set your player name and pick your first language',
+    title: 'Your name',
+    description: 'And the language you want to start with.',
     content: (data, setData) => (
       <div className="space-y-4">
         <div>
@@ -63,9 +62,7 @@ const STEPS: {
             autoFocus
           />
           <p className="text-[11px] text-muted-foreground mt-1.5">
-            {data.username.trim()
-              ? 'This is what shows on the leaderboard.'
-              : 'Pick any name — it’s what shows on the leaderboard.'}
+            Shows on the leaderboard.
           </p>
         </div>
         <div>
@@ -89,143 +86,116 @@ const STEPS: {
   },
   {
     id: 'modes',
-    title: 'Two Game Modes',
-    description: 'Voice and Draw — pick your style',
-    content: () => (
-      <div className="space-y-4">
-        <div className="p-3 rounded-lg bg-card border border-border">
-          <p className="font-semibold mb-1">🎤 Voice Mode</p>
-          <p className="text-sm text-muted-foreground">Listen to a word, speak it back. Real-time recognition, instant feedback.</p>
-        </div>
-        <div className="p-3 rounded-lg bg-card border border-border">
-          <p className="font-semibold mb-1">✏️ Draw Mode</p>
-          <p className="text-sm text-muted-foreground">See a word, sketch it. AI recognizes your drawing in real-time.</p>
-        </div>
-        <p className="text-xs text-muted-foreground text-center">You can switch between modes anytime. Both count towards your level!</p>
+    title: 'Pick how you play',
+    description: 'Switch anytime — both count the same.',
+    // A real picker, not a description of one. Whatever is chosen here is
+    // written to lok-lingu-mode and is what "Start playing" launches into.
+    content: (data, setData) => (
+      <div className="grid grid-cols-2 gap-2">
+        {([
+          { id: 'voice', icon: '🎤', name: 'Voice', line: 'Say the word.' },
+          { id: 'draw', icon: '✏️', name: 'Draw', line: 'Sketch the word.' },
+        ] as const).map((m) => {
+          const active = data.mode === m.id;
+          return (
+            <button
+              key={m.id}
+              onClick={() => setData({ ...data, mode: m.id })}
+              className={`rounded-xl border-2 p-4 text-center transition-all ${
+                active
+                  ? 'border-primary bg-primary/10 scale-[1.02]'
+                  : 'border-border bg-card hover:border-primary/40'
+              }`}
+            >
+              <div className="text-3xl mb-1.5">{m.icon}</div>
+              <div className="font-bold text-sm">{m.name}</div>
+              <div className="text-[11px] text-muted-foreground mt-0.5">{m.line}</div>
+            </button>
+          );
+        })}
       </div>
     ),
   },
   {
     id: 'levels',
-    title: 'Levels & Progression',
-    description: 'Words build your level, from 1 to 100',
+    title: 'Levels',
+    description: 'Every correct word moves you up.',
     content: () => (
-      <div className="space-y-4">
-        <div className="relative">
-          <div className="h-2 bg-muted rounded-full overflow-hidden">
-            <motion.div className="h-full bg-primary" initial={{ width: 0 }} animate={{ width: '60%' }} transition={{ duration: 0.8 }} />
-          </div>
-          <p className="text-xs text-muted-foreground mt-2 text-center">Level 60 / 100</p>
+      <div className="space-y-3">
+        <div className="h-2 bg-muted rounded-full overflow-hidden">
+          <motion.div className="h-full bg-primary" initial={{ width: 0 }} animate={{ width: '60%' }} transition={{ duration: 0.8 }} />
         </div>
-        <p className="text-sm text-muted-foreground">
-          Each correct word earns XP. Fill your bar to level up. Reach level 100? You can Prestige and climb again with tougher requirements.
-        </p>
-        <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
-          <p className="text-xs font-semibold text-primary">💡 Prestige unlocks special icons, free skips, and escalating rewards.</p>
-        </div>
+        <p className="text-sm text-muted-foreground">Level 1 to 100, then you can Prestige.</p>
       </div>
     ),
   },
   {
     id: 'prestige',
-    title: 'Prestige & Master Prestige',
-    description: 'After level 100, climb higher and higher',
+    title: 'Prestige',
+    description: 'Hit 100, go again, keep everything.',
     content: () => (
-      <div className="space-y-4">
+      <div className="space-y-2">
         <p className="text-sm text-muted-foreground">
-          Once you hit level 100, you can Prestige. Reset your level to 1, but keep all your unlocked companions, badges, and items. Each prestige requires more words than the last.
-        </p>
-        <p className="text-sm text-muted-foreground">
-          After Prestige 10, choose: retire and unlock everything in the shop, or enter Master Prestige for an even longer climb (levels 1–1000).
+          Your level resets. Companions, badges and items don’t.
         </p>
         <div className="p-3 rounded-lg bg-card border border-border">
-          <p className="text-xs">🏆 Prestige brings:</p>
-          <p className="text-xs text-muted-foreground">• New icons & titles • Free skips • Token bonuses • Exclusive cosmetics</p>
+          <p className="text-xs text-muted-foreground">New icons · Free skips · Token bonuses</p>
         </div>
       </div>
     ),
   },
   {
     id: 'shop',
-    title: 'The Shop',
-    description: 'Earn tokens, buy cosmetics, unlock skins',
+    title: 'Shop',
+    description: 'Tokens buy looks, not advantages.',
     content: () => (
-      <div className="space-y-4">
-        <p className="text-sm text-muted-foreground">
-          Earn 🪙 Tokens every game. Spend them on custom coin skins, themes, fonts, and companion cosmetics. Some are level-gated; others are earned through achievements.
-        </p>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="p-2 rounded bg-card border border-border text-center text-xs">
-            <p className="font-semibold">🪙 Token Skins</p>
-            <p className="text-muted-foreground text-xs">Custom coin look</p>
+      <div className="grid grid-cols-2 gap-2 text-xs">
+        {[
+          ['🪙', 'Token skins'],
+          ['🎨', 'Themes'],
+          ['🌸', 'Seasons'],
+          ['🔤', 'Fonts'],
+        ].map(([icon, label]) => (
+          <div key={label} className="p-2 rounded bg-card border border-border text-center">
+            <div className="text-lg">{icon}</div>
+            <p className="font-semibold mt-0.5">{label}</p>
           </div>
-          <div className="p-2 rounded bg-card border border-border text-center text-xs">
-            <p className="font-semibold">🎨 Themes</p>
-            <p className="text-muted-foreground text-xs">Game UI style</p>
-          </div>
-          <div className="p-2 rounded bg-card border border-border text-center text-xs">
-            <p className="font-semibold">🔤 Fonts</p>
-            <p className="text-muted-foreground text-xs">Word rendering</p>
-          </div>
-          <div className="p-2 rounded bg-card border border-border text-center text-xs">
-            <p className="font-semibold">👥 Companions</p>
-            <p className="text-muted-foreground text-xs">Cute mascots</p>
-          </div>
-        </div>
+        ))}
       </div>
     ),
   },
   {
     id: 'roadmap',
-    title: 'Roadmap & Achievements',
-    description: 'Track all your progress and rewards',
+    title: 'Roadmap',
+    description: 'Companions, badges, achievements.',
     content: () => (
-      <div className="space-y-4">
-        <p className="text-sm text-muted-foreground">
-          The Roadmap shows your journey: levels, companions collected, badges earned, and achievements unlocked. Special challenges like "Thousand Club" (1000 words in one session) grant unique rewards.
+      <div className="p-3 rounded-lg bg-card border border-border">
+        <p className="text-xs text-muted-foreground">
+          Everything you’ve unlocked, and what’s next.
         </p>
-        <div className="p-3 rounded-lg bg-card border border-border">
-          <p className="text-xs font-semibold mb-1">📊 Stats Page</p>
-          <p className="text-xs text-muted-foreground">Word counts, prestige history, language breakdown, and untouched languages — all at a glance.</p>
-        </div>
       </div>
     ),
   },
   {
     id: 'journal',
-    title: 'Learning Journal',
-    description: 'Annotate words, create study sets',
+    title: 'Journal',
+    description: 'Words you miss come back sooner.',
     content: () => (
-      <div className="space-y-4">
+      <div className="space-y-2">
         <p className="text-sm text-muted-foreground">
-          Click "Add note" when you answer a word correctly to jot down mnemonics, tips, or personal observations. Create custom study sets to organize words by topic.
+          Add notes to any word, and check Review to see what’s giving you trouble.
         </p>
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="p-2 rounded bg-card border border-border">
-            <p className="font-semibold mb-1">📝 Notes</p>
-            <p className="text-muted-foreground">Per-word annotations</p>
-          </div>
-          <div className="p-2 rounded bg-card border border-border">
-            <p className="font-semibold mb-1">📚 Sets</p>
-            <p className="text-muted-foreground">Custom word groups</p>
-          </div>
-        </div>
       </div>
     ),
   },
   {
     id: 'ready',
-    title: 'Ready to Learn?',
-    description: 'You\'re all set. Let\'s go!',
+    title: 'That’s it',
+    description: 'Go and learn something.',
     content: () => (
-      <div className="text-center space-y-4">
-        <p className="text-4xl">🚀</p>
-        <p className="text-base text-muted-foreground">
-          Head to Home, pick your mode, and start speaking or sketching. Your level awaits!
-        </p>
-        <p className="text-xs text-muted-foreground italic">
-          You can re-run this tour anytime from Settings.
-        </p>
+      <div className="text-center space-y-3 py-2">
+        <p className="text-5xl">🚀</p>
+        <p className="text-xs text-muted-foreground italic">Re-run this tour from Settings.</p>
       </div>
     ),
   },
@@ -236,7 +206,7 @@ export function OnboardingPage({ onDone }: { onDone?: () => void } = {}) {
   const { userId, saveUser } = useUser();
   const createUser = useCreateUser();
   const [step, setStep] = useState(0);
-  const [data, setData] = useState({ username: '', language: 'es' });
+  const [data, setData] = useState<OnboardingData>({ username: '', language: 'es', mode: 'voice' });
 
   const current = STEPS[step];
   /**
@@ -261,12 +231,19 @@ export function OnboardingPage({ onDone }: { onDone?: () => void } = {}) {
    * that id — so runs silently failed to reach the leaderboard and local
    * scores were filed under a hardcoded fallback id.
    */
-  const finish = () => {
+  const finish = (play = false) => {
     setOnboardingComplete();
     localStorage.setItem('lok-lingu-lang', data.language);
+    localStorage.setItem('lok-lingu-mode', data.mode);
     const name = data.username.trim();
 
     const close = () => {
+      // "Start playing" goes straight into the mode they picked, rather
+      // than dropping them on home to choose all over again.
+      if (play) {
+        navigate(data.mode === 'voice' ? '/game' : '/draw');
+        return;
+      }
       if (onDone) onDone();
       else navigate('/');
     };
@@ -297,11 +274,11 @@ export function OnboardingPage({ onDone }: { onDone?: () => void } = {}) {
   };
 
   const handleNext = () => {
-    if (isLast) finish();
+    if (isLast) finish(true);
     else setStep(Math.min(step + 1, STEPS.length - 1));
   };
 
-  const handleSkip = () => finish();
+  const handleSkip = () => finish(false);
 
   return (
     // Translucent rather than an opaque page, so the home screen stays
@@ -379,7 +356,7 @@ export function OnboardingPage({ onDone }: { onDone?: () => void } = {}) {
                   That’s everything you need. The rest is optional — and it’s
                   always in Settings.
                 </p>
-                <Button onClick={finish} className="w-full">
+                <Button onClick={() => finish(true)} className="w-full">
                   Start playing
                 </Button>
                 <div className="flex gap-2">
