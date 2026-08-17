@@ -260,17 +260,10 @@ export const DrawCanvas = forwardRef<DrawCanvasHandle, DrawCanvasProps>(
            * snapshotStrokes() hands to the recogniser.
            */
           /*
-           * Height comes from the `draw-canvas-sized` class (40dvh, with a
-           * 40vh fallback) rather than an inline style, so it can carry the
-           * @supports upgrade — see index.css for why `vh` alone is wrong on
-           * phones. Not `min(40vh, 100%)` either: the wrapper is `w-fit` with
-           * auto height, so a percentage height has no definite basis, the
-           * min() collapses to auto, and height silently falls back to
-           * width x aspect-ratio (measured 492.5px = 54.7% of a 900px
-           * viewport — the original bug, unchanged).
-           *
-           * maxWidth still protects narrow screens: if it binds, the aspect
-           * ratio shrinks height to match rather than overflowing.
+           * Height comes from the `draw-canvas-sized` class, which fills the
+           * leftover height of its `flex-1` wrapper — see index.css for the
+           * full reasoning, including why width must never be the binding
+           * constraint. Width is derived from that height via aspect-ratio.
            */
           width: 'auto',
           maxWidth: '100%',

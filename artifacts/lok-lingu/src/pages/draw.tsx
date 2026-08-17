@@ -598,7 +598,17 @@ export default function Draw() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className={`w-full flex flex-col gap-3 transition-all duration-300 ${expanded ? 'max-w-2xl' : 'max-w-md'}`}
+              /* `h-full` so this column inherits the scrollport's definite
+                 height instead of hugging its content. That is what gives the
+                 canvas wrapper's `flex-1` real leftover space to claim, and so
+                 what makes the canvas adapt to the device rather than taking a
+                 fixed share of it. */
+              className={`w-full h-full flex flex-col gap-3 transition-all duration-300 ${expanded ? 'max-w-2xl' : 'max-w-md'}`}
+              /* Publish the column's width cap so the canvas can bound its
+                 height by the width actually available to it. Kept in step
+                 with the max-w-* class above — if these disagree the canvas
+                 ratio distorts, so they are derived from the same flag. */
+              style={{ ['--draw-col-max' as string]: expanded ? '42rem' : '28rem' }}
             >
               {/* The same component voice mode uses, so the hit/miss
                   reactions are identical by construction. Always rendered —
@@ -623,12 +633,18 @@ export default function Draw() {
                   rotate: [-2, 2, -1.5, 1.5, -1, 1, 0]
                 } : { x: 0, rotate: 0 }}
                 transition={{ duration: 0.5, ease: 'easeInOut' }}
-                // `w-fit`, not `w-full`: the canvas now sizes itself from
-                // viewport height, so the frame shrinks to whatever it needs.
-                // The previous `maxWidth: min(100%, 60vh)` here was inert on
-                // phones — it capped *width*, and 60vh never binds on a column
-                // only ~400px wide, so it constrained nothing at all.
-                className={`relative rounded-xl border-2 overflow-hidden transition-colors duration-300 mx-auto w-fit ${
+                // `flex-1` claims whatever height the word and controls leave
+                // over, so the drawing area is as large as each device allows.
+                //
+                // `min-h-[10rem]`, deliberately not `min-h-0`: this wrapper is
+                // `overflow-hidden`, so letting flexbox squeeze it below the
+                // canvas would silently *crop* the drawing surface into a dead
+                // zone you could draw in but never see. With a floor, an
+                // extremely short screen overflows and scrolls instead — and
+                // the Done row is sticky, so it stays reachable.
+                //
+                // `w-fit`: width follows from the canvas's own aspect ratio.
+                className={`relative rounded-xl border-2 overflow-hidden transition-colors duration-300 mx-auto w-fit flex-1 min-h-[10rem] ${
                   status === 'error'
                     ? 'border-destructive shadow-lg shadow-destructive/50'
                     : status === 'success'

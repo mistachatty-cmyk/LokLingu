@@ -4216,16 +4216,68 @@
   height: 100vh;
 }
 
+/*
+ * The canvas fills the space the word and controls leave over, rather than
+ * claiming a fixed share of the screen. Its wrapper is `flex-1` inside a
+ * column of definite height, so `height: 100%` here resolves against real
+ * leftover pixels — which is what makes this adapt to any device instead of
+ * being a proportion that happens to fit some of them.
+ *
+ * The `min()` caps height so that WIDTH can never become the binding
+ * constraint. Width is derived from height through `aspect-ratio`, so if
+ * `max-width` ever clamped it the 4:5 ratio would break — and `pos()` maps
+ * pointer x/y by independent scale factors against the 400x500 bitmap, so a
+ * broken ratio skews every stroke and the image sent to recognition.
+ *
+ * The available width is the COLUMN's, not the viewport's: the column is
+ * `max-w-md` (28rem), or `max-w-2xl` (42rem) when expanded, published here as
+ * --draw-col-max. Capping against `100vw` alone was measurably wrong — at
+ * 820x1180 it permitted a 985px height while the column was only 444px wide,
+ * and the rendered ratio came out 0.5985 instead of 0.8. 2rem is the px-4
+ * padding on both sides; 1.25 is 5/4.
+ *
+ * The 4px is the wrapper's `border-2` on both sides. `max-width: 100%` resolves
+ * against the wrapper's *content* box, so ignoring the border left the canvas
+ * 4px narrower than the height implied — measurably 444px wide against a 560px
+ * height, a ratio of 0.7929. Small, but it is real anisotropic skew in the
+ * bitmap handed to the recogniser, not a rounding artefact.
+ *
+ * `100%` inside min() is safe here precisely because the parent height is
+ * definite. The earlier `min(40vh, 100%)` failed because that parent was
+ * `w-fit` with auto height, leaving the percentage with no basis and
+ * collapsing the whole expression to auto.
+ */
 .draw-canvas-sized {
-  height: 40vh;
+  height: min(
+    100%,
+    calc((min(100vw - 2rem, var(--draw-col-max, 28rem)) - 4px) * 1.25)
+  );
+}
+
+/*
+ * Draw mode shares its screen with a canvas, so the word has to respect the
+ * viewport's HEIGHT as well as its width. gameWordFontSize() builds
+ * `clamp(floor, 15vw, ceiling)` — width-responsive only, so on a short screen
+ * the word stayed ~47px and ate space the drawing area needed.
+ *
+ * Capping against `dvh` scales it continuously with the space actually
+ * available: min() means the existing width-based value still wins on any
+ * normal-height screen, and only short ones get a smaller word. Scoped under
+ * .draw-screen on purpose — voice mode has no canvas to share with and should
+ * keep its full-size word.
+ */
+.draw-screen .game-word {
+  font-size: min(var(--word-size-mobile, 4.5rem), 9dvh);
+}
+
+@media (min-width: 768px) {
+  .draw-screen .game-word {
+    font-size: min(var(--word-size-desktop, 8rem), 9dvh);
+  }
 }
 
 @supports (height: 1dvh) {
   .draw-screen {
     height: 100dvh;
-  }
-
-  .draw-canvas-sized {
-    height: 40dvh;
   }
 }
