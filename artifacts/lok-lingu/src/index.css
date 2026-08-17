@@ -4185,3 +4185,47 @@
     animation: none;
   }
 }
+
+/*
+ * Draw mode sizing, in real visible pixels.
+ *
+ * `vh` is the wrong unit on phones. In mobile Safari — and worse, in the
+ * in-app browsers used by Instagram/X/etc — `vh` resolves against the *layout*
+ * viewport, which excludes the URL bar and the bottom toolbar. A canvas set to
+ * `40vh` measured ~65% of the actually visible area on an iPhone in a webview,
+ * which pushed the Clear/Done row completely off screen.
+ *
+ * `dvh` is the dynamic viewport height: the space really on screen right now,
+ * shrinking as browser chrome appears. Declared with a plain `vh` first so any
+ * engine without `dvh` keeps a sane value, then upgraded inside @supports.
+ * Two separate declarations, deliberately — NOT `min(40vh, 40dvh)`, because an
+ * unsupported unit inside min() invalidates the whole expression and silently
+ * drops back to auto.
+ */
+/*
+ * `height`, not `min-height`. With min-height the screen grows past the
+ * viewport whenever the content is taller — measured 601.9px inside a 420px
+ * window. The `flex-1 min-h-0 overflow-y-auto` column grows with it, so it
+ * never overflows *internally*, its scrollbar never activates, `position:
+ * sticky` has no scrollport to pin against, and the excess is silently clipped
+ * by the ancestor `overflow: hidden`. The controls below the fold were then
+ * neither visible nor scrollable. A bounded height makes the inner column the
+ * real scroller.
+ */
+.draw-screen {
+  height: 100vh;
+}
+
+.draw-canvas-sized {
+  height: 40vh;
+}
+
+@supports (height: 1dvh) {
+  .draw-screen {
+    height: 100dvh;
+  }
+
+  .draw-canvas-sized {
+    height: 40dvh;
+  }
+}

@@ -243,7 +243,7 @@ export const DrawCanvas = forwardRef<DrawCanvasHandle, DrawCanvasProps>(
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerUp}
         onPointerCancel={handlePointerUp}
-        className="rounded-xl"
+        className="rounded-xl draw-canvas-sized"
         style={{
           /*
            * Sized from HEIGHT, not width.
@@ -260,17 +260,18 @@ export const DrawCanvas = forwardRef<DrawCanvasHandle, DrawCanvasProps>(
            * snapshotStrokes() hands to the recogniser.
            */
           /*
-           * Plain `40vh`, deliberately NOT `min(40vh, 100%)`. The wrapper is
-           * `w-fit` with auto height, so a percentage height has no definite
-           * basis to resolve against; the whole min() then collapses to auto
-           * and height falls out of width x aspect-ratio instead. Measured on
-           * a 430x900 viewport that produced 492.5px — 54.7% of the screen,
-           * i.e. the original bug, silently unchanged.
+           * Height comes from the `draw-canvas-sized` class (40dvh, with a
+           * 40vh fallback) rather than an inline style, so it can carry the
+           * @supports upgrade — see index.css for why `vh` alone is wrong on
+           * phones. Not `min(40vh, 100%)` either: the wrapper is `w-fit` with
+           * auto height, so a percentage height has no definite basis, the
+           * min() collapses to auto, and height silently falls back to
+           * width x aspect-ratio (measured 492.5px = 54.7% of a 900px
+           * viewport — the original bug, unchanged).
            *
-           * maxWidth below still protects narrow screens: if it binds, the
-           * aspect ratio shrinks height to match rather than overflowing.
+           * maxWidth still protects narrow screens: if it binds, the aspect
+           * ratio shrinks height to match rather than overflowing.
            */
-          height: '40vh',
           width: 'auto',
           maxWidth: '100%',
           aspectRatio: '4/5',

@@ -447,8 +447,17 @@ export default function Draw() {
 
   return (
     <div
-      className="relative min-h-screen w-full bg-background overflow-hidden flex flex-col select-none"
-      style={{ touchAction: 'none', overscrollBehavior: 'none' } as React.CSSProperties}
+      className="relative draw-screen w-full bg-background overflow-hidden flex flex-col select-none"
+      /*
+       * `pan-y`, not `none`. Effective touch-action is the intersection across
+       * all ancestors, so `none` here silently disabled finger scrolling for
+       * the entire subtree — which made the `overflow-y-auto` column below
+       * inert and left the Clear/Done row unreachable whenever the layout ran
+       * taller than the screen. `pan-y` keeps vertical scrolling available
+       * while still blocking pinch-zoom and double-tap-zoom; the canvas itself
+       * sets `touch-action: none` locally, so drawing is unaffected.
+       */
+      style={{ touchAction: 'pan-y', overscrollBehavior: 'none' } as React.CSSProperties}
     >
       {/* Draw mode never mounted this, so equipping a Vault skin here
           silently rendered nothing at all. */}
@@ -568,7 +577,7 @@ export default function Draw() {
           word lives. That is why the word kept disappearing. Padding-top
           reserves the absolutely-positioned header's height so nothing
           renders underneath it. */}
-      <div className="flex-1 min-h-0 overflow-y-auto flex flex-col items-center justify-start px-4 pt-28 pb-6">
+      <div className="flex-1 min-h-0 overflow-y-auto flex flex-col items-center justify-start px-4 pt-20 pb-2">
         <AnimatePresence mode="wait">
           {!gameOver ? (
             // NOT keyed by wordIndex. It was, which meant every word change
@@ -589,7 +598,7 @@ export default function Draw() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className={`w-full flex flex-col gap-4 transition-all duration-300 ${expanded ? 'max-w-2xl' : 'max-w-md'}`}
+              className={`w-full flex flex-col gap-3 transition-all duration-300 ${expanded ? 'max-w-2xl' : 'max-w-md'}`}
             >
               {/* The same component voice mode uses, so the hit/miss
                   reactions are identical by construction. Always rendered —
@@ -677,25 +686,31 @@ export default function Draw() {
                   screen, with `touch-action: none` on the root meaning they
                   could not even be scrolled to. The two controls the game
                   cannot be played without now come first and never wrap. */}
-              <div className="flex items-center justify-center gap-3">
+              {/* `sticky bottom-0` inside the scrolling column: Done is the
+                  one control the game cannot proceed without, so it stays on
+                  screen no matter how tall the rest of the layout runs or how
+                  much browser chrome a mobile in-app webview steals. The
+                  backdrop keeps the canvas from showing through as content
+                  scrolls underneath. */}
+              <div className="sticky bottom-0 z-20 -mx-4 px-4 py-3 flex items-center justify-center gap-3 bg-gradient-to-t from-background via-background to-transparent">
                 <Button
                   variant="outline"
-                  size="sm"
                   onClick={handleClear}
-                  className="gap-2 flex-1 max-w-[10rem]"
+                  className="gap-2 flex-1 max-w-[8rem]"
                 >
                   <Eraser className="w-4 h-4" /> Clear
                 </Button>
+                {/* Visually dominant: it is the primary action on the screen. */}
                 <Button
-                  size="sm"
+                  size="lg"
                   onClick={() => void handleDone()}
-                  className="gap-2 flex-1 max-w-[10rem]"
+                  className="gap-2 flex-[2] max-w-[14rem] text-base font-black shadow-lg shadow-primary/30"
                   disabled={status === 'success' || status === 'error' || isRecognizing}
                 >
                   {isRecognizing ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
-                    <Check className="w-4 h-4" />
+                    <Check className="w-5 h-5" />
                   )}
                   {isRecognizing ? 'Checking…' : 'Done'}
                 </Button>
