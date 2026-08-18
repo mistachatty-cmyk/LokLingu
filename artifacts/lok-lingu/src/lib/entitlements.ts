@@ -92,7 +92,7 @@ export const TIERS: TierDef[] = [
     blurb: 'Once. Then never again.',
     monthly: null,
     annual: null,
-    oneTime: 200,
+    oneTime: 500,
     perks: [
       'Everything in Lok Passport, permanently',
       'All future apps and updates included',
