@@ -34,6 +34,7 @@ import {
 import { SessionSummaryCard } from '@/components/session-summary';
 import { GameWord } from '@/components/game-word';
 import { TokenPhysicsLayer, spawnTokenAt } from '@/components/token-physics-layer';
+import { CompanionWidget } from '@/components/companion-widget';
 
 type NormalWord = { word: string; translation: string; pronunciation?: string };
 
@@ -633,6 +634,7 @@ export default function Game() {
           that skin is equipped. */}
       <TokenVaultLayer animKey={tokenLabel.key} />
       <TokenPhysicsLayer />
+      <CompanionWidget side="left" />
 
       {summary && (
         <SessionSummaryCard

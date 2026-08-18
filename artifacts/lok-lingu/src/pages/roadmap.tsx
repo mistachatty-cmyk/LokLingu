@@ -7,7 +7,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useEconomy } from '@/hooks/use-economy';
 import { getLifetimeWords } from '@/lib/offline-data';
 import { wordsForLevel, MAX_LEVEL, LEVEL_PERKS, rankTitle } from '@/lib/levels';
-import { currentBestStreak, updateCompanionUnlocks, getUnlockedCompanions, getUnlockedBadges, checkPolyglotBadge, getUnlockedAchievements, payReearnBonuses } from '@/hooks/use-celebration';
+import { currentBestStreak, updateCompanionUnlocks, getUnlockedCompanions, getUnlockedBadges, checkPolyglotBadge, getUnlockedAchievements, payReearnBonuses, getEquippedCompanion, setEquippedCompanion } from '@/hooks/use-celebration';
 import { EMBLEMS, earnedEmblems } from '@/lib/emblems';
 import {
   evaluate, MATCH_MILESTONES, TOTAL_MILESTONES, CONCEPT_MILESTONES, LOK_COMPANIONS, TIER_ANIMATION,
@@ -357,6 +357,7 @@ function PrestigeLadder({ prestige }: { prestige: number }) {
 
 function GalleryCard({
   glyph, title, at, unit, unlocked, distance, animation, tier,
+  equippable, equipped, onToggleEquip,
 }: {
   glyph: string;
   title: string;
@@ -366,19 +367,26 @@ function GalleryCard({
   distance: number;
   animation?: string | null;
   tier?: string;
+  /** Companion cards only: shows the equip toggle once unlocked. */
+  equippable?: boolean;
+  equipped?: boolean;
+  onToggleEquip?: () => void;
 }) {
   const reduce = useReducedMotion();
   // How close a locked card is to unlocking, for the progress sliver.
   const progress = Math.min(1, Math.max(0, 1 - distance / Math.max(1, at)));
   const glow = unlocked && tier === 'mythic';
+  const showEquip = unlocked && equippable;
   return (
     <motion.div
       initial={reduce ? false : { opacity: 0, scale: 0.92 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.25 }}
+      onClick={showEquip ? onToggleEquip : undefined}
+      role={showEquip ? 'button' : undefined}
       className={`relative flex aspect-square flex-col items-center justify-center gap-1.5 overflow-hidden rounded-2xl border p-3 text-center ${
         unlocked ? 'border-primary/40 bg-gradient-to-br from-primary/10 to-card' : 'border-border bg-card'
-      }`}
+      } ${equipped ? 'ring-2 ring-primary' : ''} ${showEquip ? 'cursor-pointer' : ''}`}
       style={glow ? { boxShadow: '0 0 20px hsl(var(--primary) / 0.25)' } : undefined}
     >
       <span
@@ -389,9 +397,15 @@ function GalleryCard({
       </span>
       <span className="line-clamp-1 text-[11px] font-black uppercase tracking-wide">{title}</span>
       {unlocked ? (
-        <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-primary">
-          <Check className="h-2.5 w-2.5" /> earned
-        </span>
+        showEquip ? (
+          <span className={`flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest ${equipped ? 'text-primary' : 'text-muted-foreground'}`}>
+            <Check className="h-2.5 w-2.5" /> {equipped ? 'equipped' : 'equip'}
+          </span>
+        ) : (
+          <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-primary">
+            <Check className="h-2.5 w-2.5" /> earned
+          </span>
+        )
       ) : (
         <span className="font-mono text-[9px] tabular-nums text-muted-foreground">
           {distance.toLocaleString()} {unit} to go
@@ -415,12 +429,15 @@ function GalleryCard({
 /** The graphic page: a trophy-case grid of every earnable, art-first. */
 function Gallery({
   totalWords, level, unlockedCompanions, unlockedBadges, unlockedAchievements,
+  equippedCompanion, onToggleEquip,
 }: {
   totalWords: number;
   level: number;
   unlockedCompanions: string[];
   unlockedBadges: string[];
   unlockedAchievements: string[];
+  equippedCompanion: string | null;
+  onToggleEquip: (companionId: string) => void;
 }) {
   return (
     <div className="space-y-6">
@@ -444,6 +461,9 @@ function Gallery({
                 distance={Math.max(0, m.at - totalWords)}
                 animation={isUnlocked && m.tier ? TIER_ANIMATION[m.tier] : null}
                 tier={m.tier}
+                equippable
+                equipped={equippedCompanion === companionId}
+                onToggleEquip={() => onToggleEquip(companionId)}
               />
             );
           })}
@@ -535,6 +555,9 @@ function Gallery({
                 distance={isUnlocked ? 0 : 1}
                 animation={isUnlocked && m.tier ? TIER_ANIMATION[m.tier] : null}
                 tier={m.tier}
+                equippable
+                equipped={equippedCompanion === companionId}
+                onToggleEquip={() => onToggleEquip(companionId)}
               />
             );
           })}
@@ -585,6 +608,7 @@ export default function Roadmap() {
   const { earned } = useEconomy();
   const [view, setView] = useState<'gallery' | 'list'>('gallery');
   const [unlockedCompanions, setUnlockedCompanions] = useState<string[]>([]);
+  const [equippedCompanion, setEquippedCompanionState] = useState<string | null>(null);
   const [unlockedBadges, setUnlockedBadges] = useState<string[]>([]);
   const [unlockedAchievements, setUnlockedAchievements] = useState<string[]>([]);
   const [prestige, setPrestige] = useState(0);
@@ -611,6 +635,7 @@ export default function Roadmap() {
     updateAchievementUnlocks();
     payReearnBonuses(wordsInCurrentCycle(totalWords), currentPrestige(), payReearnBonus);
     setUnlockedCompanions(getUnlockedCompanions());
+    setEquippedCompanionState(getEquippedCompanion());
     setUnlockedBadges(getUnlockedBadges());
     setUnlockedAchievements(getUnlockedAchievements());
     setPrestige(currentPrestige());
@@ -622,6 +647,12 @@ export default function Roadmap() {
     if (result != null) {
       setPrestige(result);
     }
+  };
+
+  const handleToggleEquip = (companionId: string) => {
+    const next = equippedCompanion === companionId ? null : companionId;
+    setEquippedCompanion(next);
+    setEquippedCompanionState(next);
   };
 
   const handleFork = (path: 'retire' | 'master') => {
@@ -694,6 +725,8 @@ export default function Roadmap() {
                 unlockedCompanions={unlockedCompanions}
                 unlockedBadges={unlockedBadges}
                 unlockedAchievements={unlockedAchievements}
+                equippedCompanion={equippedCompanion}
+                onToggleEquip={handleToggleEquip}
               />
             </div>
           </motion.div>

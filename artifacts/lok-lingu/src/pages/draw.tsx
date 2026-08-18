@@ -29,6 +29,7 @@ import { GameWord, type WordFeedback } from '@/components/game-word';
 import { TokenEarnedLabel } from '@/components/token-earned-label';
 import { TokenVaultLayer } from '@/components/token-vault-layer';
 import { TokenPhysicsLayer, spawnTokenAt } from '@/components/token-physics-layer';
+import { CompanionWidget } from '@/components/companion-widget';
 import { FALLBACK_WORDS, saveLocalScore } from '@/lib/offline-data';
 import { speakWord, matchWord } from '@/lib/speech-utils';
 import { useSpeechEngine } from '@/hooks/use-speech-engine';
@@ -463,6 +464,7 @@ export default function Draw() {
           silently rendered nothing at all. */}
       <TokenVaultLayer animKey={tokenLabel.key} />
       <TokenPhysicsLayer />
+      <CompanionWidget side="left" />
 
       {wordPopActive && <WordPop onComplete={() => setWordPopActive(false)} />}
 

@@ -11,6 +11,7 @@ const STORAGE_COMPANION_PREFIX = 'lok-lingu-companion-';
 const STORAGE_BADGE_PREFIX = 'lok-lingu-badge-';
 const STORAGE_SESSION_BEST = 'lok-lingu-session-best-words';
 const STORAGE_ACHIEVEMENT_PREFIX = 'lok-lingu-achievement-';
+const STORAGE_EQUIPPED_COMPANION = 'lok-lingu-equipped-companion';
 
 /**
  * High-water mark for the in-run "Hundred" ladder. Without this, the
@@ -98,6 +99,25 @@ export function getUnlockedAchievements(): string[] {
 
 export function setAchievementUnlocked(achievementId: string): void {
   localStorage.setItem(STORAGE_ACHIEVEMENT_PREFIX + achievementId, 'true');
+}
+
+/**
+ * The one companion riding along on the game screen (game.tsx/draw.tsx),
+ * chosen from the roadmap gallery. Mirrors STORAGE_ACTIVE (celebration
+ * pick) exactly: a single id, null meaning none equipped. Equipping an
+ * unlocked companion doesn't re-check unlock state here — callers (the
+ * gallery) only ever call this from an already-unlocked card.
+ */
+export function getEquippedCompanion(): string | null {
+  return localStorage.getItem(STORAGE_EQUIPPED_COMPANION) || null;
+}
+
+export function setEquippedCompanion(companionId: string | null): void {
+  if (companionId) {
+    localStorage.setItem(STORAGE_EQUIPPED_COMPANION, companionId);
+  } else {
+    localStorage.removeItem(STORAGE_EQUIPPED_COMPANION);
+  }
 }
 
 // Companion milestones: at-threshold pairs (sorted by words)
