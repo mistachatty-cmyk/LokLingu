@@ -24,6 +24,7 @@ import {
   Map as MapIcon,
   User as UserIcon,
   Heart as HeartIcon,
+  Mail,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +33,7 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { GlitchText } from '@/components/glitch-text';
 import { FontPicker } from '@/components/font-picker';
 import { SavePanel } from '@/components/save-panel';
+import { WaitlistDialog } from '@/components/waitlist-dialog';
 import { VaultExplainer } from '@/components/vault-explainer';
 import { DevSettings } from '@/components/dev-settings';
 import { announceSeasonChange } from '@/components/season-layer';
@@ -138,6 +140,7 @@ export default function Home() {
   const [experimentalMap, setExperimentalMap] = useState(
     () => localStorage.getItem('lok-lingu-experimental-map') === 'true',
   );
+  const [showWaitlist, setShowWaitlist] = useState(false);
   const [navStyle, setNavStyle] = useState<'classic' | 'morphic'>(
     () => (localStorage.getItem('lok-lingu-nav-style') as 'classic' | 'morphic') || 'classic',
   );
@@ -428,6 +431,23 @@ export default function Home() {
 
                 {/* Save / restore / cloud sync. */}
                 <SavePanel userId={userId ?? null} />
+
+                {/* Sits next to SavePanel deliberately: that's where a player
+                    finds out cloud save isn't fully wired up yet, so it's the
+                    moment the waitlist is actually relevant. Opt-in only —
+                    nothing opens this on its own. */}
+                <button
+                  onClick={() => setShowWaitlist(true)}
+                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg border border-border hover:border-primary/40 hover:bg-accent transition-all text-left"
+                >
+                  <div className="flex items-center space-x-2">
+                    <Mail className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Join the waitlist</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground font-mono uppercase tracking-wider">
+                    pre-launch
+                  </span>
+                </button>
 
                 {/* Default language */}
                 <div className="space-y-2">
@@ -1098,6 +1118,8 @@ export default function Home() {
           Tap your avatar to access profile & settings
         </p>
       </div>
+
+      <WaitlistDialog open={showWaitlist} onOpenChange={setShowWaitlist} />
     </div>
   );
 }
