@@ -1,0 +1,24 @@
+{
+  "//": [
+    "Serverless functions compile separately from the Vite app and MUST emit JS.",
+    "Deliberately standalone rather than extending ../tsconfig.json: that config",
+    "is built for the browser bundle and sets noEmit:true (forced by its",
+    "allowImportingTsExtensions), so Vercel's Node builder picked it up and failed",
+    "the deploy with 'api/waitlist.ts: Emit skipped'. The app's tsconfig only",
+    "includes src/**/*, so this directory is invisible to `pnpm run typecheck`",
+    "and needs its own settings regardless."
+  ],
+  "compilerOptions": {
+    "target": "es2022",
+    "lib": ["es2023"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "types": ["node"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": false
+  },
+  "include": ["**/*.ts"]
+}
