@@ -40,6 +40,7 @@ import {
   summarise,
   type SessionEntry,
 } from '@/lib/review';
+import { HEARTS_KEY, getConsumableCount, setConsumableCount } from '@/lib/consumables';
 
 const INK_COLORS = [
   { label: 'Primary', value: 'hsl(var(--primary))' },
@@ -154,6 +155,7 @@ export default function Draw() {
   const [tokenLabel, setTokenLabel] = useState<{ key: number; text: string }>({ key: 0, text: '' });
 
   const canvasRef = useRef<DrawCanvasHandle>(null);
+  const lifetimeBase = useRef(parseInt(localStorage.getItem('lok-lingu-lifetime-tokens') || '0'));
 
   // Refs for stale-closure safety inside the speech onResult callback
   const statusRef = useRef(status);
@@ -242,6 +244,20 @@ export default function Draw() {
     setLives(newLives);
     setTimeout(() => {
       if (heartsMode && newLives <= 0) {
+        /*
+         * Both sides kept: the heartsMode gate (so survival can still be
+         * turned off in settings) AND main's banked-heart rescue. A player
+         * who bought hearts in the shop spends one to continue instead of
+         * losing the run; only when the bank is empty does it end.
+         */
+        const banked = getConsumableCount(HEARTS_KEY);
+        if (banked > 0) {
+          setConsumableCount(HEARTS_KEY, banked - 1);
+          setLives(1);
+          canvasRef.current?.clear();
+          setStatus('idle');
+          return;
+        }
         setGameOver(true);
         saveLocalScore({ userId: userId || 1, language, category, count });
         if (userId) {
@@ -539,6 +555,9 @@ export default function Draw() {
 
           <div ref={tokenAnchorRef} className="relative text-right">
             <TokenEarnedLabel animKey={tokenLabel.key} label={tokenLabel.text} />
+            <span className="text-[10px] font-mono tracking-widest opacity-50 mb-0.5 select-none block">
+              🪙 {(lifetimeBase.current + celebration.tokensEarnedRef.current).toLocaleString()}
+            </span>
             <div className="flex items-center justify-end gap-2">
               <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Streak</span>
               {celebration.boostActive && (
@@ -578,7 +597,11 @@ export default function Draw() {
           `overflow-hidden` then discards the top half — which is where the
           word lives. That is why the word kept disappearing. Padding-top
           reserves the absolutely-positioned header's height so nothing
-          renders underneath it. */}
+          renders underneath it.
+
+          Kept over main's `overflow-hidden` on purpose: that variant clips
+          the overflow instead of scrolling it, which is exactly what put the
+          Clear/Done row off-screen and unreachable on a phone. */}
       <div className="flex-1 min-h-0 overflow-y-auto flex flex-col items-center justify-start px-4 pt-20 pb-2">
         <AnimatePresence mode="wait">
           {!gameOver ? (

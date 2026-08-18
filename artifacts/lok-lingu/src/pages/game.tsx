@@ -38,6 +38,15 @@ import { CompanionWidget } from '@/components/companion-widget';
 
 type NormalWord = { word: string; translation: string; pronunciation?: string };
 
+/** Five randomised miss animations — a fresh one is picked each wrong answer. */
+const MISS_VARIANTS = [
+  { x: [-16, 16, -11, 11, -6, 6, 0] },
+  { x: [-10, 10, -7, 7, -4, 4, 0], y: [0, -16, 0, -8, 0], scale: [1, 0.91, 1.05, 0.97, 1] },
+  { x: [-20, 0, 18, -12, 9, -5, 0], skewX: [0, 12, -9, 6, -3, 0] },
+  { rotate: [-9, 9, -6, 6, -3, 3, 0], scale: [1, 0.88, 1.08, 0.95, 1] },
+  { scale: [1, 0.72, 1.2, 0.91, 1.05, 1], x: [-8, 8, -5, 5, 0] },
+];
+
 function normalizeWord(raw: any): NormalWord | null {
   if (raw == null) return null;
   if (typeof raw === 'string') return raw.trim() ? { word: raw.trim(), translation: '' } : null;
@@ -249,6 +258,8 @@ export default function Game() {
   userIdRef.current = userId;
   const submitRef = useRef(submitScore);
   submitRef.current = submitScore;
+  const missVariantRef = useRef(0);
+  const lifetimeBase = useRef(parseInt(localStorage.getItem('lok-lingu-lifetime-tokens') || '0'));
 
   const commitRun = useCallback(() => {
     const count = streakRef.current;
@@ -319,6 +330,7 @@ export default function Game() {
     }
 
     if (isFinal) {
+      missVariantRef.current = Math.floor(Math.random() * MISS_VARIANTS.length);
       setFeedback('miss');
       // A miss used to vanish without trace. Now it drops the word to box 0,
       // which makes it far likelier to be drawn again shortly.
@@ -691,6 +703,9 @@ export default function Game() {
         </div>
         <div ref={tokenAnchorRef} className="relative flex flex-col items-end">
           <TokenEarnedLabel animKey={tokenLabel.key} label={tokenLabel.text} />
+          <span className="text-[10px] font-mono tracking-widest opacity-50 mb-0.5 select-none">
+            🪙 {(lifetimeBase.current + celebration.tokensEarnedRef.current).toLocaleString()}
+          </span>
           <span className="text-sm tracking-widest uppercase opacity-70">Streak</span>
           <span className="text-4xl font-bold tabular-nums" style={{ color: 'var(--word-color)' }}>
             {streak}
@@ -783,6 +798,7 @@ export default function Game() {
             </>
           )}
         </button>
+
         {devMode && isActive && engine && (
           <span className="text-[10px] font-mono uppercase tracking-widest opacity-40">
             {engine === 'vosk' ? 'offline engine' : 'browser engine'} · {engineNote}

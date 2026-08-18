@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { CELEBRATIONS, CELEBRATION_BY_ID, INTENSITY_CONFIG } from '@/lib/celebrations';
+import { CELEBRATIONS, ALL_CELEBRATION_BY_ID, INTENSITY_CONFIG, addTokenBalance } from '@/lib/celebrations';
 import type { CelebrationDef, CelebrationIntensity, SoundProfile } from '@/lib/celebrations';
 import { earnTokens } from '@/lib/economy';
 import { isDevMode } from '@/lib/dev-mode';
@@ -258,8 +258,17 @@ export function useCelebration() {
     return parseInt(localStorage.getItem('lok-lingu-lifetime-tokens') || '0');
   }, []);
 
-  // Routed through the economy module so the wallet HUD and the shop see
-  // the change immediately — a direct localStorage write is invisible to React.
+  /*
+   * Routed through the economy module, NOT a raw localStorage write.
+   *
+   * main resolved this with a direct setItem plus addTokenBalance(). That
+   * reintroduces the exact bug PROGRESSION.md bans: economy.ts dispatches the
+   * `lok-economy` event on every mutation, and useEconomy() listens for it, so
+   * a bare setItem leaves the wallet HUD and the shop showing a stale balance
+   * until the next remount. earnTokens() covers both halves anyway — balance is
+   * derived as `earned - spent`, so crediting `earned` credits the spendable
+   * balance too, with no second counter to keep in sync.
+   */
   const addLifetimeTokens = useCallback((amount: number) => earnTokens(amount), []);
 
   const stopBoost = useCallback(() => {
@@ -325,7 +334,7 @@ export function useCelebration() {
     }
 
     const celebrationId = localStorage.getItem(STORAGE_ACTIVE) || 'pinata';
-    const celebration = CELEBRATION_BY_ID[celebrationId] || CELEBRATIONS[0];
+    const celebration = ALL_CELEBRATION_BY_ID[celebrationId] || CELEBRATIONS[0];
 
     if (newCount === 5) {
       setBadgeUnlocked('warm');

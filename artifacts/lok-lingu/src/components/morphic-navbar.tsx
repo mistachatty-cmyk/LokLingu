@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'wouter';
-import { Home, Globe, Trophy, User, Palette, Compass, Map, X } from 'lucide-react';
+import { Home, Trophy, User, Palette, Compass, X, Map, Backpack } from 'lucide-react';
 
 interface NavItem {
   href: string;
@@ -17,6 +17,7 @@ const NAV_ITEMS: (NavItem | 'spacer')[] = [
   { href: '/stats', icon: User, label: 'Stats' },
   { href: '/roadmap', icon: Map, label: 'Roadmap' },
   { href: '/themes', icon: Palette, label: 'Themes' },
+  { href: '/inventory', icon: Backpack, label: 'Items' },
 ];
 
 export function MorphicNavbar() {
