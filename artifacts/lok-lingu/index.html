@@ -9,6 +9,16 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Lok Lingu" />
+    <!--
+      iOS "Add to Home Screen" does NOT read manifest.json icons — it looks
+      only for apple-touch-icon, and falls back to a plain color tile with
+      the page's first letter when it's missing. That fallback tile (a flat
+      teal square with "L") is exactly what was showing up; this link is the
+      actual fix, not a nice-to-have alongside the manifest icons below.
+    -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="manifest" href="/manifest.json" />
     <!-- Open Graph -->
     <meta property="og:title" content="Lok Lingu — Infinite Language Arcade" />
