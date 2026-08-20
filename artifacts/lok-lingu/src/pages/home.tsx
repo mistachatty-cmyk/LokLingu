@@ -19,7 +19,6 @@ import {
   ListMusic,
   AlertTriangle,
   Sparkles,
-  Globe,
   Backpack,
   Bug,
   Map as MapIcon,
@@ -137,9 +136,6 @@ export default function Home() {
   );
   const [mode, setMode] = useState<'voice' | 'draw'>(
     () => (localStorage.getItem('lok-lingu-mode') as 'voice' | 'draw') || 'voice',
-  );
-  const [experimentalMap, setExperimentalMap] = useState(
-    () => localStorage.getItem('lok-lingu-experimental-map') === 'true',
   );
   const [showWaitlist, setShowWaitlist] = useState(false);
   const [navStyle, setNavStyle] = useState<'classic' | 'morphic'>(
@@ -855,26 +851,6 @@ export default function Home() {
                       onCheckedChange={(v) => {
                         setDevModeState(v);
                         setDevMode(v);
-                      }}
-                    />
-                  </div>
-
-                  {/* Experimental World Map */}
-                  <div className="flex items-center justify-between px-1">
-                    <div className="flex items-center space-x-2">
-                      <Globe className="w-4 h-4 text-muted-foreground" />
-                      <div>
-                        <span className="text-sm font-medium">World Map</span>
-                        <span className="text-[9px] text-muted-foreground font-mono ml-1.5 uppercase tracking-wider">
-                          Experimental
-                        </span>
-                      </div>
-                    </div>
-                    <Switch
-                      checked={experimentalMap}
-                      onCheckedChange={(v) => {
-                        setExperimentalMap(v);
-                        localStorage.setItem('lok-lingu-experimental-map', String(v));
                       }}
                     />
                   </div>

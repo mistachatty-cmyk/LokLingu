@@ -21,7 +21,6 @@ import LibraryPage from './pages/library';
 import LokSetsPage from './pages/loksets';
 import { CanvasDesignPage } from './pages/canvas-design';
 import { OnboardingPage } from './pages/onboarding';
-import MapPage from './pages/map';
 import SettingsPage from './pages/settings';
 import { LiquidGlassCursor } from '@/components/liquid-glass-cursor';
 import { SeasonLayer } from '@/components/season-layer';
@@ -78,14 +77,6 @@ function Router() {
             router props, which don't match the optional onDone prop used
             when the tour is overlaid on home. */}
         <Route path="/onboarding">{() => <OnboardingPage />}</Route>
-        {/* /map is a second, hardcoded take on the same screen as /roadmap,
-            added on main while this branch extended /roadmap. Both are kept
-            so neither side's work is lost, but only /roadmap is in the nav —
-            two tabs both labelled "Map" would be a coin flip for the player.
-            /roadmap is the one wired to lib/roadmap.ts, so it stays canonical;
-            /map duplicates those thresholds as literals and should be retired
-            once someone confirms nothing else depends on it. */}
-        <Route path="/map" component={MapPage} />
         <Route path="/settings" component={SettingsPage} />
         <Route component={NotFound} />
       </Switch>
