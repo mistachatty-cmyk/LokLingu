@@ -42,7 +42,7 @@ import {
   summarise,
   type SessionEntry,
 } from '@/lib/review';
-import { HEARTS_KEY, getConsumableCount, setConsumableCount } from '@/lib/consumables';
+import { consumeHeart } from '@/lib/economy';
 
 const INK_COLORS = [
   { label: 'Primary', value: 'hsl(var(--primary))' },
@@ -271,10 +271,17 @@ export default function Draw() {
          * turned off in settings) AND main's banked-heart rescue. A player
          * who bought hearts in the shop spends one to continue instead of
          * losing the run; only when the bank is empty does it end.
+         *
+         * consumeHeart() (economy.ts), not a raw consumables.ts read/write.
+         * The original merge resolution wired this through
+         * getConsumableCount/setConsumableCount, which touch the same
+         * 'lok-lingu-hearts' key but never dispatch ECONOMY_EVENT — so the
+         * wallet/shop HUD kept showing the pre-spend count until some
+         * unrelated economy action forced a refresh. consumeHeart() already
+         * does the read-check-decrement-announce dance correctly; every
+         * other heart-spend path in the app already goes through it.
          */
-        const banked = getConsumableCount(HEARTS_KEY);
-        if (banked > 0) {
-          setConsumableCount(HEARTS_KEY, banked - 1);
+        if (consumeHeart()) {
           setLives(1);
           canvasRef.current?.clear();
           setStatus('idle');

@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { CELEBRATIONS, ALL_CELEBRATION_BY_ID, INTENSITY_CONFIG, addTokenBalance } from '@/lib/celebrations';
+import { CELEBRATIONS, ALL_CELEBRATION_BY_ID, INTENSITY_CONFIG } from '@/lib/celebrations';
 import type { CelebrationDef, CelebrationIntensity, SoundProfile } from '@/lib/celebrations';
 import { earnTokens } from '@/lib/economy';
 import { isDevMode } from '@/lib/dev-mode';

@@ -333,32 +333,15 @@ export const addOwnedCollab = (id: string) => addToOwnedSet(OWNED_COLLABS_KEY, i
 export const getOwnedVaults = () => readOwnedSet(OWNED_VAULTS_KEY);
 export const addOwnedVault = (id: string) => addToOwnedSet(OWNED_VAULTS_KEY, id);
 
-// ── Token balance (separate from lifetime cumulative total) ───────────────────
-
-export const TOKEN_BALANCE_KEY = 'lok-lingu-tokens';
-
-/** Returns spendable balance. First call migrates existing lifetime tokens. */
-export function getTokenBalance(): number {
-  if (localStorage.getItem(TOKEN_BALANCE_KEY) === null) {
-    // Seed from lifetime tokens so existing players keep their earned balance
-    const lifetime = parseInt(localStorage.getItem('lok-lingu-lifetime-tokens') || '0');
-    localStorage.setItem(TOKEN_BALANCE_KEY, String(lifetime));
-    return lifetime;
-  }
-  return parseInt(localStorage.getItem(TOKEN_BALANCE_KEY) || '0');
-}
-
-export function addTokenBalance(amount: number): void {
-  const current = getTokenBalance();
-  localStorage.setItem(TOKEN_BALANCE_KEY, String(Math.max(0, current + amount)));
-}
-
-export function spendTokenBalance(amount: number): boolean {
-  const current = getTokenBalance();
-  if (current < amount) return false;
-  localStorage.setItem(TOKEN_BALANCE_KEY, String(current - amount));
-  return true;
-}
+/*
+ * A second, un-eventful token balance ('lok-lingu-tokens', vs. economy.ts's
+ * 'lok-lingu-lifetime-tokens') used to live here — getTokenBalance/
+ * addTokenBalance/spendTokenBalance, from before economy.ts became the
+ * documented single owner of every spendable balance (PROGRESSION.md).
+ * Removed: nothing read or wrote it any more except a stale import in
+ * use-celebration.ts left over from a merge-conflict resolution that
+ * swapped the *call* for earnTokens() but never dropped the *import*.
+ */
 
 // ── Shop celebration → CelebrationDef converter ───────────────────────────────
 
