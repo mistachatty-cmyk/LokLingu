@@ -16,14 +16,18 @@ export interface UserStats {
   totalGames: number;
   languagesLearned: string[];
   lifetimeTokens: number;
+  /** Flags set by session-achievements.ts at the moment each actually happens. */
+  perfectGame: boolean;
+  speedDemon: boolean;
+  nightOwl: boolean;
 }
 
 export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'first-word',
     name: 'First Word',
-    label: '1-day streak',
-    desc: 'Complete your first daily streak',
+    label: '1-word streak',
+    desc: 'Answer a word correctly',
     icon: '🔤',
     tier: 'bronze',
     category: 'streak',
@@ -33,8 +37,8 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'on-fire',
     name: 'On Fire',
-    label: '5-day streak',
-    desc: 'Maintain a 5-day learning streak',
+    label: '5-word streak',
+    desc: 'Get 5 words right in a row in one run',
     icon: '🔥',
     tier: 'silver',
     category: 'streak',
@@ -44,8 +48,8 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'unstoppable',
     name: 'Unstoppable',
-    label: '10-day streak',
-    desc: 'Achieve a 10-day streak',
+    label: '10-word streak',
+    desc: 'Get 10 words right in a row in one run',
     icon: '⚡',
     tier: 'gold',
     category: 'streak',
@@ -55,8 +59,8 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'legendary',
     name: 'Legendary',
-    label: '25-day streak',
-    desc: 'Reach a 25-day streak',
+    label: '25-word streak',
+    desc: 'Get 25 words right in a row in one run',
     icon: '🏆',
     tier: 'platinum',
     category: 'streak',
@@ -66,8 +70,8 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'immortal',
     name: 'Immortal',
-    label: '50-day streak',
-    desc: 'Achieve a 50-day streak',
+    label: '50-word streak',
+    desc: 'Get 50 words right in a row in one run',
     icon: '♾️',
     tier: 'diamond',
     category: 'streak',
@@ -236,8 +240,8 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     icon: '⚡',
     tier: 'gold',
     category: 'special',
-    condition: (s) => s.totalWords >= 10,
-    maxProgress: 10,
+    condition: (s) => s.speedDemon,
+    maxProgress: 1,
   },
   {
     id: 'perfectionist',
@@ -247,7 +251,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     icon: '💯',
     tier: 'gold',
     category: 'special',
-    condition: (s) => s.totalGames >= 1,
+    condition: (s) => s.perfectGame,
     maxProgress: 1,
   },
   {
@@ -258,7 +262,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     icon: '🦉',
     tier: 'silver',
     category: 'special',
-    condition: (s) => s.lifetimeTokens > 0,
+    condition: (s) => s.nightOwl,
     maxProgress: 1,
   },
 ];

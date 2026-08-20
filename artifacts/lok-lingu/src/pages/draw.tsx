@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/tooltip';
 import { DrawCanvas, type DrawCanvasHandle } from '@/components/draw-canvas';
 import { useCelebration, incrementCategoryLifetime, incrementTotalGames } from '@/hooks/use-celebration';
+import { checkNightOwl, checkPerfectGame, checkSpeedDemon } from '@/lib/session-achievements';
 import { useSettings } from '@/hooks/use-settings';
 import { useCelebrationSound } from '@/hooks/use-celebration-sound';
 import { CelebrationEffect } from '@/components/celebration-effect';
@@ -65,7 +66,11 @@ export default function Draw() {
 
   // Counts this mount as one played session — see incrementTotalGames's
   // own doc comment for why nothing wrote this key before.
-  useEffect(() => { incrementTotalGames(); }, []);
+  useEffect(() => { incrementTotalGames(); checkNightOwl(); }, []);
+  // Draw mode's only setGameOver(true) fires from inside the miss handler,
+  // so a zero-mistake run can never reach it — check on navigate-away too,
+  // same as game.tsx's unmount commitRun().
+  useEffect(() => () => checkPerfectGame(sessionLogRef.current), []);
 
   // A LokSet launch (loksets.tsx) stamps this before navigating here — see
   // the matching comment in game.tsx. It overrides the plain language and
@@ -198,6 +203,7 @@ export default function Draw() {
      indices served so the scheduler doesn't repeat the word on screen. */
   const sessionLogRef = useRef<SessionEntry[]>([]);
   const recentRef = useRef<number[]>([]);
+  const hitTimestampsRef = useRef<number[]>([]);
   /* The HUD element physics tokens launch from. */
   const tokenAnchorRef = useRef<HTMLDivElement>(null);
   // Optional larger canvas — collapses the ink-color row to give the
@@ -225,6 +231,8 @@ export default function Draw() {
     if (drawn) {
       recordAttempt(language, drawn, true);
       sessionLogRef.current.push({ word: drawn, correct: true });
+      hitTimestampsRef.current.push(Date.now());
+      checkSpeedDemon(hitTimestampsRef.current);
     }
     canvasRef.current?.fadeOut(900);
     setTimeout(() => {

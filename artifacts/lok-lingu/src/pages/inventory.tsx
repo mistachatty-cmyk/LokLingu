@@ -9,6 +9,7 @@ import type { ThemeDef } from './themes-data';
 import { ACHIEVEMENTS } from '@/data/achievements';
 import type { UserStats } from '@/data/achievements';
 import { AchievementBadge } from '@/components/achievement-badge';
+import { hasPerfectGame, hasSpeedDemon, hasNightOwl } from '@/lib/session-achievements';
 
 export default function Inventory() {
   const [, setLocation] = useLocation();
@@ -39,6 +40,9 @@ export default function Inventory() {
       totalGames: parseInt(localStorage.getItem('lok-lingu-total-games') || '0'),
       languagesLearned,
       lifetimeTokens,
+      perfectGame: hasPerfectGame(),
+      speedDemon: hasSpeedDemon(),
+      nightOwl: hasNightOwl(),
     };
   })();
 

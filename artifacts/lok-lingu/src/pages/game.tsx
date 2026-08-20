@@ -18,6 +18,7 @@ import { getSelectedEmblem, earnedEmblems } from '@/lib/emblems';
 import { speakWord, matchWord, primeVoices, toLocale } from '@/lib/speech-utils';
 import { useTheme } from '@/hooks/use-theme';
 import { useCelebration, incrementCategoryLifetime, incrementTotalGames } from '@/hooks/use-celebration';
+import { checkNightOwl, checkPerfectGame, checkSpeedDemon } from '@/lib/session-achievements';
 import { useCelebrationSound } from '@/hooks/use-celebration-sound';
 import { CelebrationEffect } from '@/components/celebration-effect';
 import { TokenEarnedLabel } from '@/components/token-earned-label';
@@ -114,7 +115,7 @@ export default function Game() {
   useTheme();
   // Counts this mount as one played session — see incrementTotalGames's
   // own doc comment for why nothing wrote this key before.
-  useEffect(() => { incrementTotalGames(); }, []);
+  useEffect(() => { incrementTotalGames(); checkNightOwl(); }, []);
   // A LokSet launch (loksets.tsx) stamps this before navigating here. When
   // present it overrides the plain language/category picked on the home
   // screen — the set carries its own language, and "category" stops
@@ -293,11 +294,13 @@ export default function Game() {
   const submitRef = useRef(submitScore);
   submitRef.current = submitScore;
   const missVariantRef = useRef(0);
+  const hitTimestampsRef = useRef<number[]>([]);
   const lifetimeBase = useRef(parseInt(localStorage.getItem('lok-lingu-lifetime-tokens') || '0'));
 
   const commitRun = useCallback(() => {
     const count = streakRef.current;
     if (count <= 0) return;
+    checkPerfectGame(sessionLogRef.current);
     streakRef.current = 0;
     const uid = userIdRef.current;
     saveLocalScore({ userId: uid ?? 1, language, category, count });
@@ -345,6 +348,8 @@ export default function Game() {
       // record every review mechanic reads from.
       recordAttempt(languageRef.current, target, true);
       sessionLogRef.current.push({ word: target, correct: true });
+      hitTimestampsRef.current.push(Date.now());
+      checkSpeedDemon(hitTimestampsRef.current);
       // incrementMatch handles lifetime tracking internally, so a separate
       // incrementLifetimeWords call is not needed here (it would double-count).
       const { milestoneHit, tokenBonus } = celebrationRef.current.incrementMatch(languageRef.current);
