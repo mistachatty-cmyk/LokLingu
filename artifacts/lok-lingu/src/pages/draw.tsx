@@ -19,7 +19,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { DrawCanvas, type DrawCanvasHandle } from '@/components/draw-canvas';
-import { useCelebration, incrementCategoryLifetime } from '@/hooks/use-celebration';
+import { useCelebration, incrementCategoryLifetime, incrementTotalGames } from '@/hooks/use-celebration';
 import { useSettings } from '@/hooks/use-settings';
 import { useCelebrationSound } from '@/hooks/use-celebration-sound';
 import { CelebrationEffect } from '@/components/celebration-effect';
@@ -62,6 +62,10 @@ export default function Draw() {
   const [, setLocation] = useLocation();
   const { userId } = useUser();
   const { toast } = useToast();
+
+  // Counts this mount as one played session — see incrementTotalGames's
+  // own doc comment for why nothing wrote this key before.
+  useEffect(() => { incrementTotalGames(); }, []);
 
   // A LokSet launch (loksets.tsx) stamps this before navigating here — see
   // the matching comment in game.tsx. It overrides the plain language and

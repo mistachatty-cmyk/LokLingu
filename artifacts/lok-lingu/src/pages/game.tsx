@@ -17,7 +17,7 @@ import { gameWordFontSize } from '@/lib/word-sizing';
 import { getSelectedEmblem, earnedEmblems } from '@/lib/emblems';
 import { speakWord, matchWord, primeVoices, toLocale } from '@/lib/speech-utils';
 import { useTheme } from '@/hooks/use-theme';
-import { useCelebration, incrementCategoryLifetime } from '@/hooks/use-celebration';
+import { useCelebration, incrementCategoryLifetime, incrementTotalGames } from '@/hooks/use-celebration';
 import { useCelebrationSound } from '@/hooks/use-celebration-sound';
 import { CelebrationEffect } from '@/components/celebration-effect';
 import { TokenEarnedLabel } from '@/components/token-earned-label';
@@ -112,6 +112,9 @@ export default function Game() {
   // screen mounts — without this call the class can lag if the player
   // navigates directly to /game without visiting a page that calls useTheme.
   useTheme();
+  // Counts this mount as one played session — see incrementTotalGames's
+  // own doc comment for why nothing wrote this key before.
+  useEffect(() => { incrementTotalGames(); }, []);
   // A LokSet launch (loksets.tsx) stamps this before navigating here. When
   // present it overrides the plain language/category picked on the home
   // screen — the set carries its own language, and "category" stops

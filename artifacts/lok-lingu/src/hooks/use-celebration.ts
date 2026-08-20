@@ -36,6 +36,20 @@ export function currentSessionBestWords(): number {
   return parseInt(localStorage.getItem(STORAGE_SESSION_BEST) || '0');
 }
 
+const STORAGE_TOTAL_GAMES = 'lok-lingu-total-games';
+
+/**
+ * Lifetime count of play sessions started. inventory.tsx and map.tsx have
+ * always read this key to gate the games-played achievement tier ('first-game',
+ * 'dedicated', 'veteran', 'champion', 'perfectionist'), but nothing ever wrote
+ * it — those achievements were permanently unreachable. Call once per mount
+ * of game.tsx/draw.tsx, the unambiguous "a session started" signal.
+ */
+export function incrementTotalGames(): void {
+  const current = parseInt(localStorage.getItem(STORAGE_TOTAL_GAMES) || '0');
+  localStorage.setItem(STORAGE_TOTAL_GAMES, String(current + 1));
+}
+
 export function getCompanionUnlocked(companionId: string): boolean {
   if (isDevMode()) return true;
   return localStorage.getItem(STORAGE_COMPANION_PREFIX + companionId) === 'true';
