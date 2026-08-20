@@ -1,0 +1,251 @@
+/* ------------------------------------------------------------------
+   CompanionKit — one table drives every companion's in-game presence.
+
+   See docs/COMPANIONS.md for the full design record (why each field
+   exists, the occlusion/reduced-motion/anti-farm constraints, and the
+   build order this file is Phase 1 of). This file ships the "kit and
+   ambient" phase: a CompanionKit entry per companion, each with an
+   `ambient` Season fed straight into the existing particle engine
+   (src/lib/particles/field.ts). Collectibles, per-companion specials
+   (NiNi's pacing/palette, Amber's bottle, Baguette's guest words) and
+   rare drops are later phases — not built here.
+------------------------------------------------------------------ */
+
+import type { Season } from './seasons';
+
+export interface CompanionKit {
+  /** Matches the roadmap/achievement companion id (title, lowercased and
+   *  hyphenated) — see companionGlyph() in companion-widget.tsx for the
+   *  same derivation. */
+  id: string;
+  name: string;
+  /** Fed straight into createField() while this companion is equipped. */
+  ambient?: Season;
+  copy: {
+    quips: string[];
+  };
+}
+
+export const COMPANION_KITS: CompanionKit[] = [
+  {
+    id: 'nini',
+    name: 'NiNi the Sloth',
+    ambient: {
+      id: 'companion-nini',
+      name: 'NiNi — drifting leaves',
+      blurb: 'Slow leaves drift by while NiNi takes her time.',
+      glyphs: ['🍃', '🍃', '🌿'],
+      motion: { gravity: 10, terminalVelocity: 18, spinSpeed: 12, wander: 0, flicker: 0, swayAmplitude: 26, swayFrequency: 0.12 },
+      baseCount: 6, // "very low count" per the doc — this is ambience, not weather
+      sizeRange: [12, 20],
+      opacity: 0.4,
+      cost: 0,
+    },
+    copy: { quips: ["No rush. You've got this.", 'Slow and steady.', 'Take your time.'] },
+  },
+  {
+    id: 'wren',
+    name: 'Wren',
+    ambient: {
+      id: 'companion-wren',
+      name: 'Wren — drifting feathers',
+      blurb: 'Feathers drift down after Wren.',
+      glyphs: ['🪶'],
+      motion: { gravity: 8, terminalVelocity: 20, spinSpeed: 40, wander: 0.3, flicker: 0, swayAmplitude: 18, swayFrequency: 0.18 },
+      baseCount: 5,
+      sizeRange: [10, 16],
+      opacity: 0.35,
+      cost: 0,
+    },
+    copy: { quips: ["Chirp! You're doing great.", 'Small steps count.'] },
+  },
+  {
+    id: 'sparrow',
+    name: 'Sparrow',
+    ambient: {
+      id: 'companion-sparrow',
+      name: 'Sparrow — quick darting motes',
+      blurb: 'Quick motes dart past, keeping pace with Sparrow.',
+      glyphs: ['✨'],
+      motion: { gravity: 2, terminalVelocity: 40, spinSpeed: 0, wander: 1.4, flicker: 0.3, swayAmplitude: 0, swayFrequency: 0 },
+      baseCount: 6,
+      sizeRange: [6, 10],
+      opacity: 0.45,
+      cost: 0,
+    },
+    copy: { quips: ['Quick as ever!', "Let's keep going."] },
+  },
+  {
+    id: 'otter',
+    name: 'Otter',
+    ambient: {
+      id: 'companion-otter',
+      name: 'Otter — rising bubbles',
+      blurb: 'Bubbles rise lazily around Otter.',
+      glyphs: ['🫧'],
+      motion: { gravity: -9, terminalVelocity: 16, spinSpeed: 0, wander: 0.2, flicker: 0, swayAmplitude: 14, swayFrequency: 0.2 },
+      baseCount: 7,
+      sizeRange: [8, 16],
+      opacity: 0.4,
+      cost: 0,
+    },
+    copy: { quips: ['Splash! Having fun yet?', "You've got this."] },
+  },
+  {
+    id: 'fox',
+    name: 'Fox',
+    ambient: {
+      id: 'companion-fox',
+      name: 'Fox — autumn leaves',
+      blurb: 'Autumn leaves tumble by, Fox-quick.',
+      glyphs: ['🍁', '🍂'],
+      motion: { gravity: 16, terminalVelocity: 44, spinSpeed: 60, wander: 0, flicker: 0, swayAmplitude: 30, swayFrequency: 0.2 },
+      baseCount: 7,
+      sizeRange: [12, 20],
+      opacity: 0.45,
+      cost: 0,
+    },
+    copy: { quips: ['Yip! Nearly there.', 'Sneaky good streak.'] },
+  },
+  {
+    id: 'crane',
+    name: 'Crane',
+    ambient: {
+      id: 'companion-crane',
+      name: 'Crane — origami paper',
+      blurb: 'Folded paper drifts around Crane.',
+      glyphs: ['📄', '🕊️'],
+      motion: { gravity: 6, terminalVelocity: 20, spinSpeed: 30, wander: 0, flicker: 0, swayAmplitude: 24, swayFrequency: 0.15 },
+      baseCount: 5,
+      sizeRange: [10, 16],
+      opacity: 0.35,
+      cost: 0,
+    },
+    copy: { quips: ['Graceful as always.', 'Steady wins it.'] },
+  },
+  {
+    id: 'wolf',
+    name: 'Wolf',
+    ambient: {
+      id: 'companion-wolf',
+      name: 'Wolf — drifting snow',
+      blurb: 'Snow drifts past while Wolf keeps watch.',
+      glyphs: ['❄️'],
+      motion: { gravity: 14, terminalVelocity: 30, spinSpeed: 20, wander: 0.1, flicker: 0, swayAmplitude: 20, swayFrequency: 0.16 },
+      baseCount: 8,
+      sizeRange: [8, 14],
+      opacity: 0.4,
+      cost: 0,
+    },
+    copy: { quips: ['Awoo! Pack is proud.', "Don't stop now."] },
+  },
+  {
+    id: 'tiger',
+    name: 'Tiger',
+    ambient: {
+      id: 'companion-tiger',
+      name: 'Tiger — tall grass',
+      blurb: 'Tall grass sways at the edges around Tiger.',
+      glyphs: ['🌾'],
+      motion: { gravity: 0, terminalVelocity: 0, spinSpeed: 0, wander: 0, flicker: 0, swayAmplitude: 34, swayFrequency: 0.1 },
+      baseCount: 6,
+      sizeRange: [16, 26],
+      opacity: 0.3,
+      cost: 0,
+    },
+    copy: { quips: ['Roar! Ferocious focus.', 'Keep the momentum.'] },
+  },
+  {
+    id: 'whale',
+    name: 'Whale',
+    ambient: {
+      id: 'companion-whale',
+      name: 'Whale — slow bubbles',
+      blurb: 'Slow, deep bubbles rise around Whale.',
+      glyphs: ['🫧'],
+      motion: { gravity: -4, terminalVelocity: 10, spinSpeed: 0, wander: 0.1, flicker: 0, swayAmplitude: 10, swayFrequency: 0.08 },
+      baseCount: 5,
+      sizeRange: [10, 22],
+      opacity: 0.3,
+      cost: 0,
+    },
+    copy: { quips: ['A deep breath, then on.', 'Making waves out there.'] },
+  },
+  {
+    id: 'dragon',
+    name: 'Amber the Dragon',
+    ambient: {
+      id: 'companion-dragon',
+      name: 'Amber — rising embers',
+      blurb: 'Embers rise and flicker around Amber.',
+      // Straight from docs/COMPANIONS.md's Amber spec: gravity -6, terminalVelocity 20, flicker 0.6.
+      glyphs: ['🔥', '✨'],
+      motion: { gravity: -6, terminalVelocity: 20, spinSpeed: 0, wander: 0.15, flicker: 0.6, swayAmplitude: 12, swayFrequency: 0.2 },
+      baseCount: 9,
+      sizeRange: [10, 18],
+      opacity: 0.5,
+      cost: 0,
+    },
+    copy: { quips: ['Legendary pace.', 'Fire it up!'] },
+  },
+  {
+    id: 'phoenix',
+    name: 'Phoenix',
+    ambient: {
+      id: 'companion-phoenix',
+      name: 'Phoenix — falling ash',
+      blurb: 'Ash drifts down after Phoenix.',
+      glyphs: ['🪶', '✨'],
+      motion: { gravity: 10, terminalVelocity: 24, spinSpeed: 16, wander: 0.1, flicker: 0.2, swayAmplitude: 16, swayFrequency: 0.15 },
+      baseCount: 8,
+      sizeRange: [8, 16],
+      opacity: 0.4,
+      cost: 0,
+    },
+    copy: { quips: ['Reborn every run.', 'Rise and keep going.'] },
+  },
+  {
+    id: 'leviathan',
+    name: 'Leviathan',
+    ambient: {
+      id: 'companion-leviathan',
+      name: 'Leviathan — deep silhouettes',
+      blurb: 'Dark shapes drift at the edges around Leviathan.',
+      glyphs: ['🌊'],
+      motion: { gravity: 0, terminalVelocity: 0, spinSpeed: 0, wander: 0.25, flicker: 0, swayAmplitude: 20, swayFrequency: 0.06 },
+      baseCount: 5,
+      sizeRange: [18, 30],
+      opacity: 0.25,
+      cost: 0,
+    },
+    copy: { quips: ['From the depths, respect.', 'Unstoppable.'] },
+  },
+  {
+    id: 'sir-baguette',
+    name: 'Sir Baguette',
+    ambient: {
+      id: 'companion-sir-baguette',
+      name: 'Sir Baguette — falling bread',
+      blurb: 'Baguettes fall gently, Sir Baguette-style.',
+      glyphs: ['🥖'],
+      motion: { gravity: 16, terminalVelocity: 40, spinSpeed: 50, wander: 0, flicker: 0, swayAmplitude: 22, swayFrequency: 0.18 },
+      baseCount: 6,
+      sizeRange: [14, 22],
+      opacity: 0.4,
+      cost: 0,
+    },
+    copy: { quips: ['Magnifique, mon ami!', 'A little crusty, a lot proud.'] },
+  },
+];
+
+const DEFAULT_QUIPS = ['Keep going!', "You've got this."];
+
+const KIT_BY_ID = new Map(COMPANION_KITS.map((k) => [k.id, k]));
+
+export function getCompanionKit(id: string): CompanionKit | null {
+  return KIT_BY_ID.get(id) ?? null;
+}
+
+export function companionQuips(id: string): string[] {
+  return KIT_BY_ID.get(id)?.copy.quips ?? DEFAULT_QUIPS;
+}

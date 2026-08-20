@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { EyeOff } from 'lucide-react';
 import { getEquippedCompanion } from '@/hooks/use-celebration';
 import { TOTAL_MILESTONES, LOK_COMPANIONS } from '@/lib/roadmap';
+import { companionQuips } from '@/lib/companions';
 
 const ALL_COMPANION_MILESTONES = [...TOTAL_MILESTONES, ...LOK_COMPANIONS].filter(
   (m) => m.reward === 'companion',
@@ -14,23 +15,6 @@ function companionGlyph(id: string): string | null {
   );
   return m?.glyph ?? null;
 }
-
-const QUIPS: Record<string, string[]> = {
-  wren: ["Chirp! You're doing great.", 'Small steps count.'],
-  sparrow: ['Quick as ever!', "Let's keep going."],
-  otter: ['Splash! Having fun yet?', "You've got this."],
-  fox: ['Yip! Nearly there.', 'Sneaky good streak.'],
-  crane: ['Graceful as always.', 'Steady wins it.'],
-  wolf: ['Awoo! Pack is proud.', "Don't stop now."],
-  tiger: ['Roar! Ferocious focus.', 'Keep the momentum.'],
-  whale: ['A deep breath, then on.', 'Making waves out there.'],
-  dragon: ['Legendary pace.', 'Fire it up!'],
-  phoenix: ['Reborn every run.', 'Rise and keep going.'],
-  leviathan: ['From the depths, respect.', 'Unstoppable.'],
-  'sir-baguette': ['Magnifique, mon ami!', 'A little crusty, a lot proud.'],
-};
-
-const DEFAULT_QUIPS = ['Keep going!', "You've got this."];
 
 /**
  * Floating avatar for the player's equipped companion (set from the
@@ -54,7 +38,7 @@ export function CompanionWidget({ side = 'left' }: { side?: 'left' | 'right' }) 
 
   const handleActivate = useCallback(() => {
     if (!equippedId) return;
-    const pool = QUIPS[equippedId] ?? DEFAULT_QUIPS;
+    const pool = companionQuips(equippedId);
     setQuip(pool[Math.floor(Math.random() * pool.length)]);
     window.setTimeout(() => setQuip(null), 2200);
   }, [equippedId]);

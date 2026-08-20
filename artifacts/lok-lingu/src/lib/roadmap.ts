@@ -74,7 +74,15 @@ export const MATCH_MILESTONES: Milestone[] = [
  * along on the game screen where the floating "L" sits today.
  */
 export const TOTAL_MILESTONES: Milestone[] = [
-  { at: 10,    track: 'total', title: 'Wren',      detail: 'Companion. The very first — arrives fast so the system introduces itself early.', reward: 'companion', rewardLabel: 'Wren companion', live: true, glyph: '🐤', tier: 'common' },
+  /*
+   * NiNi is the accessibility companion (see docs/COMPANIONS.md) — slower
+   * pacing dressed as a charming sloth rather than an "easy mode" toggle.
+   * Placed ahead of Wren deliberately: the player most likely to want
+   * NiNi's slower pace is the one still finding their footing, so she
+   * should be reachable before anything else in the menagerie.
+   */
+  { at: 5,     track: 'total', title: 'NiNi',      detail: 'Companion. Arrives first of all — the patient one, who gives you room to think.', reward: 'companion', rewardLabel: 'NiNi companion', live: true, glyph: '🦥', tier: 'common' },
+  { at: 10,    track: 'total', title: 'Wren',      detail: 'Companion. Arrives fast so the system introduces itself early.', reward: 'companion', rewardLabel: 'Wren companion', live: true, glyph: '🐤', tier: 'common' },
   { at: 25,    track: 'total', title: 'Sparrow',   detail: 'Companion. Small, quick, first to arrive.',          reward: 'companion', rewardLabel: 'Sparrow companion',  live: true, glyph: '🐦', tier: 'common' },
   { at: 50,    track: 'total', title: 'Otter',     detail: 'Companion. Playful — keeps the early stretch from feeling empty before Centurion.', reward: 'companion', rewardLabel: 'Otter companion', live: true, glyph: '🦦', tier: 'common' },
   { at: 100,   track: 'total', title: 'Centurion', detail: 'One hundred words banked across all languages.',     reward: 'tokens',    rewardLabel: '+100 tokens',        live: false, glyph: '💯' },

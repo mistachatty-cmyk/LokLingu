@@ -30,6 +30,7 @@ import { TokenEarnedLabel } from '@/components/token-earned-label';
 import { TokenVaultLayer } from '@/components/token-vault-layer';
 import { TokenPhysicsLayer, spawnTokenAt } from '@/components/token-physics-layer';
 import { CompanionWidget } from '@/components/companion-widget';
+import { CompanionLayer } from '@/components/companion-layer';
 import { resolveWordSet, CUSTOM_SET_KEY, CUSTOM_ORDER_KEY } from '@/lib/wordsets';
 import { FALLBACK_WORDS, saveLocalScore } from '@/lib/offline-data';
 import { speakWord, matchWord } from '@/lib/speech-utils';
@@ -501,6 +502,7 @@ export default function Draw() {
           silently rendered nothing at all. */}
       <TokenVaultLayer animKey={tokenLabel.key} />
       <TokenPhysicsLayer />
+      <CompanionLayer />
       <CompanionWidget side="left" />
 
       {wordPopActive && <WordPop onComplete={() => setWordPopActive(false)} />}

@@ -35,6 +35,7 @@ import { SessionSummaryCard } from '@/components/session-summary';
 import { GameWord } from '@/components/game-word';
 import { TokenPhysicsLayer, spawnTokenAt } from '@/components/token-physics-layer';
 import { CompanionWidget } from '@/components/companion-widget';
+import { CompanionLayer } from '@/components/companion-layer';
 import { resolveWordSet, CUSTOM_SET_KEY, CUSTOM_ORDER_KEY } from '@/lib/wordsets';
 
 type NormalWord = { word: string; translation: string; pronunciation?: string };
@@ -676,6 +677,7 @@ export default function Game() {
           that skin is equipped. */}
       <TokenVaultLayer animKey={tokenLabel.key} />
       <TokenPhysicsLayer />
+      <CompanionLayer />
       <CompanionWidget side="left" />
 
       {summary && (
