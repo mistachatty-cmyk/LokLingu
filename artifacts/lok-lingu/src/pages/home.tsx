@@ -16,6 +16,7 @@ import {
   Check,
   Mic,
   Pencil,
+  ListMusic,
   AlertTriangle,
   Sparkles,
   Globe,
@@ -637,6 +638,16 @@ export default function Home() {
               </button>
             ))}
           </div>
+
+          {/* Custom mode: a separate decision from voice-vs-draw, since
+              picking a LokSet happens first and voice/draw is chosen after,
+              on the set's own launch buttons — see pages/loksets.tsx. */}
+          <button
+            onClick={() => setLocation('/loksets')}
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-border px-3 py-2.5 text-sm font-black uppercase tracking-wider text-muted-foreground transition-all hover:border-primary/30 hover:text-foreground"
+          >
+            <ListMusic className="h-4 w-4" /> Custom — my LokSets
+          </button>
 
           {/* What you are about to play, spelled out. */}
           <p className="text-center text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground pb-1">

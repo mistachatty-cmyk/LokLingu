@@ -35,6 +35,7 @@ import { SessionSummaryCard } from '@/components/session-summary';
 import { GameWord } from '@/components/game-word';
 import { TokenPhysicsLayer, spawnTokenAt } from '@/components/token-physics-layer';
 import { CompanionWidget } from '@/components/companion-widget';
+import { resolveWordSet, CUSTOM_SET_KEY, CUSTOM_ORDER_KEY } from '@/lib/wordsets';
 
 type NormalWord = { word: string; translation: string; pronunciation?: string };
 
@@ -110,8 +111,25 @@ export default function Game() {
   // screen mounts — without this call the class can lag if the player
   // navigates directly to /game without visiting a page that calls useTheme.
   useTheme();
-  const language = localStorage.getItem('lok-lingu-lang') || 'es';
+  // A LokSet launch (loksets.tsx) stamps this before navigating here. When
+  // present it overrides the plain language/category picked on the home
+  // screen — the set carries its own language, and "category" stops
+  // meaning anything once the word list is hand-picked.
+  const customSetId = localStorage.getItem(CUSTOM_SET_KEY);
+  const customSet = useMemo(() => (customSetId ? resolveWordSet(customSetId) : null), [customSetId]);
+  // Leaving to the main menu must drop the LokSet pin — otherwise a plain
+  // "Voice" tap from home would silently resume whatever set was last
+  // played instead of the category picked on that screen.
+  const goHome = useCallback(() => {
+    localStorage.removeItem(CUSTOM_SET_KEY);
+    localStorage.removeItem(CUSTOM_ORDER_KEY);
+    setLocation('/');
+  }, [setLocation]);
+  const language = customSet?.lang ?? localStorage.getItem('lok-lingu-lang') ?? 'es';
   const category = localStorage.getItem('lok-lingu-cat') || 'numbers';
+  const customOrderMode = (localStorage.getItem(CUSTOM_ORDER_KEY) as 'sequential' | 'shuffle' | null)
+    ?? customSet?.defaultOrderMode
+    ?? 'shuffle';
 
   const [wordIndex, setWordIndex] = useState(0);
   const [streak, setStreak] = useState(0);
@@ -176,13 +194,20 @@ export default function Game() {
   }, [celebration.milestone, playSound]);
 
   // Numbers are a sequence, not a list: when the language has a generator the
-  // player can keep counting past the end of any table, forever.
-  const infinite = category === 'numbers' && supportsInfiniteCounting(language);
+  // player can keep counting past the end of any table, forever. A LokSet
+  // is a hand-picked list, never the infinite generator — a set can't
+  // contain "the concept of counting forever."
+  const infinite = !customSet && category === 'numbers' && supportsInfiniteCounting(language);
 
-  const { words, substituted } = useMemo(
-    () => resolveWords(language, category),
-    [language, category],
-  );
+  const { words, substituted } = useMemo(() => {
+    if (customSet) {
+      return {
+        words: customSet.entries.map((e) => ({ word: e.word, translation: e.translation, pronunciation: e.pronunciation })),
+        substituted: false,
+      };
+    }
+    return resolveWords(language, category);
+  }, [customSet, language, category]);
 
   const currentWord: NormalWord | undefined = useMemo(() => {
     if (infinite) {
@@ -225,7 +250,12 @@ export default function Game() {
    */
   const advanceWord = useCallback(() => {
     missLoggedRef.current.clear();
-    if (infinite || !shouldSchedule(categoryRef.current) || words.length < 2) {
+    // A LokSet's own order choice overrides the category-based default —
+    // "In order" must stay in order even for a category that would
+    // otherwise be Leitner-scheduled, and "Shuffle" applies even to a set
+    // built entirely from the (normally sequential) numbers category.
+    const sequential = customSetId ? customOrderMode === 'sequential' : !shouldSchedule(categoryRef.current);
+    if (infinite || sequential || words.length < 2) {
       setWordIndex((i) => i + 1);
       return;
     }
@@ -236,7 +266,7 @@ export default function Game() {
     );
     recentRef.current = [...recentRef.current, next].slice(-4);
     setWordIndex(next);
-  }, [infinite, words]);
+  }, [infinite, words, customSetId, customOrderMode]);
 
   const advanceWordRef = useRef(advanceWord);
   advanceWordRef.current = advanceWord;
@@ -543,7 +573,7 @@ export default function Game() {
           </p>
         </div>
         <button
-          onClick={() => setLocation('/')}
+          onClick={goHome}
           className="flex items-center gap-2 rounded-full bg-primary px-8 py-3 text-sm font-black uppercase tracking-widest text-primary-foreground transition-all hover:brightness-110 active:scale-95"
         >
           <Home size={16} /> Home
@@ -628,7 +658,7 @@ export default function Game() {
               variant="outline"
               size="lg"
               className="w-full h-14 text-lg font-bold uppercase tracking-widest bg-transparent"
-              onClick={() => setLocation('/')}
+              onClick={goHome}
             >
               <Home className="w-5 h-5 mr-2" /> Main Menu
             </Button>

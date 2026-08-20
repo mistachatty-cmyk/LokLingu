@@ -30,6 +30,7 @@ import { TokenEarnedLabel } from '@/components/token-earned-label';
 import { TokenVaultLayer } from '@/components/token-vault-layer';
 import { TokenPhysicsLayer, spawnTokenAt } from '@/components/token-physics-layer';
 import { CompanionWidget } from '@/components/companion-widget';
+import { resolveWordSet, CUSTOM_SET_KEY, CUSTOM_ORDER_KEY } from '@/lib/wordsets';
 import { FALLBACK_WORDS, saveLocalScore } from '@/lib/offline-data';
 import { speakWord, matchWord } from '@/lib/speech-utils';
 import { useSpeechEngine } from '@/hooks/use-speech-engine';
@@ -61,11 +62,25 @@ export default function Draw() {
   const { userId } = useUser();
   const { toast } = useToast();
 
-  const language = localStorage.getItem('lok-lingu-lang') || 'es';
+  // A LokSet launch (loksets.tsx) stamps this before navigating here — see
+  // the matching comment in game.tsx. It overrides the plain language and
+  // makes "category" meaningless, since the word list is hand-picked.
+  const customSetId = localStorage.getItem(CUSTOM_SET_KEY);
+  const customSet = useMemo(() => (customSetId ? resolveWordSet(customSetId) : null), [customSetId]);
+  const language = customSet?.lang ?? localStorage.getItem('lok-lingu-lang') ?? 'es';
   const category = localStorage.getItem('lok-lingu-cat') || 'numbers';
+  const customOrderMode = (localStorage.getItem(CUSTOM_ORDER_KEY) as 'sequential' | 'shuffle' | null)
+    ?? customSet?.defaultOrderMode
+    ?? 'shuffle';
+  // Leaving to the main menu must drop the LokSet pin — see game.tsx's goHome.
+  const goHome = useCallback(() => {
+    localStorage.removeItem(CUSTOM_SET_KEY);
+    localStorage.removeItem(CUSTOM_ORDER_KEY);
+    setLocation('/');
+  }, [setLocation]);
 
   const { data: apiWords } = useGetWords(language, category, {
-    query: { enabled: true, queryKey: ['words', language, category] },
+    query: { enabled: !customSet, queryKey: ['words', language, category] },
   });
 
   /**
@@ -88,9 +103,12 @@ export default function Draw() {
    * truthiness.
    */
   const words = useMemo(() => {
+    if (customSet) {
+      return customSet.entries.map((e) => ({ word: e.word, translation: e.translation, pronunciation: e.pronunciation }));
+    }
     const fromApi = Array.isArray(apiWords) && apiWords.length > 0 ? apiWords : null;
     return fromApi ?? FALLBACK_WORDS[language]?.[category] ?? FALLBACK_WORDS['es']['numbers'];
-  }, [apiWords, language, category]);
+  }, [customSet, apiWords, language, category]);
 
   const submitScore = useSubmitScore({
     mutation: {
@@ -208,7 +226,10 @@ export default function Draw() {
       if (!words) return;
       // Round-robin taught position, not vocabulary. Outside of ordinal
       // categories the next word is now drawn by the review scheduler.
-      if (shouldSchedule(category) && words.length > 1) {
+      // A LokSet's order choice overrides the category-based default — see
+      // the matching logic and comment in game.tsx's advanceWord.
+      const sequential = customSetId ? customOrderMode === 'sequential' : !shouldSchedule(category);
+      if (!sequential && words.length > 1) {
         const next = pickNextIndex(language, words.map((w: any) => w.word ?? String(w)), recentRef.current);
         recentRef.current = [...recentRef.current, next].slice(-4);
         setWordIndex(next);
@@ -455,7 +476,7 @@ export default function Draw() {
             <br />Try a different language or category.
           </p>
         </div>
-        <Button size="lg" onClick={() => setLocation('/')} className="gap-2">
+        <Button size="lg" onClick={goHome} className="gap-2">
           <Home className="w-5 h-5" /> Home
         </Button>
       </div>
@@ -991,7 +1012,7 @@ export default function Draw() {
                   variant="outline"
                   size="lg"
                   className="w-full h-14 text-lg font-bold uppercase tracking-widest bg-transparent"
-                  onClick={() => setLocation('/')}
+                  onClick={goHome}
                 >
                   <Home className="w-5 h-5 mr-2" /> Main Menu
                 </Button>

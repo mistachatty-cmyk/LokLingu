@@ -3,6 +3,8 @@
  * All data persisted to localStorage with lok-lingu-* prefix, export/import as JSON.
  */
 
+import { FALLBACK_WORDS } from './offline-data';
+
 export interface WordNote {
   lang: string;
   word: string;
@@ -17,6 +19,19 @@ export interface WordNote {
   lastSeen?: number;
 }
 
+/**
+ * A single word inside a LokSet, carrying its own translation/pronunciation
+ * so the set works standalone — including for a word typed by hand that
+ * isn't in FALLBACK_WORDS at all. `category` is informational only (badge
+ * display); it does not gate anything.
+ */
+export interface LokSetWord {
+  word: string;
+  translation: string;
+  pronunciation?: string;
+  category?: string;
+}
+
 export interface StudySet {
   id: string;               // uuid or slug
   name: string;
@@ -25,7 +40,20 @@ export interface StudySet {
   wordCount: number;        // auto-computed from words array length
   created: number;          // timestamp
   lastReviewed?: number;    // timestamp of last review
-  words: string[];          // array of word strings in this set
+  words: string[];          // legacy: word strings only. Kept for back-compat
+                             // with sets created before `entries` existed —
+                             // new code should read/write `entries` instead.
+  entries?: LokSetWord[];   // authoritative word list when present
+  description?: string;
+  favorite?: boolean;
+  /**
+   * 'default' LokSets are derived on the fly from FALLBACK_WORDS and never
+   * stored (see lib/wordsets.ts) — this field only appears on stored,
+   * user-created sets, so it is always 'custom' here today. 'special' is a
+   * reserved slot for future timed/bonus sets; nothing produces it yet.
+   */
+  kind?: 'custom' | 'special';
+  orderMode?: 'sequential' | 'shuffle';
   notes?: string;           // optional set-level notes
 }
 
@@ -116,7 +144,12 @@ export function recordWordAttempt(lang: string, word: string, correct: boolean):
 /**
  * Create a new study set. Returns the created set.
  */
-export function createStudySet(name: string, lang: string, categoryFilter?: string): StudySet {
+export function createStudySet(
+  name: string,
+  lang: string,
+  categoryFilter?: string,
+  description?: string,
+): StudySet {
   const set: StudySet = {
     id: `set-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
     name,
@@ -125,6 +158,11 @@ export function createStudySet(name: string, lang: string, categoryFilter?: stri
     wordCount: 0,
     created: Date.now(),
     words: [],
+    entries: [],
+    description,
+    favorite: false,
+    kind: 'custom',
+    orderMode: 'shuffle',
   };
   addStudySet(set);
   return set;
@@ -182,6 +220,69 @@ export function removeWordFromSet(setId: string, word: string): void {
   const set = getStudySet(setId);
   if (!set) return;
   set.words = set.words.filter((w) => w !== word);
+  if (set.entries) set.entries = set.entries.filter((e) => e.word !== word);
+  addStudySet(set);
+}
+
+/**
+ * The set's word list as full entries, regardless of when it was created.
+ *
+ * Sets made before `entries` existed only have `words: string[]` — this
+ * derives entries for those by looking each word up in FALLBACK_WORDS
+ * across every category for the set's language, so old sets keep working
+ * without a data migration. Sets made after this change always have
+ * `entries` already and skip the lookup entirely.
+ */
+export function getSetWordEntries(set: StudySet): LokSetWord[] {
+  if (set.entries) return set.entries;
+  const byCategory = FALLBACK_WORDS[set.lang] ?? {};
+  return set.words.map((word): LokSetWord => {
+    for (const [category, list] of Object.entries(byCategory)) {
+      const found = list.find((e) => e.word === word);
+      if (found) return { word, translation: found.translation, pronunciation: found.pronunciation, category };
+    }
+    return { word, translation: '' };
+  });
+}
+
+/**
+ * Add a full word entry to a set, keeping `words`/`entries`/`wordCount` in
+ * sync. Silently no-ops on a duplicate `word` rather than erroring — the
+ * caller (LokLibrary's "add selected") doesn't need to pre-filter.
+ */
+export function addEntryToSet(setId: string, entry: LokSetWord): void {
+  const set = getStudySet(setId);
+  if (!set) return;
+  const entries = set.entries ?? getSetWordEntries(set);
+  if (entries.some((e) => e.word === entry.word)) return;
+  entries.push(entry);
+  set.entries = entries;
+  if (!set.words.includes(entry.word)) set.words.push(entry.word);
+  addStudySet(set);
+}
+
+export function removeEntryFromSet(setId: string, word: string): void {
+  removeWordFromSet(setId, word);
+}
+
+export function toggleSetFavorite(setId: string): void {
+  const set = getStudySet(setId);
+  if (!set) return;
+  set.favorite = !set.favorite;
+  addStudySet(set);
+}
+
+export function updateSetDescription(setId: string, description: string): void {
+  const set = getStudySet(setId);
+  if (!set) return;
+  set.description = description;
+  addStudySet(set);
+}
+
+export function setOrderMode(setId: string, orderMode: 'sequential' | 'shuffle'): void {
+  const set = getStudySet(setId);
+  if (!set) return;
+  set.orderMode = orderMode;
   addStudySet(set);
 }
 

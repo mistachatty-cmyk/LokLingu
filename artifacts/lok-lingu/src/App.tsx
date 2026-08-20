@@ -17,6 +17,8 @@ import Explore from './pages/explore';
 import Inventory from './pages/inventory';
 import Roadmap from './pages/roadmap';
 import { JournalPage } from './pages/journal';
+import LibraryPage from './pages/library';
+import LokSetsPage from './pages/loksets';
 import { CanvasDesignPage } from './pages/canvas-design';
 import { OnboardingPage } from './pages/onboarding';
 import MapPage from './pages/map';
@@ -69,6 +71,8 @@ function Router() {
         <Route path="/inventory" component={Inventory} />
         <Route path="/roadmap" component={Roadmap} />
         <Route path="/journal" component={JournalPage} />
+        <Route path="/library" component={LibraryPage} />
+        <Route path="/loksets" component={LokSetsPage} />
         <Route path="/canvas-design" component={CanvasDesignPage} />
         {/* Wrapped rather than passed directly: wouter hands a component
             router props, which don't match the optional onDone prop used
