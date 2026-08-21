@@ -43,7 +43,8 @@ import {
   summarise,
   type SessionEntry,
 } from '@/lib/review';
-import { consumeHeart } from '@/lib/economy';
+import { consumeHeart, earnTokens } from '@/lib/economy';
+import { getCompanionKit, currentStreakMultiplier } from '@/lib/companions';
 
 const INK_COLORS = [
   { label: 'Primary', value: 'hsl(var(--primary))' },
@@ -180,6 +181,8 @@ export default function Draw() {
   // of ending the run.
   const [isPhoenix] = useState(() => getEquippedCompanion() === 'phoenix');
   const phoenixUsedRef = useRef(false);
+  const [wolfTiers] = useState(() => getCompanionKit(getEquippedCompanion() ?? '')?.streakMultiplier);
+  const wolfStreakRef = useRef(0);
   useCelebrationSound(); // keeps audio context alive
   const { theme } = useTheme();
 
@@ -228,7 +231,17 @@ export default function Draw() {
     const { milestoneHit, tokenBonus } = celebration.incrementMatch(language);
     incrementCategoryLifetime(language, category);
     const rate = celebration.boostActive ? 4 : 2;
-    const labelText = milestoneHit && tokenBonus > 0 ? `+${tokenBonus} 🎁` : `+${rate}`;
+    // Wolf's pack bonus — see game.tsx's matching comment.
+    wolfStreakRef.current += 1;
+    const wolfMult = currentStreakMultiplier(wolfTiers, wolfStreakRef.current);
+    const wolfBonus = wolfMult > 1 ? Math.round(rate * (wolfMult - 1)) : 0;
+    if (wolfBonus > 0) earnTokens(wolfBonus);
+    const labelText =
+      milestoneHit && tokenBonus > 0
+        ? `+${tokenBonus} 🎁`
+        : wolfBonus > 0
+          ? `+${rate + wolfBonus} 🐺`
+          : `+${rate}`;
     setTokenLabel((prev) => ({ key: prev.key + 1, text: labelText }));
     spawnTokenAt(tokenAnchorRef.current);
     // Promote this word up a Leitner box before advancing.
@@ -261,6 +274,7 @@ export default function Draw() {
 
   const handleFailure = useCallback(() => {
     if (status !== 'idle' || gameOver) return;
+    wolfStreakRef.current = 0;
     setStatus('error');
     setFeedback('miss');
     // Voice mode clears a miss at a flat 500ms regardless of the response

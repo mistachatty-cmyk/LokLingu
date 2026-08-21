@@ -77,9 +77,29 @@ export interface CompanionKit {
    *  companion-layer.tsx — purely additive, never touches the player's
    *  saved theme (localStorage['lok-lingu-theme']). Defined in index.css. */
   palette?: string;
+  /** Wolf: escalating token bonus while a streak holds. Ascending by `at`
+   *  (words correct in a row, this run); the highest tier whose `at` the
+   *  current streak has reached applies. Layered as EXTRA tokens on top
+   *  of the normal per-hit award in game.tsx/draw.tsx, not a change to
+   *  the award itself — keeps boost/rate math in use-celebration.ts
+   *  untouched. */
+  streakMultiplier?: { at: number; mult: number }[];
   copy: {
     quips: string[];
   };
+}
+
+/** Highest tier whose `at` <= streak, or 1 (no bonus) if none qualify. */
+export function currentStreakMultiplier(
+  tiers: { at: number; mult: number }[] | undefined,
+  streak: number,
+): number {
+  if (!tiers) return 1;
+  let mult = 1;
+  for (const tier of tiers) {
+    if (streak >= tier.at) mult = tier.mult;
+  }
+  return mult;
 }
 
 export const COMPANION_KITS: CompanionKit[] = [
@@ -269,6 +289,14 @@ export const COMPANION_KITS: CompanionKit[] = [
       opacity: 0.4,
       cost: 0,
     },
+    // "Pack bonus" -- the pack gets stronger the longer the streak holds,
+    // resets the instant it breaks (see the miss branch in game.tsx/
+    // draw.tsx that zeroes the streak ref this reads from).
+    streakMultiplier: [
+      { at: 5, mult: 1.5 },
+      { at: 15, mult: 2 },
+      { at: 30, mult: 3 },
+    ],
     copy: { quips: ['Awoo! Pack is proud.', "Don't stop now."] },
   },
   {

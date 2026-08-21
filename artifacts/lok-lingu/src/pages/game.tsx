@@ -20,7 +20,7 @@ import { getSelectedEmblem, earnedEmblems } from '@/lib/emblems';
 import { speakWord, matchWord, primeVoices, toLocale } from '@/lib/speech-utils';
 import { useTheme } from '@/hooks/use-theme';
 import { useCelebration, incrementCategoryLifetime, incrementTotalGames, getEquippedCompanion } from '@/hooks/use-celebration';
-import { getCompanionKit } from '@/lib/companions';
+import { getCompanionKit, currentStreakMultiplier } from '@/lib/companions';
 import { checkNightOwl, checkPerfectGame, checkSpeedDemon } from '@/lib/session-achievements';
 import { useCelebrationSound } from '@/hooks/use-celebration-sound';
 import { CelebrationEffect } from '@/components/celebration-effect';
@@ -183,6 +183,12 @@ export default function Game() {
   // same pattern as isBaguette below.
   const [isPhoenix] = useState(() => getEquippedCompanion() === 'phoenix');
   const phoenixUsedRef = useRef(false);
+  // Wolf's pack bonus: escalating token multiplier while a streak holds.
+  // wolfStreakRef tracks correct-in-a-row independent of `streak` state
+  // (which lags a render behind inside the same synchronous handler) and
+  // resets to 0 on any miss.
+  const [wolfTiers] = useState(() => getCompanionKit(getEquippedCompanion() ?? '')?.streakMultiplier);
+  const wolfStreakRef = useRef(0);
   const stopListeningRef = useRef<() => void>(() => {});
 
   // Stable ref so handleResult can call abortSession without it being in
@@ -412,7 +418,19 @@ export default function Game() {
       const { milestoneHit, tokenBonus } = celebrationRef.current.incrementMatch(languageRef.current);
       incrementCategoryLifetime(languageRef.current, categoryRef.current);
       const rate = boostActiveRef.current ? 4 : 2;
-      const labelText = milestoneHit && tokenBonus > 0 ? `+${tokenBonus} 🎁` : `+${rate}`;
+      // Wolf's pack bonus — extra tokens layered on top of the normal
+      // award (see currentStreakMultiplier's doc comment for why this
+      // doesn't touch incrementMatch's own boost/rate math).
+      wolfStreakRef.current += 1;
+      const wolfMult = currentStreakMultiplier(wolfTiers, wolfStreakRef.current);
+      const wolfBonus = wolfMult > 1 ? Math.round(rate * (wolfMult - 1)) : 0;
+      if (wolfBonus > 0) earnTokens(wolfBonus);
+      const labelText =
+        milestoneHit && tokenBonus > 0
+          ? `+${tokenBonus} 🎁`
+          : wolfBonus > 0
+            ? `+${rate + wolfBonus} 🐺`
+            : `+${rate}`;
       setTokenLabel((prev) => ({ key: prev.key + 1, text: labelText }));
       // Physics tokens launch from wherever the counter actually sits, so
       // they read as coming out of the HUD rather than from nowhere.
@@ -426,6 +444,7 @@ export default function Game() {
     }
 
     if (isFinal) {
+      wolfStreakRef.current = 0;
       missVariantRef.current = Math.floor(Math.random() * MISS_VARIANTS.length);
       setFeedback('miss');
       // A miss used to vanish without trace. Now it drops the word to box 0,
