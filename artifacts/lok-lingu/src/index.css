@@ -4243,3 +4243,26 @@
     height: 100dvh;
   }
 }
+
+/* ------------------------------------------------------------------
+   NiNi's palette — a slow, additive tint while equipped (companion-layer.tsx
+   renders this class, never touches localStorage['lok-lingu-theme']).
+   Deep purple <-> desaturated grey, the sloth's two-tone breathing.
+------------------------------------------------------------------ */
+@keyframes companion-nini-breathe {
+  0%, 100% { background-color: hsl(270 45% 35% / 0.16); }
+  50%      { background-color: hsl(240 8% 55% / 0.1); }
+}
+.companion-nini-tint {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: soft-light;
+  animation: companion-nini-breathe 8s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .companion-nini-tint {
+    animation: none;
+    background-color: hsl(270 45% 35% / 0.13);
+  }
+}

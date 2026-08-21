@@ -59,6 +59,13 @@ export interface CompanionKit {
   /** Tappable layer, rendered via particles/collectibles.ts. Phase 2 —
    *  most companions don't have one yet; see docs/COMPANIONS.md. */
   collectible?: CollectibleKit;
+  /** Overrides SPEED_TIMING (game.tsx) while equipped — more time to think
+   *  and speak. Voice mode only; draw mode has no restart-delay concept. */
+  pacing?: { hitMs: number; restartMs: number };
+  /** CSS class rendered as a full-screen, pointer-events-none tint by
+   *  companion-layer.tsx — purely additive, never touches the player's
+   *  saved theme (localStorage['lok-lingu-theme']). Defined in index.css. */
+  palette?: string;
   copy: {
     quips: string[];
   };
@@ -79,6 +86,11 @@ export const COMPANION_KITS: CompanionKit[] = [
       opacity: 0.4,
       cost: 0,
     },
+    // A tier beyond 'relaxed' (700/500) — more time to think and speak.
+    // This is the accessibility companion; framed as a sloth's pace, not
+    // an "easy mode" toggle, per the doc's explicit note not to nerf it.
+    pacing: { hitMs: 1100, restartMs: 900 },
+    palette: 'companion-nini-tint',
     // Bamboo grows from the bottom edge; weights mirror the doc's table
     // (40% tokens / 25% bonus points / 15% guest word / 10% skip / 8%
     // heart / 2% rare drop) with the three unbuilt slots folded into

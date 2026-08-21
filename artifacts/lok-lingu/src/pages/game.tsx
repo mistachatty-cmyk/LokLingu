@@ -17,7 +17,8 @@ import { gameWordFontSize } from '@/lib/word-sizing';
 import { getSelectedEmblem, earnedEmblems } from '@/lib/emblems';
 import { speakWord, matchWord, primeVoices, toLocale } from '@/lib/speech-utils';
 import { useTheme } from '@/hooks/use-theme';
-import { useCelebration, incrementCategoryLifetime, incrementTotalGames } from '@/hooks/use-celebration';
+import { useCelebration, incrementCategoryLifetime, incrementTotalGames, getEquippedCompanion } from '@/hooks/use-celebration';
+import { getCompanionKit } from '@/lib/companions';
 import { checkNightOwl, checkPerfectGame, checkSpeedDemon } from '@/lib/session-achievements';
 import { useCelebrationSound } from '@/hooks/use-celebration-sound';
 import { CelebrationEffect } from '@/components/celebration-effect';
@@ -158,7 +159,13 @@ export default function Game() {
     [playerLevel],
   );
   const { responseSpeed, heartsMode } = useSettings();
-  const timing = SPEED_TIMING[responseSpeed];
+  // NiNi overrides the response-speed setting entirely while equipped — a
+  // tier slower than 'relaxed', more time to think and speak. One-shot
+  // read (equipping only happens via full navigation to /roadmap).
+  const [equippedPacing] = useState(
+    () => getCompanionKit(getEquippedCompanion() ?? '')?.pacing ?? null,
+  );
+  const timing = equippedPacing ?? SPEED_TIMING[responseSpeed];
 
   // Voice mode had no survival mechanic at all — a miss flashed red and the
   // run simply continued until the player stopped the mic themselves. Draw

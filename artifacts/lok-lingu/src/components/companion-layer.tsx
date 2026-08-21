@@ -145,10 +145,11 @@ export function CompanionLayer({ zoneRef, onReward, wordCount = 0 }: Props) {
     play(burstConfig.sound, 'big');
   }, [wordCount, collectible?.burst, play]);
 
-  if (!shouldRunAmbient && !shouldRunCollectibles) return null;
+  if (!shouldRunAmbient && !shouldRunCollectibles && !kit?.palette) return null;
 
   return (
     <>
+      {kit?.palette && <div aria-hidden="true" className={kit.palette} style={{ zIndex: 0 }} />}
       {shouldRunAmbient && (
         <canvas
           ref={ambientCanvasRef}
