@@ -12,11 +12,14 @@
    bespoke game-loop hooks now, wired directly in game.tsx/draw.tsx rather
    than through the collectible engine (see each entry's comment).
 
-   Still ambient-only, deliberately: Wren (doc wants feathers nudging a
-   first-letter hint into the word display) and Leviathan (stacks two
-   other companions' ambients — needs multi-Season field composition,
-   which field.ts doesn't support). Not building a shallow reskin of
-   something else just to say they're "done".
+   Wren's hint (first-letter nudge, 25% per word) is wired directly in
+   game.tsx/draw.tsx via an `isWren` equip check, same as Phoenix's revive
+   — no CompanionKit field, since it's not data other code needs to read.
+
+   Still ambient-only, deliberately: Leviathan (stacks two other
+   companions' ambients — needs multi-Season field composition, which
+   field.ts doesn't support). Not building a shallow reskin of something
+   else just to say it's "done".
 ------------------------------------------------------------------ */
 
 import type { Season } from './seasons';

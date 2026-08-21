@@ -279,6 +279,21 @@ export default function Game() {
     // Only the word identity should retrigger the roll, not every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isBaguette, currentWord?.word, language, category]);
+
+  // Wren's hint: "feathers land on the word and gently nudge a hint (first
+  // letter)". A quiet nudge, not a crutch — rolled per word, same pattern
+  // as Baguette's guest word above, purely additive UI (no economy/heart
+  // interaction, so no reason to gate it to voice mode only).
+  const [isWren] = useState(() => getEquippedCompanion() === 'wren');
+  const [wrenHint, setWrenHint] = useState<string | null>(null);
+  useEffect(() => {
+    if (!isWren || !currentWord?.word) {
+      setWrenHint(null);
+      return;
+    }
+    setWrenHint(Math.random() < 0.25 ? currentWord.word[0] : null);
+  }, [isWren, currentWord?.word]);
+
   const lockedRef = useRef(false);
 
   /* ── review scheduling ──────────────────────────────────────────
@@ -901,6 +916,14 @@ export default function Game() {
           <div className="mt-3 flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-xs font-mono text-amber-300 animate-in fade-in duration-300">
             <span aria-hidden>🥖</span>
             <span>bonus: {guestWord.word}</span>
+          </div>
+        )}
+
+        {/* Wren's hint — a quiet nudge, not the answer. */}
+        {wrenHint && (
+          <div className="mt-3 flex items-center gap-1.5 rounded-full border border-sky-400/30 bg-sky-400/10 px-3 py-1 text-xs font-mono text-sky-300 animate-in fade-in duration-300">
+            <span aria-hidden>🪶</span>
+            <span>starts with "{wrenHint}"</span>
           </div>
         )}
 

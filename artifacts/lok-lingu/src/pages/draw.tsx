@@ -222,6 +222,17 @@ export default function Draw() {
   const [expanded, setExpanded] = useState(false);
   currentWordRef.current = currentWord;
 
+  // Wren's hint — see game.tsx's matching comment.
+  const [isWren] = useState(() => getEquippedCompanion() === 'wren');
+  const [wrenHint, setWrenHint] = useState<string | null>(null);
+  useEffect(() => {
+    if (!isWren || !currentWord?.word) {
+      setWrenHint(null);
+      return;
+    }
+    setWrenHint(Math.random() < 0.25 ? currentWord.word[0] : null);
+  }, [isWren, currentWord?.word]);
+
   // ── success / failure handlers ─────────────────────────────────────────────
   const handleSuccess = useCallback(() => {
     if (status !== 'idle' || gameOver) return;
@@ -748,6 +759,13 @@ export default function Draw() {
                   animKey={wordIndex}
                   scale={0.65}
                 />
+                {/* Wren's hint — a quiet nudge, not the answer. */}
+                {wrenHint && (
+                  <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-sky-400/30 bg-sky-400/10 px-3 py-1 text-xs font-mono text-sky-300 animate-in fade-in duration-300">
+                    <span aria-hidden>🪶</span>
+                    <span>starts with "{wrenHint}"</span>
+                  </div>
+                )}
               </div>
 
               {/*
