@@ -178,6 +178,11 @@ export default function Game() {
   livesRef.current = lives;
   const heartsModeRef = useRef(heartsMode);
   heartsModeRef.current = heartsMode;
+  // Phoenix's marquee perk: once per match, revive from 0 hearts instead
+  // of ending the run. One-shot equip read + one-shot per-mount use flag,
+  // same pattern as isBaguette below.
+  const [isPhoenix] = useState(() => getEquippedCompanion() === 'phoenix');
+  const phoenixUsedRef = useRef(false);
   const stopListeningRef = useRef<() => void>(() => {});
 
   // Stable ref so handleResult can call abortSession without it being in
@@ -439,6 +444,13 @@ export default function Game() {
         livesRef.current = next;
         setLives(next);
         if (next <= 0) {
+          if (isPhoenix && !phoenixUsedRef.current) {
+            phoenixUsedRef.current = true;
+            livesRef.current = 1;
+            setLives(1);
+            setTokenLabel((prev) => ({ key: prev.key + 1, text: '🔥 Reborn!' }));
+            return;
+          }
           lockedRef.current = true;
           abortSessionRef.current();
           setIsActive(false);

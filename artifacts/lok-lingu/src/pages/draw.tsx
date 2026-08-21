@@ -19,7 +19,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { DrawCanvas, type DrawCanvasHandle } from '@/components/draw-canvas';
-import { useCelebration, incrementCategoryLifetime, incrementTotalGames } from '@/hooks/use-celebration';
+import { useCelebration, incrementCategoryLifetime, incrementTotalGames, getEquippedCompanion } from '@/hooks/use-celebration';
 import { checkNightOwl, checkPerfectGame, checkSpeedDemon } from '@/lib/session-achievements';
 import { useSettings } from '@/hooks/use-settings';
 import { useCelebrationSound } from '@/hooks/use-celebration-sound';
@@ -176,6 +176,10 @@ export default function Draw() {
   // declared but nothing read it, so draw mode's three lives were always
   // on with no way to turn them off.
   const { heartsMode } = useSettings();
+  // Phoenix's marquee perk: once per match, revive from 0 hearts instead
+  // of ending the run.
+  const [isPhoenix] = useState(() => getEquippedCompanion() === 'phoenix');
+  const phoenixUsedRef = useRef(false);
   useCelebrationSound(); // keeps audio context alive
   const { theme } = useTheme();
 
@@ -296,6 +300,17 @@ export default function Draw() {
          */
         if (consumeHeart()) {
           setLives(1);
+          canvasRef.current?.clear();
+          setStatus('idle');
+          return;
+        }
+        // Phoenix's marquee perk: once per match, revive instead of
+        // ending the run. Checked after the banked-heart rescue (a
+        // purchased heart is spent first; Phoenix is the last resort).
+        if (isPhoenix && !phoenixUsedRef.current) {
+          phoenixUsedRef.current = true;
+          setLives(1);
+          setTokenLabel((prev) => ({ key: prev.key + 1, text: '🔥 Reborn!' }));
           canvasRef.current?.clear();
           setStatus('idle');
           return;
