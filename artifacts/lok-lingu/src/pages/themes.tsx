@@ -34,7 +34,9 @@ import {
   getSelectedMotion,
   ownsMotion,
   purchaseMotion,
+  resolveMotion,
 } from '@/lib/token-motions';
+import { TokenMotionPreview } from '@/components/token-motion-preview';
 
 const SHOP_SECTIONS: NavSection[] = [
   { id: 'shop-stacks', label: 'Stacks' },
@@ -533,6 +535,18 @@ function TokenSkinShop() {
   const [owned, setOwned] = useState<string[]>(getOwnedSkins);
   const [previews, setPreviews] = useState<Record<string, number>>({});
   const [previewedSkin, setPreviewedSkin] = useState<TokenSkin | null>(null);
+  // Longest skin.duration in the catalog today is 1.2s — this leaves a
+  // comfortable buffer so the preview never clears mid-animation.
+  const previewDismissRef = useRef<number | null>(null);
+  const armPreviewDismiss = () => {
+    if (previewDismissRef.current) window.clearTimeout(previewDismissRef.current);
+    previewDismissRef.current = window.setTimeout(() => setPreviewedSkin(null), 2200);
+  };
+  useEffect(() => {
+    return () => {
+      if (previewDismissRef.current) window.clearTimeout(previewDismissRef.current);
+    };
+  }, []);
   const [purchaseConfirm, setPurchaseConfirm] = useState<string | null>(null);
   const [note, setNote] = useState<{ id: string; text: string; ok: boolean } | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -640,10 +654,12 @@ function TokenSkinShop() {
       return;
     }
 
-    // First click: show preview
+    // First click: show preview, then auto-clear a couple seconds after
+    // the animation finishes rather than sitting there until another tap.
     if (previewedSkin?.id !== skin.id) {
       setPreviewedSkin(skin);
       setPurchaseConfirm(null);
+      armPreviewDismiss();
       return;
     }
 
@@ -654,6 +670,7 @@ function TokenSkinShop() {
       return;
     }
 
+    if (previewDismissRef.current) window.clearTimeout(previewDismissRef.current);
     grantSkin(skin.id);
     setSelectedSkin(skin.id);
     setOwned(getOwnedSkins());
@@ -807,13 +824,24 @@ function TokenSkinShop() {
         );
       })}
 
-      {previewedSkin && !owned.includes(previewedSkin.id) && !ownsSkin(previewedSkin.id, level) && (
-        <div className="rounded-lg border border-emerald-500/50 bg-emerald-500/10 p-3">
-          <p className="text-xs font-bold text-emerald-400">
-            ✓ Previewing {previewedSkin.name} — click again to purchase for {previewedSkin.cost} tokens
-          </p>
-        </div>
-      )}
+      <AnimatePresence>
+        {previewedSkin && !owned.includes(previewedSkin.id) && !ownsSkin(previewedSkin.id, level) && (
+          <motion.div
+            key={previewedSkin.id}
+            initial={{ opacity: 0, x: -12, height: 0 }}
+            animate={{ opacity: 1, x: 0, height: 'auto' }}
+            exit={{ opacity: 0, x: 24, height: 0 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            className="overflow-hidden"
+          >
+            <div className="rounded-lg border border-emerald-500/50 bg-emerald-500/10 p-3">
+              <p className="text-xs font-bold text-emerald-400">
+                ✓ Previewing {previewedSkin.name} — click again to purchase for {previewedSkin.cost} tokens
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <p className="rounded-lg border border-border bg-card p-3 text-[10px] leading-relaxed text-muted-foreground">
         The Vault caps its pile and evicts the oldest coins, and every skin drops to a cheaper
@@ -836,11 +864,18 @@ function TokenSkinShop() {
  */
 function MotionShop() {
   const { balance } = useEconomy();
+  const { skin } = useTokenSkin();
   const [owned, setOwned] = useState<string[]>(getOwnedMotions);
   const [selected, setSelected] = useState(() => getSelectedMotion().id);
   const [note, setNote] = useState<{ id: string; text: string; ok: boolean } | null>(null);
+  const [previews, setPreviews] = useState<Record<string, number>>({});
+
+  const bump = (id: string) => setPreviews((p) => ({ ...p, [id]: (p[id] ?? 0) + 1 }));
 
   const handleCard = (motion: (typeof TOKEN_MOTIONS)[number]) => {
+    // Play the live preview on every tap regardless of purchase outcome —
+    // seeing what a motion looks like shouldn't require already owning it.
+    bump(motion.id);
     const had = ownsMotion(motion.id);
     if (!purchaseMotion(motion.id)) {
       setNote({ id: motion.id, text: `Needs ${motion.cost} tokens — keep playing.`, ok: false });
@@ -890,6 +925,19 @@ function MotionShop() {
               }`}
             >
               {isSelected && <Check className="absolute top-2 right-2 w-3.5 h-3.5 text-primary" />}
+
+              {/* Live preview stage — the real token-sim physics, contained. */}
+              <div className="relative mb-2 h-16 overflow-hidden rounded-lg bg-background/60">
+                <span className="absolute inset-0 flex items-center justify-center text-lg opacity-30">
+                  {skin?.glyph ?? '🪙'}
+                </span>
+                <TokenMotionPreview
+                  motion={resolveMotion(m)}
+                  glyph={skin?.glyph ?? '🪙'}
+                  animKey={previews[m.id] ?? 0}
+                />
+              </div>
+
               <div className="flex items-center gap-1.5">
                 <span className="font-bold text-xs uppercase tracking-wide">{m.name}</span>
                 {m.ultimate && <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />}
