@@ -226,8 +226,14 @@ export const COMPANION_KITS: CompanionKit[] = [
       sizeRange: [16, 26],
       capPerRun: 30,
       rewards: [
-        { kind: 'tokens', weight: 92, amount: [1, 3] },
+        { kind: 'tokens', weight: 90, amount: [1, 3] },
         { kind: 'heart', weight: 8 },
+        // Doc: "every reward table carries a 2% cosmetic slot." Fireflies
+        // isn't a literal water skin (none of the premium Seasons are),
+        // but the doc doesn't require a thematic match, only that it's
+        // an existing grant -- see NiNi/Amber for the cases where a
+        // matching skin did exist.
+        { kind: 'skin', weight: 2, seasonId: 'fireflies' },
       ],
       charge: {
         capacity: 5,
@@ -264,8 +270,10 @@ export const COMPANION_KITS: CompanionKit[] = [
       sizeRange: [18, 28],
       capPerRun: 15,
       rewards: [
-        { kind: 'tokens', weight: 90, amount: [2, 6] },
+        { kind: 'tokens', weight: 88, amount: [2, 6] },
         { kind: 'skip', weight: 10 },
+        // A perfect match this time — Fox's own ambient IS autumn leaves.
+        { kind: 'skin', weight: 2, seasonId: 'leaves' },
       ],
       charge: {
         capacity: 3,
@@ -359,7 +367,10 @@ export const COMPANION_KITS: CompanionKit[] = [
       origin: 'top',
       sizeRange: [22, 34],
       capPerRun: 12,
-      rewards: [{ kind: 'tokens', weight: 100, amount: [2, 5] }],
+      rewards: [
+        { kind: 'tokens', weight: 98, amount: [2, 5] },
+        { kind: 'skin', weight: 2, seasonId: 'snow' },
+      ],
       charge: {
         capacity: 8,
         burstCount: [18, 28],
