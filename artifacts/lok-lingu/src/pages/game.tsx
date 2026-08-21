@@ -10,7 +10,9 @@ import { useSpeechEngine } from '@/hooks/use-speech-engine';
 import { useSettings } from '@/hooks/use-settings';
 import { useDevMode } from '@/hooks/use-dev-mode';
 import { useEconomy } from '@/hooks/use-economy';
-import { consumeSkip, FREE_SKIPS_PER_MATCH } from '@/lib/economy';
+import { consumeSkip, FREE_SKIPS_PER_MATCH, earnTokens } from '@/lib/economy';
+import { frenchCounterpart, GUEST_WORD_CHANCE } from '@/lib/companion-guest-word';
+import type { WordEntry } from '@/lib/offline-data';
 import { currentWords, freeSkipsForLevel } from '@/lib/levels';
 import { effectiveLevelState, currentPrestige, prestigeIcon } from '@/lib/prestige';
 import { gameWordFontSize } from '@/lib/word-sizing';
@@ -240,6 +242,26 @@ export default function Game() {
   languageRef.current = language;
   const categoryRef = useRef(category);
   categoryRef.current = category;
+
+  // Sir Baguette's guest word — strictly upside, see companion-guest-word.ts.
+  // One-shot equip read, matching the rest of this file's companion checks.
+  const [isBaguette] = useState(() => getEquippedCompanion() === 'sir-baguette');
+  const [guestWord, setGuestWord] = useState<WordEntry | null>(null);
+  const guestWordRef = useRef<WordEntry | null>(null);
+  guestWordRef.current = guestWord;
+  useEffect(() => {
+    if (!isBaguette || !currentWord) {
+      setGuestWord(null);
+      return;
+    }
+    setGuestWord(
+      Math.random() < GUEST_WORD_CHANCE
+        ? frenchCounterpart(currentWord.word, language, category)
+        : null,
+    );
+    // Only the word identity should retrigger the roll, not every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isBaguette, currentWord?.word, language, category]);
   const lockedRef = useRef(false);
 
   /* ── review scheduling ──────────────────────────────────────────
@@ -344,6 +366,28 @@ export default function Game() {
       ? [currentWordRef.current.pronunciation]
       : [];
 
+    // Sir Baguette's guest word: a strictly-upside bonus layered on top of
+    // the real target, not a replacement for it. Deliberately skips
+    // recordAttempt/incrementCategoryLifetime/incrementMatch's lifetime
+    // tracking -- ephemeral exposure that pays tokens and nothing else,
+    // per the doc, so it can't pollute review-scheduler or Polyglot-badge
+    // data for a language the player isn't actually studying.
+    const guest = guestWordRef.current;
+    if (guest && matchWord(spoken, guest.word, guest.pronunciation ? [guest.pronunciation] : [])) {
+      lockedRef.current = true;
+      abortSessionRef.current();
+      setFeedback('hit');
+      setGuestWord(null);
+      earnTokens(2);
+      setTokenLabel((prev) => ({ key: prev.key + 1, text: 'Oui ! +2' }));
+      spawnTokenAt(tokenAnchorRef.current);
+      setTimeout(() => {
+        setFeedback('idle');
+        lockedRef.current = false;
+      }, timing.hitMs);
+      return;
+    }
+
     if (matchWord(spoken, target, alternates)) {
       lockedRef.current = true;
       // Close the current recognition session immediately so the restart timer
@@ -425,8 +469,11 @@ export default function Game() {
     } else {
       words.forEach(add);
     }
+    // Sir Baguette's guest word needs to be in the grammar too, or Vosk
+    // would never have a chance of hearing it correctly.
+    if (guestWord) add(guestWord);
     return [...pool];
-  }, [infinite, wordIndex, language, words]);
+  }, [infinite, wordIndex, language, words, guestWord]);
 
   const {
     isListening,
@@ -781,6 +828,16 @@ export default function Game() {
           feedback={feedback}
           animKey={wordIndex}
         />
+
+        {/* Sir Baguette's guest word — strictly a bonus. Say the target word
+            as normal, or say this too for +2 extra tokens; ignoring it has
+            no cost at all. */}
+        {guestWord && (
+          <div className="mt-3 flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-xs font-mono text-amber-300 animate-in fade-in duration-300">
+            <span aria-hidden>🥖</span>
+            <span>bonus: {guestWord.word}</span>
+          </div>
+        )}
 
         <div className="flex flex-col items-center">
             <div className="group relative mt-10 flex flex-col items-center">
