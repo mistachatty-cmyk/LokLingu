@@ -35,6 +35,17 @@ export interface CollectibleKit {
     count: [number, number];
     sound: SoundProfile;
   };
+  /** Amber's bottle: every `capacity`-th collect (on top of its own normal
+   *  reward) also fires a bigger burst + a bonus reward roll, then resets.
+   *  Doc's escalating 25/50/100 thresholds are simplified to one repeating
+   *  threshold here — the multi-tier version needs a persistent fill-level
+   *  HUD element that isn't built yet. */
+  charge?: {
+    capacity: number;
+    burstCount: [number, number];
+    sound: SoundProfile;
+    bonusRewards: RewardRoll[];
+  };
 }
 
 export interface CompanionKit {
@@ -233,6 +244,27 @@ export const COMPANION_KITS: CompanionKit[] = [
       sizeRange: [10, 18],
       opacity: 0.5,
       cost: 0,
+    },
+    // Tappable embers pay a small amount on their own; every 25th one also
+    // fires the "bottle" — a bigger burst + bonus payout, per the doc's
+    // "hoard the embers, cash in the hoard" fantasy.
+    collectible: {
+      glyph: '🔥',
+      spawnEveryMs: [1800, 3400],
+      maxOnScreen: 5,
+      origin: 'top',
+      sizeRange: [20, 32],
+      capPerRun: 40,
+      rewards: [
+        { kind: 'tokens', weight: 90, amount: [1, 4] },
+        { kind: 'skip', weight: 10 },
+      ],
+      charge: {
+        capacity: 25,
+        burstCount: [16, 24],
+        sound: 'gong',
+        bonusRewards: [{ kind: 'tokens', weight: 100, amount: [40, 80] }],
+      },
     },
     copy: { quips: ['Legendary pace.', 'Fire it up!'] },
   },

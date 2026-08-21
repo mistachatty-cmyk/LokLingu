@@ -54,6 +54,8 @@ export function CompanionLayer({ zoneRef, onReward, wordCount = 0 }: Props) {
   /** Last wordCount a burst fired at, so a re-render at the same count
    *  (e.g. a sibling state update) can't double-fire it. */
   const lastBurstAtRef = useRef(0);
+  /** Amber's bottle fill, since last burst — resets to 0 each time it pays out. */
+  const chargeRef = useRef(0);
 
   const kit = equippedId ? getCompanionKit(equippedId) : null;
   const season = kit?.ambient;
@@ -107,6 +109,20 @@ export function CompanionLayer({ zoneRef, onReward, wordCount = 0 }: Props) {
         const roll = rollReward(collectible.rewards);
         const label = grantReward(roll);
         onReward?.(label);
+        const chargeConfig = collectible.charge;
+        if (chargeConfig) {
+          chargeRef.current += 1;
+          if (chargeRef.current >= chargeConfig.capacity) {
+            chargeRef.current = 0;
+            const [minC, maxC] = chargeConfig.burstCount;
+            const count = Math.round(minC + Math.random() * (maxC - minC));
+            collectiblesRef.current?.burst(count);
+            play(chargeConfig.sound, 'suBang');
+            const bonusRoll = rollReward(chargeConfig.bonusRewards);
+            const bonusLabel = grantReward(bonusRoll);
+            onReward?.(bonusLabel);
+          }
+        }
       },
     });
     collectiblesRef.current = handle;
