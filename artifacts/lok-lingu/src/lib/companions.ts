@@ -3,12 +3,23 @@
 
    See docs/COMPANIONS.md for the full design record (why each field
    exists, the occlusion/reduced-motion/anti-farm constraints, and the
-   build order this file is Phase 1 of). This file ships the "kit and
-   ambient" phase: a CompanionKit entry per companion, each with an
-   `ambient` Season fed straight into the existing particle engine
-   (src/lib/particles/field.ts). Collectibles, per-companion specials
-   (NiNi's pacing/palette, Amber's bottle, Baguette's guest words) and
-   rare drops are later phases — not built here.
+   build order). Every companion has ambient (Phase 1). NiNi, Amber,
+   Baguette, Otter, Fox and Whale also have a collectible/special (Phase
+   2-4) — see each entry's own comment for how it maps to (or simplifies)
+   its doc spec.
+
+   Still ambient-only, deliberately: Wren (doc wants feathers nudging a
+   first-letter hint into the word display), Crane (fold-a-crane-over-N-
+   corrects -> streak shield), Wolf (escalating token multiplier while a
+   streak holds), Phoenix (once-per-match revive from 0 hearts), and
+   Leviathan (stacks two other companions' ambients). Each needs bespoke
+   game-loop wiring beyond the generic collectible+reward+charge engine
+   the other six reuse — hint injection into GameWord, a shield flag
+   surviving a miss, a live multiplier on the token-award math, a
+   heart-refill hook, and multi-Season field composition, respectively.
+   None of that plumbing exists yet; not building a shallow reskin of the
+   collectible engine for them just to say they're "done", since none of
+   those five mechanics is actually a tap-and-reward loop.
 ------------------------------------------------------------------ */
 
 import type { Season } from './seasons';
@@ -166,6 +177,28 @@ export const COMPANION_KITS: CompanionKit[] = [
       opacity: 0.4,
       cost: 0,
     },
+    // Doc's "raft" combo (clear 5 before any surface) needs a per-bubble
+    // lifespan signal collectibles.ts doesn't expose yet -- approximated
+    // with the same charge mechanic Amber's bottle uses: every 5th bubble
+    // caught is the "raft" landing, paying a bonus on top.
+    collectible: {
+      glyph: '🫧',
+      spawnEveryMs: [1600, 3000],
+      maxOnScreen: 6,
+      origin: 'top',
+      sizeRange: [16, 26],
+      capPerRun: 30,
+      rewards: [
+        { kind: 'tokens', weight: 92, amount: [1, 3] },
+        { kind: 'heart', weight: 8 },
+      ],
+      charge: {
+        capacity: 5,
+        burstCount: [6, 10],
+        sound: 'splash',
+        bonusRewards: [{ kind: 'tokens', weight: 100, amount: [10, 20] }],
+      },
+    },
     copy: { quips: ['Splash! Having fun yet?', "You've got this."] },
   },
   {
@@ -181,6 +214,28 @@ export const COMPANION_KITS: CompanionKit[] = [
       sizeRange: [12, 20],
       opacity: 0.45,
       cost: 0,
+    },
+    // Doc's shell game (token hidden under one of 3 leaves) needs a
+    // choice-based reveal UI that doesn't exist yet -- simplified to a
+    // guaranteed bonus every 3rd leaf caught, same charge mechanic as
+    // Otter's raft, so it's still "sometimes a leaf hides something".
+    collectible: {
+      glyph: '🍁',
+      spawnEveryMs: [2000, 3600],
+      maxOnScreen: 4,
+      origin: 'edges',
+      sizeRange: [18, 28],
+      capPerRun: 15,
+      rewards: [
+        { kind: 'tokens', weight: 90, amount: [2, 6] },
+        { kind: 'skip', weight: 10 },
+      ],
+      charge: {
+        capacity: 3,
+        burstCount: [5, 8],
+        sound: 'pop',
+        bonusRewards: [{ kind: 'tokens', weight: 100, amount: [15, 30] }],
+      },
     },
     copy: { quips: ['Yip! Nearly there.', 'Sneaky good streak.'] },
   },
@@ -245,6 +300,25 @@ export const COMPANION_KITS: CompanionKit[] = [
       sizeRange: [10, 22],
       opacity: 0.3,
       cost: 0,
+    },
+    // "Very rare, very large payout" -- a slow, low-count spawn (few
+    // chances per run) with a small per-bubble reward, but the charge
+    // threshold is deliberately low relative to Otter's so a "breach"
+    // actually lands sometimes despite the low spawn rate.
+    collectible: {
+      glyph: '🫧',
+      spawnEveryMs: [3200, 5200],
+      maxOnScreen: 3,
+      origin: 'top',
+      sizeRange: [22, 34],
+      capPerRun: 12,
+      rewards: [{ kind: 'tokens', weight: 100, amount: [2, 5] }],
+      charge: {
+        capacity: 8,
+        burstCount: [18, 28],
+        sound: 'ascend',
+        bonusRewards: [{ kind: 'tokens', weight: 100, amount: [60, 120] }],
+      },
     },
     copy: { quips: ['A deep breath, then on.', 'Making waves out there.'] },
   },
