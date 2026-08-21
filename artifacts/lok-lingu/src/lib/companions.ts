@@ -93,8 +93,9 @@ export const COMPANION_KITS: CompanionKit[] = [
     palette: 'companion-nini-tint',
     // Bamboo grows from the bottom edge; weights mirror the doc's table
     // (40% tokens / 25% bonus points / 15% guest word / 10% skip / 8%
-    // heart / 2% rare drop) with the three unbuilt slots folded into
-    // 'tokens' — see companion-rewards.ts's file header.
+    // heart / 2% rare drop) with 'bonus points' and 'guest word' folded
+    // into 'tokens' (still unbuilt as generic reward-table entries — see
+    // companion-rewards.ts's file header) but the rare drop is real.
     collectible: {
       glyph: '🎋',
       spawnEveryMs: [2200, 4200],
@@ -103,9 +104,14 @@ export const COMPANION_KITS: CompanionKit[] = [
       sizeRange: [26, 40],
       capPerRun: 8,
       rewards: [
-        { kind: 'tokens', weight: 82, amount: [3, 12] },
+        { kind: 'tokens', weight: 80, amount: [3, 12] },
         { kind: 'skip', weight: 10 },
         { kind: 'heart', weight: 8 },
+        // Doc's "rare cosmetic drop" slot — grants the Autumn Leaves skin,
+        // matching NiNi's own falling-leaves ambient. Backed by the pity
+        // timer in companion-layer.tsx, so it's guaranteed within a bound
+        // even at 2% odds rather than possibly never landing.
+        { kind: 'skin', weight: 2, seasonId: 'leaves' },
       ],
       // Every 10 words: a bamboo explosion — bounces around and clatters,
       // no tap needed. Celebration, not a second payout channel (the slow
@@ -268,8 +274,11 @@ export const COMPANION_KITS: CompanionKit[] = [
       sizeRange: [20, 32],
       capPerRun: 40,
       rewards: [
-        { kind: 'tokens', weight: 90, amount: [1, 4] },
+        { kind: 'tokens', weight: 88, amount: [1, 4] },
         { kind: 'skip', weight: 10 },
+        // Rare drop — Ash & Embers, matching Amber's own ambient. Same
+        // pity-timer backstop as NiNi's leaves.
+        { kind: 'skin', weight: 2, seasonId: 'embers' },
       ],
       charge: {
         capacity: 25,

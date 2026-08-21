@@ -4,7 +4,7 @@ import { createField, type FieldHandle } from '@/lib/particles/field';
 import { createCollectibles, type CollectiblesHandle } from '@/lib/particles/collectibles';
 import { getEquippedCompanion } from '@/hooks/use-celebration';
 import { getCompanionKit } from '@/lib/companions';
-import { rollReward, grantReward } from '@/lib/companion-rewards';
+import { rollReward, rollRewardWithPity, grantReward } from '@/lib/companion-rewards';
 import { useCelebrationSound } from '@/hooks/use-celebration-sound';
 
 interface Props {
@@ -106,7 +106,7 @@ export function CompanionLayer({ zoneRef, onReward, wordCount = 0 }: Props) {
       onCollect: () => {
         if (collectedRef.current >= collectible.capPerRun) return;
         collectedRef.current += 1;
-        const roll = rollReward(collectible.rewards);
+        const roll = kit ? rollRewardWithPity(kit.id, collectible.rewards) : rollReward(collectible.rewards);
         const label = grantReward(roll);
         onReward?.(label);
         const chargeConfig = collectible.charge;
