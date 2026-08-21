@@ -224,6 +224,10 @@ export default function Draw() {
 
   // Wren's hint — see game.tsx's matching comment.
   const [isWren] = useState(() => getEquippedCompanion() === 'wren');
+  // Game-over copy only — Baguette's guest word itself stays voice-only
+  // (game.tsx), but the "C'est la vie." sign-off applies wherever a run
+  // can end while he's equipped.
+  const [isBaguette] = useState(() => getEquippedCompanion() === 'sir-baguette');
   const [wrenHint, setWrenHint] = useState<string | null>(null);
   useEffect(() => {
     if (!isWren || !currentWord?.word) {
@@ -1052,7 +1056,9 @@ export default function Draw() {
               className="text-center w-full max-w-sm space-y-8 px-4"
             >
               <div>
-                <h2 className="text-4xl font-black text-destructive uppercase tracking-widest">Game Over</h2>
+                <h2 className="text-4xl font-black text-destructive uppercase tracking-widest">
+                  {isBaguette ? "C'est la vie." : 'Game Over'}
+                </h2>
                 <p className="text-muted-foreground mt-1">
                   You drew {count} word{count !== 1 ? 's' : ''}.
                 </p>

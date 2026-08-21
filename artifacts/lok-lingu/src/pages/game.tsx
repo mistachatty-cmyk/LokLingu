@@ -739,7 +739,9 @@ export default function Game() {
           className="text-center w-full max-w-sm space-y-8"
         >
           <div>
-            <h2 className="text-4xl font-black text-destructive uppercase tracking-widest">Game Over</h2>
+            <h2 className="text-4xl font-black text-destructive uppercase tracking-widest">
+              {isBaguette ? "C'est la vie." : 'Game Over'}
+            </h2>
             <p className="text-muted-foreground mt-1">
               {runSummary.correct} word{runSummary.correct !== 1 ? 's' : ''} correct.
             </p>
