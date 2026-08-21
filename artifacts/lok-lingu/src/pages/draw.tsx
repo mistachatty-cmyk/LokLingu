@@ -186,6 +186,10 @@ export default function Draw() {
   const [craneShield] = useState(() => getCompanionKit(getEquippedCompanion() ?? '')?.shield);
   const craneFoldRef = useRef(0);
   const craneShieldActiveRef = useRef(false);
+  const [sparrowBurst] = useState(() => getCompanionKit(getEquippedCompanion() ?? '')?.burstChance);
+  const [tigerAmbush] = useState(() => getCompanionKit(getEquippedCompanion() ?? '')?.ambush);
+  const ambushActiveRef = useRef(false);
+  const [ambushFlagged, setAmbushFlagged] = useState(false);
   const { play: playSound } = useCelebrationSound();
   const { theme } = useTheme();
 
@@ -237,6 +241,13 @@ export default function Draw() {
     setWrenHint(Math.random() < 0.25 ? currentWord.word[0] : null);
   }, [isWren, currentWord?.word]);
 
+  // Tiger's ambush — see game.tsx's matching comment.
+  useEffect(() => {
+    const flagged = !!tigerAmbush && !!currentWord?.word && Math.random() < tigerAmbush.chance;
+    ambushActiveRef.current = flagged;
+    setAmbushFlagged(flagged);
+  }, [tigerAmbush, currentWord?.word]);
+
   // ── success / failure handlers ─────────────────────────────────────────────
   const handleSuccess = useCallback(() => {
     if (status !== 'idle' || gameOver) return;
@@ -254,6 +265,14 @@ export default function Draw() {
     const wolfMult = currentStreakMultiplier(wolfTiers, wolfStreakRef.current);
     const wolfBonus = wolfMult > 1 ? Math.round(rate * (wolfMult - 1)) : 0;
     if (wolfBonus > 0) earnTokens(wolfBonus);
+    // Sparrow / Tiger — see game.tsx's matching comment.
+    const sparrowHit = !!sparrowBurst && Math.random() < sparrowBurst.chance;
+    const sparrowBonus = sparrowHit ? Math.round(rate * sparrowBurst!.extraMult) : 0;
+    if (sparrowBonus > 0) earnTokens(sparrowBonus);
+    const ambushHit = ambushActiveRef.current;
+    const ambushBonus = ambushHit && tigerAmbush ? Math.round(rate * tigerAmbush.bonusMult) : 0;
+    if (ambushBonus > 0) earnTokens(ambushBonus);
+    ambushActiveRef.current = false;
     // Crane's fold-a-crane shield — see game.tsx's matching comment.
     let craneReady = false;
     if (craneShield && !craneShieldActiveRef.current) {
@@ -269,9 +288,13 @@ export default function Draw() {
       ? '🕊️ Shield ready!'
       : milestoneHit && tokenBonus > 0
         ? `+${tokenBonus} 🎁`
-        : wolfBonus > 0
-          ? `+${rate + wolfBonus} 🐺`
-          : `+${rate}`;
+        : ambushBonus > 0
+          ? `+${rate + ambushBonus} 🐅`
+          : sparrowBonus > 0
+            ? `+${rate + sparrowBonus} ⚡`
+            : wolfBonus > 0
+              ? `+${rate + wolfBonus} 🐺`
+              : `+${rate}`;
     setTokenLabel((prev) => ({ key: prev.key + 1, text: labelText }));
     spawnTokenAt(tokenAnchorRef.current);
     // Promote this word up a Leitner box before advancing.
@@ -768,6 +791,12 @@ export default function Draw() {
                   <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-sky-400/30 bg-sky-400/10 px-3 py-1 text-xs font-mono text-sky-300 animate-in fade-in duration-300">
                     <span aria-hidden>🪶</span>
                     <span>starts with "{wrenHint}"</span>
+                  </div>
+                )}
+                {ambushFlagged && (
+                  <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-orange-400/30 bg-orange-400/10 px-3 py-1 text-xs font-mono text-orange-300 animate-in fade-in duration-300">
+                    <span aria-hidden>🐅</span>
+                    <span>ambush — bonus if you get this one!</span>
                   </div>
                 )}
               </div>

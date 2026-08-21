@@ -89,6 +89,17 @@ export interface CompanionKit {
    *  (no heart lost, fold progress untouched) rather than breaking the
    *  streak like a normal miss would. */
   shield?: { foldsNeeded: number };
+  /** Sparrow: "short bursts of doubled token rate" — a per-hit chance to
+   *  add `extraMult`x the normal rate as bonus tokens, layered on top the
+   *  same way Wolf's pack bonus is. Stateless (no window/duration to
+   *  track) — each burst is exactly the one hit it lands on. */
+  burstChance?: { chance: number; extraMult: number };
+  /** Tiger: ambush — rolled once per served word (like Wren's hint); a
+   *  flagged word pays `bonusMult`x extra if answered correctly. Missing
+   *  a flagged word has no extra consequence beyond the normal miss —
+   *  this app avoids punitive drawbacks elsewhere (see Baguette's guest
+   *  word), so "or nothing" means no bonus, not a penalty. */
+  ambush?: { chance: number; bonusMult: number };
   copy: {
     quips: string[];
   };
@@ -186,6 +197,7 @@ export const COMPANION_KITS: CompanionKit[] = [
       opacity: 0.45,
       cost: 0,
     },
+    burstChance: { chance: 0.12, extraMult: 1 },
     copy: { quips: ['Quick as ever!', "Let's keep going."] },
   },
   {
@@ -319,6 +331,7 @@ export const COMPANION_KITS: CompanionKit[] = [
       opacity: 0.3,
       cost: 0,
     },
+    ambush: { chance: 0.08, bonusMult: 3 },
     copy: { quips: ['Roar! Ferocious focus.', 'Keep the momentum.'] },
   },
   {

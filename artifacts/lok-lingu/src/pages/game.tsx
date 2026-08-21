@@ -195,6 +195,12 @@ export default function Game() {
   const [craneShield] = useState(() => getCompanionKit(getEquippedCompanion() ?? '')?.shield);
   const craneFoldRef = useRef(0);
   const craneShieldActiveRef = useRef(false);
+  // Sparrow: per-hit chance of a doubled-rate burst.
+  const [sparrowBurst] = useState(() => getCompanionKit(getEquippedCompanion() ?? '')?.burstChance);
+  // Tiger: rolled once per served word (like Wren's hint); a flagged word
+  // pays a bonus on a correct answer only.
+  const [tigerAmbush] = useState(() => getCompanionKit(getEquippedCompanion() ?? '')?.ambush);
+  const ambushActiveRef = useRef(false);
   const stopListeningRef = useRef<() => void>(() => {});
 
   // Stable ref so handleResult can call abortSession without it being in
@@ -293,6 +299,14 @@ export default function Game() {
     }
     setWrenHint(Math.random() < 0.25 ? currentWord.word[0] : null);
   }, [isWren, currentWord?.word]);
+
+  // Tiger's ambush — rolled per word, same pattern as Wren's hint.
+  const [ambushFlagged, setAmbushFlagged] = useState(false);
+  useEffect(() => {
+    const flagged = !!tigerAmbush && !!currentWord?.word && Math.random() < tigerAmbush.chance;
+    ambushActiveRef.current = flagged;
+    setAmbushFlagged(flagged);
+  }, [tigerAmbush, currentWord?.word]);
 
   const lockedRef = useRef(false);
 
@@ -446,6 +460,15 @@ export default function Game() {
       const wolfMult = currentStreakMultiplier(wolfTiers, wolfStreakRef.current);
       const wolfBonus = wolfMult > 1 ? Math.round(rate * (wolfMult - 1)) : 0;
       if (wolfBonus > 0) earnTokens(wolfBonus);
+      // Sparrow: per-hit chance of a doubled-rate burst.
+      const sparrowHit = !!sparrowBurst && Math.random() < sparrowBurst.chance;
+      const sparrowBonus = sparrowHit ? Math.round(rate * sparrowBurst!.extraMult) : 0;
+      if (sparrowBonus > 0) earnTokens(sparrowBonus);
+      // Tiger: this word was flagged as an ambush — correct pays a big bonus.
+      const ambushHit = ambushActiveRef.current;
+      const ambushBonus = ambushHit && tigerAmbush ? Math.round(rate * tigerAmbush.bonusMult) : 0;
+      if (ambushBonus > 0) earnTokens(ambushBonus);
+      ambushActiveRef.current = false;
       // Crane's fold-a-crane shield.
       let craneReady = false;
       if (craneShield && !craneShieldActiveRef.current) {
@@ -461,9 +484,13 @@ export default function Game() {
         ? '🕊️ Shield ready!'
         : milestoneHit && tokenBonus > 0
           ? `+${tokenBonus} 🎁`
-          : wolfBonus > 0
-            ? `+${rate + wolfBonus} 🐺`
-            : `+${rate}`;
+          : ambushBonus > 0
+            ? `+${rate + ambushBonus} 🐅`
+            : sparrowBonus > 0
+              ? `+${rate + sparrowBonus} ⚡`
+              : wolfBonus > 0
+                ? `+${rate + wolfBonus} 🐺`
+                : `+${rate}`;
       setTokenLabel((prev) => ({ key: prev.key + 1, text: labelText }));
       // Physics tokens launch from wherever the counter actually sits, so
       // they read as coming out of the HUD rather than from nowhere.
@@ -926,6 +953,14 @@ export default function Game() {
           <div className="mt-3 flex items-center gap-1.5 rounded-full border border-sky-400/30 bg-sky-400/10 px-3 py-1 text-xs font-mono text-sky-300 animate-in fade-in duration-300">
             <span aria-hidden>🪶</span>
             <span>starts with "{wrenHint}"</span>
+          </div>
+        )}
+
+        {/* Tiger's ambush — get it right for a bonus; missing it costs nothing extra. */}
+        {ambushFlagged && (
+          <div className="mt-3 flex items-center gap-1.5 rounded-full border border-orange-400/30 bg-orange-400/10 px-3 py-1 text-xs font-mono text-orange-300 animate-in fade-in duration-300">
+            <span aria-hidden>🐅</span>
+            <span>ambush — bonus if you get this one!</span>
           </div>
         )}
 
