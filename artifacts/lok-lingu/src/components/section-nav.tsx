@@ -16,10 +16,21 @@ export interface NavSection {
  *  2. The bar itself overlaps the top of the container, so the observer's
  *     top margin is inset by roughly the bar's height — otherwise a section
  *     is "active" while it is still hidden behind the bar.
+ *  3. `scrollIntoView` walks and adjusts EVERY scrollable ancestor of its
+ *     target, not just the nearest one. The "keep the active chip in view"
+ *     effect used to call `chip.scrollIntoView(...)` directly — since the
+ *     chip's ancestors are the horizontal pill row AND `main`, every time
+ *     the IntersectionObserver fired mid-scroll (which it does repeatedly
+ *     during a `jump()`, as sections pass through the viewport) that call
+ *     re-adjusted `main`'s scroll too, cancelling the section-jump animation
+ *     partway through. Concretely: tapping a pill would only ever scroll
+ *     about one section down, then stop. Fixed by scrolling the pill row's
+ *     own `scrollLeft` directly instead, which never touches `main`.
  */
 export function SectionNav({ sections }: { sections: NavSection[] }) {
   const [active, setActive] = useState(sections[0]?.id ?? '');
   const barRef = useRef<HTMLDivElement>(null);
+  const rowRef = useRef<HTMLDivElement>(null);
   const chipRefs = useRef(new Map<string, HTMLButtonElement>());
 
   useEffect(() => {
@@ -44,10 +55,21 @@ export function SectionNav({ sections }: { sections: NavSection[] }) {
     return () => observer.disconnect();
   }, [sections]);
 
-  // Keep the active chip in view as the page scrolls past sections.
+  // Keep the active chip in view as the page scrolls past sections. Scrolls
+  // the pill row's own scrollLeft directly rather than chip.scrollIntoView()
+  // — see the file header for why that broke the vertical section jump.
   useEffect(() => {
     const chip = chipRefs.current.get(active);
-    chip?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    const row = rowRef.current;
+    if (!chip || !row) return;
+    const chipLeft = chip.offsetLeft;
+    const chipRight = chipLeft + chip.offsetWidth;
+    const viewLeft = row.scrollLeft;
+    const viewRight = viewLeft + row.clientWidth;
+    if (chipLeft < viewLeft || chipRight > viewRight) {
+      const target = chipLeft - row.clientWidth / 2 + chip.offsetWidth / 2;
+      row.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
+    }
   }, [active]);
 
   const jump = (id: string) => {
@@ -65,6 +87,7 @@ export function SectionNav({ sections }: { sections: NavSection[] }) {
       className="sticky top-0 z-30 -mx-5 px-5 py-2 bg-background/85 backdrop-blur-xl border-b border-border"
     >
       <div
+        ref={rowRef}
         className="flex gap-1.5 overflow-x-auto"
         style={{ scrollbarWidth: 'none' }}
       >
