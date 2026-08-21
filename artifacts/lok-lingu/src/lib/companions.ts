@@ -12,6 +12,30 @@
 ------------------------------------------------------------------ */
 
 import type { Season } from './seasons';
+import type { SoundProfile } from './celebrations';
+import type { RewardRoll } from './companion-rewards';
+import type { SpawnOrigin } from './particles/collectibles';
+
+export interface CollectibleKit {
+  glyph: string;
+  spawnEveryMs: [number, number];
+  maxOnScreen: number;
+  origin: SpawnOrigin;
+  sizeRange: [number, number];
+  rewards: RewardRoll[];
+  /** Anti-farm: no more than this many collects count for a reward per run. */
+  capPerRun: number;
+  /** Optional milestone celebration — a physics burst of the same glyph,
+   *  distinct from the slow tap-to-collect items above. Visual/sound only,
+   *  no separate reward grant (see companion-layer.tsx). */
+  burst?: {
+    /** Fires every N words answered correctly this run (celebration.matchCount). */
+    every: number;
+    /** [min, max] pieces per burst. */
+    count: [number, number];
+    sound: SoundProfile;
+  };
+}
 
 export interface CompanionKit {
   /** Matches the roadmap/achievement companion id (title, lowercased and
@@ -21,6 +45,9 @@ export interface CompanionKit {
   name: string;
   /** Fed straight into createField() while this companion is equipped. */
   ambient?: Season;
+  /** Tappable layer, rendered via particles/collectibles.ts. Phase 2 —
+   *  most companions don't have one yet; see docs/COMPANIONS.md. */
+  collectible?: CollectibleKit;
   copy: {
     quips: string[];
   };
@@ -40,6 +67,27 @@ export const COMPANION_KITS: CompanionKit[] = [
       sizeRange: [12, 20],
       opacity: 0.4,
       cost: 0,
+    },
+    // Bamboo grows from the bottom edge; weights mirror the doc's table
+    // (40% tokens / 25% bonus points / 15% guest word / 10% skip / 8%
+    // heart / 2% rare drop) with the three unbuilt slots folded into
+    // 'tokens' — see companion-rewards.ts's file header.
+    collectible: {
+      glyph: '🎋',
+      spawnEveryMs: [2200, 4200],
+      maxOnScreen: 4,
+      origin: 'bottom',
+      sizeRange: [26, 40],
+      capPerRun: 8,
+      rewards: [
+        { kind: 'tokens', weight: 82, amount: [3, 12] },
+        { kind: 'skip', weight: 10 },
+        { kind: 'heart', weight: 8 },
+      ],
+      // Every 10 words: a bamboo explosion — bounces around and clatters,
+      // no tap needed. Celebration, not a second payout channel (the slow
+      // tap-to-collect bamboo above already pays out on its own schedule).
+      burst: { every: 10, count: [8, 14], sound: 'rattle' },
     },
     copy: { quips: ["No rush. You've got this.", 'Slow and steady.', 'Take your time.'] },
   },

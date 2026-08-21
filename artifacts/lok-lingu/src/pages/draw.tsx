@@ -206,6 +206,7 @@ export default function Draw() {
   const hitTimestampsRef = useRef<number[]>([]);
   /* The HUD element physics tokens launch from. */
   const tokenAnchorRef = useRef<HTMLDivElement>(null);
+  const wordZoneRef = useRef<HTMLDivElement>(null);
   // Optional larger canvas — collapses the ink-color row to give the
   // canvas more room, since it already scales via w-full + aspect-ratio.
   const [expanded, setExpanded] = useState(false);
@@ -521,7 +522,11 @@ export default function Draw() {
           silently rendered nothing at all. */}
       <TokenVaultLayer animKey={tokenLabel.key} />
       <TokenPhysicsLayer />
-      <CompanionLayer />
+      <CompanionLayer
+        zoneRef={wordZoneRef}
+        wordCount={celebration.matchCount}
+        onReward={(label) => setTokenLabel((prev) => ({ key: prev.key + 1, text: label }))}
+      />
       <CompanionWidget side="left" />
 
       {wordPopActive && <WordPop onComplete={() => setWordPopActive(false)} />}
@@ -644,7 +649,11 @@ export default function Draw() {
           Kept over main's `overflow-hidden` on purpose: that variant clips
           the overflow instead of scrolling it, which is exactly what put the
           Clear/Done row off-screen and unreachable on a phone. */}
-      <div className="flex-1 min-h-0 overflow-y-auto flex flex-col items-center justify-start px-4 pt-20 pb-2">
+      {/* Wraps the word, the draw canvas, and the Clear/Done row as one
+          rect — companion-layer.tsx's zoneRef forbids collectibles from
+          spawning anywhere in it, satisfying both "never occlude the word"
+          and "never overlap the draw canvas" with a single boundary. */}
+      <div ref={wordZoneRef} className="flex-1 min-h-0 overflow-y-auto flex flex-col items-center justify-start px-4 pt-20 pb-2">
         <AnimatePresence mode="wait">
           {!gameOver ? (
             // NOT keyed by wordIndex. It was, which meant every word change

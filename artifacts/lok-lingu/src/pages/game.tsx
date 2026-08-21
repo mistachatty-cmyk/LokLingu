@@ -247,6 +247,7 @@ export default function Game() {
   const recentRef = useRef<number[]>([]);
   /* The HUD element physics tokens launch from. */
   const tokenAnchorRef = useRef<HTMLDivElement>(null);
+  const wordZoneRef = useRef<HTMLDivElement>(null);
 
   /**
    * Counting is ordinal, so infinite/number rounds keep stepping forward.
@@ -685,7 +686,11 @@ export default function Game() {
           that skin is equipped. */}
       <TokenVaultLayer animKey={tokenLabel.key} />
       <TokenPhysicsLayer />
-      <CompanionLayer />
+      <CompanionLayer
+        zoneRef={wordZoneRef}
+        wordCount={celebration.matchCount}
+        onReward={(label) => setTokenLabel((prev) => ({ key: prev.key + 1, text: label }))}
+      />
       <CompanionWidget side="left" />
 
       {summary && (
@@ -753,6 +758,10 @@ export default function Game() {
         </div>
       </div>
 
+      {/* Wraps the word + spoken-text readout + mic/typed controls as one
+          block, so companion-layer.tsx's zoneRef can forbid collectibles
+          from spawning over any of it in a single rect. */}
+      <div ref={wordZoneRef} className="flex-1 flex flex-col min-h-0">
       <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
         {/* Rendered through the shared component so draw mode is guaranteed
             to look and react identically — see components/game-word.tsx. */}
@@ -876,6 +885,7 @@ export default function Game() {
             <Keyboard size={12} /> Type instead
           </button>
         )}
+      </div>
       </div>
 
       {/* Skip — bottom right, deliberately out of the thumb path of the mic

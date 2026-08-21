@@ -46,7 +46,8 @@ const MAX_DT = 1 / 20; // clamp to 50ms; below this we just lose a little motion
 /** Rasterised glyphs, keyed by `${glyph}@${roundedSize}`. */
 const spriteCache = new Map<string, HTMLCanvasElement>();
 
-function getSprite(glyph: string, size: number): HTMLCanvasElement | null {
+/** Shared with collectibles.ts so tappable and ambient glyphs share one cache. */
+export function getSprite(glyph: string, size: number): HTMLCanvasElement | null {
   // Bucket sizes to keep the cache small — a 1px difference is invisible.
   const bucket = Math.max(6, Math.round(size / 2) * 2);
   const key = `${glyph}@${bucket}`;
