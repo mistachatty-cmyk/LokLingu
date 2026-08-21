@@ -183,7 +183,10 @@ export default function Draw() {
   const phoenixUsedRef = useRef(false);
   const [wolfTiers] = useState(() => getCompanionKit(getEquippedCompanion() ?? '')?.streakMultiplier);
   const wolfStreakRef = useRef(0);
-  useCelebrationSound(); // keeps audio context alive
+  const [craneShield] = useState(() => getCompanionKit(getEquippedCompanion() ?? '')?.shield);
+  const craneFoldRef = useRef(0);
+  const craneShieldActiveRef = useRef(false);
+  const { play: playSound } = useCelebrationSound();
   const { theme } = useTheme();
 
   // Token earned label — shown briefly near the streak counter after each hit.
@@ -236,8 +239,20 @@ export default function Draw() {
     const wolfMult = currentStreakMultiplier(wolfTiers, wolfStreakRef.current);
     const wolfBonus = wolfMult > 1 ? Math.round(rate * (wolfMult - 1)) : 0;
     if (wolfBonus > 0) earnTokens(wolfBonus);
-    const labelText =
-      milestoneHit && tokenBonus > 0
+    // Crane's fold-a-crane shield — see game.tsx's matching comment.
+    let craneReady = false;
+    if (craneShield && !craneShieldActiveRef.current) {
+      craneFoldRef.current += 1;
+      if (craneFoldRef.current >= craneShield.foldsNeeded) {
+        craneFoldRef.current = 0;
+        craneShieldActiveRef.current = true;
+        craneReady = true;
+        playSound('chime', 'big');
+      }
+    }
+    const labelText = craneReady
+      ? '🕊️ Shield ready!'
+      : milestoneHit && tokenBonus > 0
         ? `+${tokenBonus} 🎁`
         : wolfBonus > 0
           ? `+${rate + wolfBonus} 🐺`
@@ -274,7 +289,16 @@ export default function Draw() {
 
   const handleFailure = useCallback(() => {
     if (status !== 'idle' || gameOver) return;
-    wolfStreakRef.current = 0;
+    // Crane's shield absorbs this miss outright: no heart lost, fold
+    // progress and Wolf's streak tracking both left alone.
+    const shielded = craneShieldActiveRef.current;
+    if (shielded) {
+      craneShieldActiveRef.current = false;
+      setTokenLabel((prev) => ({ key: prev.key + 1, text: '🕊️ Shield broke — protected!' }));
+      playSound('thud', 'mini');
+    } else {
+      wolfStreakRef.current = 0;
+    }
     setStatus('error');
     setFeedback('miss');
     // Voice mode clears a miss at a flat 500ms regardless of the response
@@ -292,11 +316,12 @@ export default function Draw() {
       sessionLogRef.current.push({ word: drawn, correct: false });
     }
     // With hearts off this is endless practice — a miss still shakes and
-    // clears the canvas, it just never ends the run.
-    const newLives = heartsMode ? lives - 1 : lives;
+    // clears the canvas, it just never ends the run. A shielded miss is
+    // treated the same way regardless of hearts mode.
+    const newLives = heartsMode && !shielded ? lives - 1 : lives;
     setLives(newLives);
     setTimeout(() => {
-      if (heartsMode && newLives <= 0) {
+      if (heartsMode && !shielded && newLives <= 0) {
         /*
          * Both sides kept: the heartsMode gate (so survival can still be
          * turned off in settings) AND main's banked-heart rescue. A player

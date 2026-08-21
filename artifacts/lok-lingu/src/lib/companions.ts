@@ -8,18 +8,15 @@
    2-4) — see each entry's own comment for how it maps to (or simplifies)
    its doc spec.
 
+   Wolf (streakMultiplier), Crane (shield) and Phoenix (revive) also have
+   bespoke game-loop hooks now, wired directly in game.tsx/draw.tsx rather
+   than through the collectible engine (see each entry's comment).
+
    Still ambient-only, deliberately: Wren (doc wants feathers nudging a
-   first-letter hint into the word display), Crane (fold-a-crane-over-N-
-   corrects -> streak shield), Wolf (escalating token multiplier while a
-   streak holds), Phoenix (once-per-match revive from 0 hearts), and
-   Leviathan (stacks two other companions' ambients). Each needs bespoke
-   game-loop wiring beyond the generic collectible+reward+charge engine
-   the other six reuse — hint injection into GameWord, a shield flag
-   surviving a miss, a live multiplier on the token-award math, a
-   heart-refill hook, and multi-Season field composition, respectively.
-   None of that plumbing exists yet; not building a shallow reskin of the
-   collectible engine for them just to say they're "done", since none of
-   those five mechanics is actually a tap-and-reward loop.
+   first-letter hint into the word display) and Leviathan (stacks two
+   other companions' ambients — needs multi-Season field composition,
+   which field.ts doesn't support). Not building a shallow reskin of
+   something else just to say they're "done".
 ------------------------------------------------------------------ */
 
 import type { Season } from './seasons';
@@ -84,6 +81,11 @@ export interface CompanionKit {
    *  the award itself — keeps boost/rate math in use-celebration.ts
    *  untouched. */
   streakMultiplier?: { at: number; mult: number }[];
+  /** Crane: fold a crane over `foldsNeeded` correct answers in a row; a
+   *  completed fold grants a shield that absorbs the next miss entirely
+   *  (no heart lost, fold progress untouched) rather than breaking the
+   *  streak like a normal miss would. */
+  shield?: { foldsNeeded: number };
   copy: {
     quips: string[];
   };
@@ -273,6 +275,7 @@ export const COMPANION_KITS: CompanionKit[] = [
       opacity: 0.35,
       cost: 0,
     },
+    shield: { foldsNeeded: 10 },
     copy: { quips: ['Graceful as always.', 'Steady wins it.'] },
   },
   {

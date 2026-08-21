@@ -189,6 +189,12 @@ export default function Game() {
   // resets to 0 on any miss.
   const [wolfTiers] = useState(() => getCompanionKit(getEquippedCompanion() ?? '')?.streakMultiplier);
   const wolfStreakRef = useRef(0);
+  // Crane's fold-a-crane shield: foldRef counts correct-in-a-row (reset on
+  // an unshielded miss, same as Wolf's streak); reaching foldsNeeded grants
+  // a shield that absorbs the next miss outright.
+  const [craneShield] = useState(() => getCompanionKit(getEquippedCompanion() ?? '')?.shield);
+  const craneFoldRef = useRef(0);
+  const craneShieldActiveRef = useRef(false);
   const stopListeningRef = useRef<() => void>(() => {});
 
   // Stable ref so handleResult can call abortSession without it being in
@@ -425,8 +431,20 @@ export default function Game() {
       const wolfMult = currentStreakMultiplier(wolfTiers, wolfStreakRef.current);
       const wolfBonus = wolfMult > 1 ? Math.round(rate * (wolfMult - 1)) : 0;
       if (wolfBonus > 0) earnTokens(wolfBonus);
-      const labelText =
-        milestoneHit && tokenBonus > 0
+      // Crane's fold-a-crane shield.
+      let craneReady = false;
+      if (craneShield && !craneShieldActiveRef.current) {
+        craneFoldRef.current += 1;
+        if (craneFoldRef.current >= craneShield.foldsNeeded) {
+          craneFoldRef.current = 0;
+          craneShieldActiveRef.current = true;
+          craneReady = true;
+          playSound('chime', 'big');
+        }
+      }
+      const labelText = craneReady
+        ? '🕊️ Shield ready!'
+        : milestoneHit && tokenBonus > 0
           ? `+${tokenBonus} 🎁`
           : wolfBonus > 0
             ? `+${rate + wolfBonus} 🐺`
@@ -444,6 +462,22 @@ export default function Game() {
     }
 
     if (isFinal) {
+      // Crane's shield absorbs this miss outright: no heart lost, fold
+      // progress untouched, streak-multiplier tracking left alone too.
+      if (craneShieldActiveRef.current) {
+        craneShieldActiveRef.current = false;
+        missVariantRef.current = Math.floor(Math.random() * MISS_VARIANTS.length);
+        setFeedback('miss');
+        setTimeout(() => setFeedback('idle'), 500);
+        setTokenLabel((prev) => ({ key: prev.key + 1, text: '🕊️ Shield broke — protected!' }));
+        playSound('thud', 'mini');
+        if (!missLoggedRef.current.has(target)) {
+          missLoggedRef.current.add(target);
+          recordAttempt(languageRef.current, target, false);
+          sessionLogRef.current.push({ word: target, correct: false });
+        }
+        return;
+      }
       wolfStreakRef.current = 0;
       missVariantRef.current = Math.floor(Math.random() * MISS_VARIANTS.length);
       setFeedback('miss');
