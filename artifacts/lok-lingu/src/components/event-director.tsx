@@ -65,6 +65,12 @@ interface Props {
   onPresentation: (p: WordPresentation | null) => void;
   /** Short label for the host's existing token/skip flash. */
   onNotice?: (text: string) => void;
+  /**
+   * False on a screen that already owns the pointer for answering — draw
+   * mode. Non-blocking gesture events are then dropped from the roll
+   * instead of mounting a surface that eats canvas strokes.
+   */
+  pointerFree?: boolean;
 }
 
 export function EventDirector({
@@ -72,6 +78,7 @@ export function EventDirector({
   gate,
   onPresentation,
   onNotice,
+  pointerFree = true,
 }: Props) {
   const { eventFrequency } = useSettings();
   const { play } = useCelebrationSound();
@@ -104,11 +111,18 @@ export function EventDirector({
     lastRolledWordRef.current = wordCount;
     if (active) return;
 
-    const picked = forcedEvent() ?? rollEvent({
+    const forced = forcedEvent();
+    // The QA override forces *which* event, not whether the screen can
+    // afford it — otherwise forcing a gesture event in draw mode would
+    // demo behaviour the roll can never actually produce.
+    const usable =
+      forced && !(forced.needsPointer && !forced.blocking && !pointerFree) ? forced : null;
+    const picked = usable ?? rollEvent({
       frequency: eventFrequency,
       wordCount,
       firedCounts: firedRef.current,
       suppressed: Date.now() < cooldownUntilRef.current,
+      pointerFree,
     });
     if (!picked) return;
 
@@ -118,7 +132,7 @@ export function EventDirector({
       releaseRef.current = gate.acquire(picked.id);
     }
     setActive(picked);
-  }, [wordCount, eventFrequency, active, gate]);
+  }, [wordCount, eventFrequency, active, gate, pointerFree]);
 
   // ── the escape hatch ──────────────────────────────────────────────
   // Every event, blocking or not, is force-resolved after durationMs.

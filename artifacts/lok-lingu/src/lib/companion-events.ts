@@ -60,6 +60,16 @@ export interface CompanionEventDef {
    * never be trapped. Non-blocking events use it as their natural length.
    */
   durationMs: number;
+  /**
+   * True if this event mounts a GestureSurface over the play area.
+   *
+   * Draw mode owns the canvas — `COMPANIONS.md`'s standing rule — so a
+   * *non-blocking* pointer event there would silently swallow strokes
+   * while the player is still expected to be drawing. Blocking ones are
+   * fine: answering is suspended anyway, so pausing the canvas with it is
+   * coherent rather than a trap.
+   */
+  needsPointer?: boolean;
 }
 
 export const COMPANION_EVENTS: CompanionEventDef[] = [
@@ -84,6 +94,7 @@ export const COMPANION_EVENTS: CompanionEventDef[] = [
     minWords: 5,
     maxPerRun: 3,
     durationMs: 7000,
+    needsPointer: true,
   },
   {
     id: 'bot-loko',
@@ -95,6 +106,7 @@ export const COMPANION_EVENTS: CompanionEventDef[] = [
     minWords: 8,
     maxPerRun: 2,
     durationMs: 5200,
+    needsPointer: true,
   },
 ];
 
@@ -123,6 +135,12 @@ export interface RollContext {
   weightMults?: Partial<Record<EventId, number>>;
   /** True while another event is mid-flight, or inside the global cooldown. */
   suppressed: boolean;
+  /**
+   * False where the screen already owns the pointer for answering — draw
+   * mode's canvas. Non-blocking pointer events are dropped from the roll
+   * there rather than competing for strokes.
+   */
+  pointerFree?: boolean;
 }
 
 /**
@@ -141,6 +159,7 @@ export function rollEvent(ctx: RollContext): CompanionEventDef | null {
   const eligible = COMPANION_EVENTS.filter((e) => {
     if (ctx.wordCount < e.minWords) return false;
     if ((ctx.firedCounts[e.id] ?? 0) >= e.maxPerRun) return false;
+    if (e.needsPointer && !e.blocking && ctx.pointerFree === false) return false;
     return (e.weight * (ctx.weightMults?.[e.id] ?? 1)) > 0;
   });
   if (eligible.length === 0) return null;

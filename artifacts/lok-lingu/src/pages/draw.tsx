@@ -32,6 +32,9 @@ import { TokenVaultLayer } from '@/components/token-vault-layer';
 import { TokenPhysicsLayer, spawnTokenAt } from '@/components/token-physics-layer';
 import { CompanionWidget } from '@/components/companion-widget';
 import { CompanionLayer } from '@/components/companion-layer';
+import { EventDirector } from '@/components/event-director';
+import { useAnswerGate } from '@/hooks/use-answer-gate';
+import type { WordPresentation } from '@/lib/word-effects';
 import { resolveWordSet, CUSTOM_SET_KEY, CUSTOM_ORDER_KEY } from '@/lib/wordsets';
 import { FALLBACK_WORDS, saveLocalScore } from '@/lib/offline-data';
 import { speakWord, matchWord } from '@/lib/speech-utils';
@@ -166,6 +169,23 @@ export default function Draw() {
   const [isRecognizing, setIsRecognizing] = useState(false);
   /** Shown only in voice-confirm mode after Done is pressed */
   const [awaitingVoice, setAwaitingVoice] = useState(false);
+
+  /* ── companion events ────────────────────────────────────────────
+     Deliberately *not* routed through `status`. Draw mode's `status`
+     is coupled to advance timing — setting it to anything but 'idle'
+     schedules the next word — so overloading it to mean "an event is
+     blocking" would desync the whole loop. The gate is separate. */
+  const [presentation, setPresentation] = useState<WordPresentation | null>(null);
+  const gate = useAnswerGate({
+    // Same reason as voice mode: the recogniser stays hot while blocked
+    // and would silently eat whatever the player says at a locked screen.
+    onAcquire: () => stopListeningRef.current(),
+  });
+  const gateRef = useRef(gate);
+  gateRef.current = gate;
+  /* useSpeechEngine is initialised further down and needs `gate`, so the
+     stop function is reached through a ref rather than reordering. */
+  const stopListeningRef = useRef<() => void>(() => {});
   /** Whether voice confirmation is enabled (opt-in, default off) */
   const [voiceConfirmEnabled, setVoiceConfirmEnabled] = useState(
     () => localStorage.getItem(VOICE_CONFIRM_KEY) === 'true',
@@ -412,6 +432,10 @@ export default function Draw() {
   const handleDone = useCallback(async () => {
     const canvas = canvasRef.current;
     if (!canvas || status !== 'idle' || gameOver || isRecognizing) return;
+    // A blocking event's gesture surface sits over the canvas, so strokes
+    // pause with it — but submitting is guarded here too, because the
+    // player can still reach Done through the HUD the surface leaves live.
+    if (gateRef.current.isBlocked()) return;
 
     if (canvas.getStrokes() < 1) {
       handleFailure();
@@ -470,6 +494,7 @@ export default function Draw() {
         if (speechMutedRef.current) return;
         if (!voiceConfirmRef.current) return; // voice answering off — ignore
         if (statusRef.current !== 'idle' || gameOverRef.current) return;
+        if (gateRef.current.isBlocked()) return;
         const target = currentWordRef.current?.word;
         if (!target) return;
         // No strokes gate. Voice is an *alternative* answer, not a second
@@ -509,10 +534,13 @@ export default function Draw() {
     if (micLikelyBlockedDraw) setShowTypedConfirm(true);
   }, [micLikelyBlockedDraw]);
 
+  stopListeningRef.current = stopListening;
+
   const submitTypedConfirm = useCallback(() => {
     const value = typedConfirm.trim();
     if (!value) return;
     if (statusRef.current !== 'idle' || gameOverRef.current) return;
+    if (gateRef.current.isBlocked()) return;
     const target = currentWordRef.current?.word;
     if (!target) return;
     const pronunciation = currentWordRef.current?.pronunciation as string | undefined;
@@ -618,6 +646,15 @@ export default function Draw() {
         zoneRef={wordZoneRef}
         wordCount={celebration.matchCount}
         onReward={(label) => setTokenLabel((prev) => ({ key: prev.key + 1, text: label }))}
+      />
+      <EventDirector
+        wordCount={celebration.matchCount}
+        gate={gate}
+        onPresentation={setPresentation}
+        onNotice={(text) => setTokenLabel((prev) => ({ key: prev.key + 1, text }))}
+        // The canvas owns the pointer here, so a non-blocking gesture event
+        // would quietly swallow strokes mid-drawing.
+        pointerFree={false}
       />
       <CompanionWidget side="left" />
 
@@ -785,6 +822,7 @@ export default function Draw() {
                   feedback={feedback}
                   animKey={wordIndex}
                   scale={0.65}
+                  presentation={presentation ?? undefined}
                 />
                 {/* Wren's hint — a quiet nudge, not the answer. */}
                 {wrenHint && (
