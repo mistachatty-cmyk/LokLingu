@@ -1,5 +1,13 @@
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { gameWordFontSize } from '@/lib/word-sizing';
+import {
+  blockMotion,
+  feedbackEffect,
+  isWholeWordEffect,
+  letterMotion,
+  splitWord,
+  type WordPresentation,
+} from '@/lib/word-effects';
 
 export type WordFeedback = 'idle' | 'hit' | 'miss';
 
@@ -12,14 +20,21 @@ export type WordFeedback = 'idle' | 'hit' | 'miss';
  * never had. Anything that reads "the word you're being asked for" now
  * renders through here so the two modes cannot drift apart again.
  *
- * Feedback states, matching voice mode exactly:
+ * Feedback states:
  *   idle → theme glow, `--word-color`
- *   hit  → primary, a 1.12 scale pop with a brightness flash
- *   miss → destructive. No shake, no scale — just the colour swap.
+ *   hit  → primary, plus a per-letter `ripple`
+ *   miss → destructive, plus a per-letter `melt`
  *
- * `theme-ultimate`'s glitch and every other per-theme treatment ride along
- * for free via the `.game-word` class, so there is deliberately no
- * theme-specific branch in here.
+ * The word is split into per-letter spans so `lib/word-effects.ts`'s
+ * vocabulary can animate it. A plain string still renders identically when
+ * no effect is active — the spans are inline and carry no styling of their
+ * own, so `.game-word`'s theme treatments (including `theme-ultimate`'s
+ * glitch) still cascade exactly as before.
+ *
+ * `presentation` is display-only. `game.tsx` matches spoken input against
+ * `currentWordRef.current.word`, which this component never touches, so an
+ * event can freely substitute or obscure what is drawn without ever
+ * changing what counts as a correct answer.
  */
 export function GameWord({
   word,
@@ -29,6 +44,7 @@ export function GameWord({
   animKey,
   scale = 1,
   className = '',
+  presentation,
 }: {
   word: string;
   translation?: string;
@@ -43,16 +59,44 @@ export function GameWord({
    */
   scale?: number;
   className?: string;
+  /** Per-turn display treatment — see lib/word-effects.ts. */
+  presentation?: WordPresentation;
 }) {
   const prefersReducedMotion = useReducedMotion();
-  const size = gameWordFontSize(word ?? '');
+
+  // Display string and answer target are deliberately separate.
+  const shown = presentation?.text ?? word;
+  const size = gameWordFontSize(shown ?? '');
+
+  // An explicit effect from a companion or event wins; otherwise the base
+  // game's own hit/miss feedback drives the animation.
+  const effect = presentation?.effect ?? feedbackEffect(feedback);
+
+  // Reduced motion collapses every effect to a static render. The word is
+  // always legible — that rule outranks all of this.
+  const active = prefersReducedMotion ? 'none' : effect;
+  const perLetter = active !== 'none' && !isWholeWordEffect(active);
+  const block = isWholeWordEffect(active) ? blockMotion(active) : null;
+
+  const units = splitWord(shown ?? '', presentation?.chunks);
+  const effectiveScale = scale * (presentation?.scale ?? 1);
 
   // Scale the clamp ceiling rather than the whole expression, so the
   // viewport-responsive floor and vw term still behave.
   const scaleCeiling = (value: string) =>
-    scale === 1
+    effectiveScale === 1
       ? value
-      : value.replace(/([\d.]+)rem\)$/, (_m, rem) => `${(parseFloat(rem) * scale).toFixed(2)}rem)`);
+      : value.replace(
+          /([\d.]+)rem\)$/,
+          (_m, rem) => `${(parseFloat(rem) * effectiveScale).toFixed(2)}rem)`,
+        );
+
+  const filters = [
+    presentation?.blur ? `blur(${presentation.blur}px)` : '',
+    presentation?.invert ? 'invert(1)' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <AnimatePresence mode="wait">
@@ -62,7 +106,7 @@ export function GameWord({
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -12 }}
         transition={{ duration: 0.22 }}
-        className={`flex flex-col items-center ${className}`}
+        className={`relative flex flex-col items-center ${className}`}
       >
         <motion.h1
           className={`game-word font-black tracking-tighter capitalize leading-none transition-colors duration-200 ${
@@ -75,21 +119,57 @@ export function GameWord({
           style={{
             // Must be undefined rather than '' on hit/miss, or this inline
             // value beats the Tailwind colour class.
-            color: feedback === 'idle' ? 'var(--word-color)' : undefined,
+            color: presentation?.tint ?? (feedback === 'idle' ? 'var(--word-color)' : undefined),
             ['--word-size-mobile' as string]: scaleCeiling(size.mobile),
             ['--word-size-desktop' as string]: scaleCeiling(size.desktop),
+            filter: filters || undefined,
           }}
-          animate={
-            prefersReducedMotion
+          // flipX rides in `animate`, not `style` — framer-motion writes the
+          // element's `transform` itself, so an inline transform here would
+          // be clobbered the moment any effect animates.
+          animate={{
+            ...(presentation?.flipX ? { scaleX: -1 } : {}),
+            ...(prefersReducedMotion
               ? {}
-              : feedback === 'hit'
-                ? { scale: [1, 1.12, 1], filter: ['brightness(1)', 'brightness(1.7)', 'brightness(1)'] }
-                : { scale: 1, filter: 'brightness(1)' }
-          }
-          transition={{ duration: 0.22, ease: 'easeOut' }}
+              : block
+                ? block.animate
+                : feedback === 'hit'
+                  ? { filter: ['brightness(1)', 'brightness(1.7)', 'brightness(1)'] }
+                  : { filter: 'brightness(1)' }),
+          }}
+          transition={block ? block.transition : { duration: 0.22, ease: 'easeOut' }}
         >
-          {word}
+          {perLetter ? (
+            units.map((unit, i) => {
+              const m = letterMotion(active, i, units.length);
+              return (
+                <motion.span
+                  // Keyed on the animation identity too, so a new effect
+                  // restarts one-shots instead of resuming mid-flight.
+                  key={`${animKey}-${active}-${i}`}
+                  className="inline-block whitespace-pre"
+                  animate={m.animate}
+                  transition={m.transition}
+                >
+                  {unit}
+                </motion.span>
+              );
+            })
+          ) : (
+            shown
+          )}
         </motion.h1>
+
+        {/* Obscuring mask. Event-only: the amendment in docs/EVENTS.md allows
+            hiding the word solely while answering is blocked and clearing it
+            is the event's win condition. */}
+        {presentation?.maskPct !== undefined && presentation.maskPct > 0 && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 rounded-lg bg-muted"
+            style={{ opacity: Math.min(1, presentation.maskPct) }}
+          />
+        )}
 
         {translation !== undefined && (
           <p className="text-xl md:text-3xl italic opacity-50 mt-5">{translation || '—'}</p>
