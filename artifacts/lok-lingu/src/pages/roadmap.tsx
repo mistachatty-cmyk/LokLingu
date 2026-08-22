@@ -19,6 +19,8 @@ import {
   retire, isRetired, prestigeTokenReward, payReearnBonus, wordsInCurrentCycle,
 } from '@/lib/prestige';
 import { ALL_ACHIEVEMENTS, updateAchievementUnlocks } from '@/lib/achievements';
+import { getCompanionKit } from '@/lib/companions';
+import { SeasonPreview } from '@/components/season-preview';
 
 const REWARD_ICON: Record<RewardKind, typeof Coins> = {
   tokens: Coins,
@@ -357,7 +359,7 @@ function PrestigeLadder({ prestige }: { prestige: number }) {
 
 function GalleryCard({
   glyph, title, at, unit, unlocked, distance, animation, tier,
-  equippable, equipped, onToggleEquip,
+  equippable, equipped, onToggleEquip, companionId,
 }: {
   glyph: string;
   title: string;
@@ -371,12 +373,18 @@ function GalleryCard({
   equippable?: boolean;
   equipped?: boolean;
   onToggleEquip?: () => void;
+  /** Companion cards only: when unlocked, shows a live preview of the
+   *  companion's real ambient effect behind the glyph — same
+   *  createField()-backed preview the shop's Season cards use, since a
+   *  companion's `ambient` field is already a `Season` (see companions.ts). */
+  companionId?: string;
 }) {
   const reduce = useReducedMotion();
   // How close a locked card is to unlocking, for the progress sliver.
   const progress = Math.min(1, Math.max(0, 1 - distance / Math.max(1, at)));
   const glow = unlocked && tier === 'mythic';
   const showEquip = unlocked && equippable;
+  const ambient = unlocked && companionId ? getCompanionKit(companionId)?.ambient : null;
   return (
     <motion.div
       initial={reduce ? false : { opacity: 0, scale: 0.92 }}
@@ -389,8 +397,9 @@ function GalleryCard({
       } ${equipped ? 'ring-2 ring-primary' : ''} ${showEquip ? 'cursor-pointer' : ''}`}
       style={glow ? { boxShadow: '0 0 20px hsl(var(--primary) / 0.25)' } : undefined}
     >
+      {ambient && <SeasonPreview season={ambient} />}
       <span
-        className={`text-4xl leading-none ${unlocked ? (animation ?? '') : 'grayscale opacity-30'}`}
+        className={`relative text-4xl leading-none ${unlocked ? (animation ?? '') : 'grayscale opacity-30'}`}
         aria-hidden
       >
         {glyph}
@@ -464,6 +473,7 @@ function Gallery({
                 equippable
                 equipped={equippedCompanion === companionId}
                 onToggleEquip={() => onToggleEquip(companionId)}
+                companionId={companionId}
               />
             );
           })}
@@ -558,6 +568,7 @@ function Gallery({
                 equippable
                 equipped={equippedCompanion === companionId}
                 onToggleEquip={() => onToggleEquip(companionId)}
+                companionId={companionId}
               />
             );
           })}
