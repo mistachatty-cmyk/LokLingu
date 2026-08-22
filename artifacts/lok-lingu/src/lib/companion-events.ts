@@ -37,7 +37,7 @@ import type { EventFrequency } from '@/hooks/use-settings';
 
 export type EventTier = 'T0' | 'T1' | 'T2' | 'T3';
 
-export type EventId = 'blurred-word' | 'scratch-card' | 'bot-loko';
+export type EventId = 'blurred-word' | 'scratch-card' | 'bot-loko' | 'eclipse';
 
 export interface CompanionEventDef {
   id: EventId;
@@ -94,6 +94,18 @@ export const COMPANION_EVENTS: CompanionEventDef[] = [
     minWords: 5,
     maxPerRun: 3,
     durationMs: 7000,
+    needsPointer: true,
+  },
+  {
+    id: 'eclipse',
+    name: 'The Eclipse',
+    blurb: 'A dark disc transits the word. Tap to nudge it along.',
+    tier: 'T0',
+    weight: 30,
+    blocking: false,
+    minWords: 3,
+    maxPerRun: 6,
+    durationMs: 4200,
     needsPointer: true,
   },
   {

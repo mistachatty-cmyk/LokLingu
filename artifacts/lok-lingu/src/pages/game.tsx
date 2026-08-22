@@ -1036,7 +1036,14 @@ export default function Game() {
         ) : null}
       </div>
 
-      <div className="pb-14 px-6 flex flex-col items-center gap-3 w-full">
+      {/* z-50: must sit above every event's GestureSurface (z-30/40). A
+          non-blocking event must never be able to cover the actual answer
+          controls — Home and the mic are already carved out of each
+          surface's inset, but the typed-answer fallback lives inside that
+          same band, and without this z-index the surface's explicit
+          z-index wins stacking over an unpositioned sibling regardless of
+          DOM order, silently swallowing every submit while it's up. */}
+      <div className="relative z-50 pb-14 px-6 flex flex-col items-center gap-3 w-full">
         {showTypedInput && (
           <div className="w-full max-w-sm space-y-1.5">
             {micLikelyBlocked && (

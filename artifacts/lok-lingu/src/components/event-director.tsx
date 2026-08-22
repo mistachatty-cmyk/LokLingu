@@ -15,6 +15,7 @@ import type { AnswerGate } from '@/hooks/use-answer-gate';
 import { BlurredWord } from '@/components/events/blurred-word';
 import { ScratchCard } from '@/components/events/scratch-card';
 import { BotLoko } from '@/components/events/bot-loko';
+import { Eclipse } from '@/components/events/eclipse';
 
 /* ------------------------------------------------------------------
    The event director — one owner for when a beat fires and what it may do.
@@ -164,6 +165,15 @@ export function EventDirector({
     case 'blurred-word':
       return (
         <BlurredWord
+          durationMs={active.durationMs}
+          onPresentation={onPresentation}
+          onDone={finish}
+        />
+      );
+
+    case 'eclipse':
+      return (
+        <Eclipse
           durationMs={active.durationMs}
           onPresentation={onPresentation}
           onDone={finish}

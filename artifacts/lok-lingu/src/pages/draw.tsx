@@ -945,7 +945,10 @@ export default function Draw() {
                   much browser chrome a mobile in-app webview steals. The
                   backdrop keeps the canvas from showing through as content
                   scrolls underneath. */}
-              <div className="sticky bottom-0 z-20 -mx-4 px-4 py-3 flex items-center justify-center gap-3 bg-gradient-to-t from-background via-background to-transparent">
+              {/* z-50: above any event's GestureSurface (z-30/40) — Done is
+                  the one control the game cannot proceed without, and a
+                  non-blocking event must never be able to cover it. */}
+              <div className="sticky bottom-0 z-50 -mx-4 px-4 py-3 flex items-center justify-center gap-3 bg-gradient-to-t from-background via-background to-transparent">
                 <Button
                   variant="outline"
                   onClick={handleClear}
@@ -1015,6 +1018,10 @@ export default function Draw() {
                 </Button>
               </div>
 
+              {/* z-50 for the same reason as the Clear/Done bar above: the
+                  typed-confirm fallback inside here is a real answer path
+                  and must win stacking over any event surface. */}
+              <div className="relative z-50">
               {/* Status area */}
               <AnimatePresence>
                 {/* Voice confirm banner (voice mode only) */}
@@ -1069,6 +1076,9 @@ export default function Draw() {
                   </motion.div>
                 )}
 
+              </AnimatePresence>
+              </div>
+              <AnimatePresence>
                 {/* Mic status (voice mode only, when not awaiting) */}
                 {voiceConfirmEnabled && !awaitingVoice && !showTypedConfirm && (
                   <motion.div

@@ -137,6 +137,7 @@ snapshotting those keys before and after it runs.
 | --- | --- | --- | --- |
 | **Blurred Word** | T0 | no | P1, with no interaction risk at all |
 | **Scratch Card** | T1 | yes | P2 `scrub` *and* a real hold on the gate |
+| **The Eclipse** | T0 | no | P1 mask + an optional P2 `tap`, with nothing to win or lose |
 | **Bot-Loko** | T2 | no | P2 `slash` under time pressure, with a real stake |
 
 ### Blurred Word
@@ -157,6 +158,18 @@ still half-hidden at the moment you are allowed to answer.
 
 Reduced motion swaps the drag for three large tap targets — same unlock, same
 payout. **An accessibility setting must not become a paywall on progress.**
+
+### The Eclipse
+
+A dark disc transits the word over ~4.2s, darkest at the midpoint and clear at
+both ends — a genuine transit, not a fade in and out. Tapping anywhere nudges
+it along faster. There is nothing to win: the disc always clears on its own,
+tapping only makes it clear sooner.
+
+It is the gentlest interactive event in the catalogue on purpose. Blurred Word
+proves presentation alone; this proves presentation plus an optional gesture
+that can never fail — the point being that *not every event needs stakes to
+justify existing.*
 
 ### Bot-Loko
 
@@ -213,7 +226,6 @@ Each is a data row plus a small stage component against the primitives above.
 | **Fogged Glass** — condensation creeps in from the edges; wipe it clear | P2 scrub | T1 |
 | **The Slip** — the word slides toward one edge on ice; flick it back (it re-enters from the far side, never lost) | P1 + P2 slash | T1 |
 | **Signal Loss** — the word degrades to static; drag an antenna until it locks sharp | P1 `glitch` + P2 | T1 |
-| **The Eclipse** — a dark disc transits the word over ~4s; tap to push it along faster | P1 | T0 |
 | **Mirror Mode** — the word renders flipped; swipe to unflip, or answer it flipped for double tokens | P1 `flipX` | T0 |
 | Ink splatter | P1 mask + P2 scrub | T1 |
 | Tomato splat | P1 mask | T0 |
