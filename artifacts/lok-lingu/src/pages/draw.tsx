@@ -197,17 +197,22 @@ export default function Draw() {
   // declared but nothing read it, so draw mode's three lives were always
   // on with no way to turn them off.
   const { heartsMode } = useSettings();
-  // Phoenix's marquee perk: once per match, revive from 0 hearts instead
-  // of ending the run.
-  const [isPhoenix] = useState(() => getEquippedCompanion() === 'phoenix');
-  const phoenixUsedRef = useRef(false);
-  const [wolfTiers] = useState(() => getCompanionKit(getEquippedCompanion() ?? '')?.streakMultiplier);
+  /* The equipped kit, read once per mount — see game.tsx's matching
+     comment. Every perk is a field on it; no equip-id checks remain. */
+  const [kit] = useState(() => getCompanionKit(getEquippedCompanion() ?? '') ?? null);
+  // Revive (Phoenix): survive 0 hearts instead of ending the run.
+  const reviveLeftRef = useRef(kit?.revive?.perMatch ?? 0);
+  /* Read through a ref by the scheduler, which runs inside callbacks with
+     their own dependency arrays. */
+  const kitRef = useRef(kit);
+  kitRef.current = kit;
+  const wolfTiers = kit?.streakMultiplier;
   const wolfStreakRef = useRef(0);
-  const [craneShield] = useState(() => getCompanionKit(getEquippedCompanion() ?? '')?.shield);
+  const craneShield = kit?.shield;
   const craneFoldRef = useRef(0);
   const craneShieldActiveRef = useRef(false);
-  const [sparrowBurst] = useState(() => getCompanionKit(getEquippedCompanion() ?? '')?.burstChance);
-  const [tigerAmbush] = useState(() => getCompanionKit(getEquippedCompanion() ?? '')?.ambush);
+  const sparrowBurst = kit?.burstChance;
+  const tigerAmbush = kit?.ambush;
   const ambushActiveRef = useRef(false);
   const [ambushFlagged, setAmbushFlagged] = useState(false);
   const { play: playSound } = useCelebrationSound();
@@ -246,20 +251,18 @@ export default function Draw() {
   const [expanded, setExpanded] = useState(false);
   currentWordRef.current = currentWord;
 
-  // Wren's hint — see game.tsx's matching comment.
-  const [isWren] = useState(() => getEquippedCompanion() === 'wren');
-  // Game-over copy only — Baguette's guest word itself stays voice-only
-  // (game.tsx), but the "C'est la vie." sign-off applies wherever a run
-  // can end while he's equipped.
-  const [isBaguette] = useState(() => getEquippedCompanion() === 'sir-baguette');
+  // Hint (Wren) — see game.tsx's matching comment. The guest word itself
+  // stays voice-only, but a companion's game-over sign-off applies
+  // wherever a run can end.
+  const hintKit = kit?.hint;
   const [wrenHint, setWrenHint] = useState<string | null>(null);
   useEffect(() => {
-    if (!isWren || !currentWord?.word) {
+    if (!hintKit || !currentWord?.word) {
       setWrenHint(null);
       return;
     }
-    setWrenHint(Math.random() < 0.25 ? currentWord.word[0] : null);
-  }, [isWren, currentWord?.word]);
+    setWrenHint(Math.random() < hintKit.chance ? currentWord.word[0] : null);
+  }, [hintKit, currentWord?.word]);
 
   // Tiger's ambush — see game.tsx's matching comment.
   useEffect(() => {
@@ -334,7 +337,12 @@ export default function Draw() {
       // the matching logic and comment in game.tsx's advanceWord.
       const sequential = customSetId ? customOrderMode === 'sequential' : !shouldSchedule(category);
       if (!sequential && words.length > 1) {
-        const next = pickNextIndex(language, words.map((w: any) => w.word ?? String(w)), recentRef.current);
+        const next = pickNextIndex(
+          language,
+          words.map((w: any) => w.word ?? String(w)),
+          recentRef.current,
+          kitRef.current?.lengthBias,
+        );
         recentRef.current = [...recentRef.current, next].slice(-4);
         setWordIndex(next);
       } else {
@@ -404,8 +412,8 @@ export default function Draw() {
         // Phoenix's marquee perk: once per match, revive instead of
         // ending the run. Checked after the banked-heart rescue (a
         // purchased heart is spent first; Phoenix is the last resort).
-        if (isPhoenix && !phoenixUsedRef.current) {
-          phoenixUsedRef.current = true;
+        if (reviveLeftRef.current > 0) {
+          reviveLeftRef.current -= 1;
           setLives(1);
           setTokenLabel((prev) => ({ key: prev.key + 1, text: '🔥 Reborn!' }));
           canvasRef.current?.clear();
@@ -1124,7 +1132,7 @@ export default function Draw() {
             >
               <div>
                 <h2 className="text-4xl font-black text-destructive uppercase tracking-widest">
-                  {isBaguette ? "C'est la vie." : 'Game Over'}
+                  {kit?.copy.onGameOver ?? 'Game Over'}
                 </h2>
                 <p className="text-muted-foreground mt-1">
                   You drew {count} word{count !== 1 ? 's' : ''}.

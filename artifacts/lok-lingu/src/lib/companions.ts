@@ -8,13 +8,16 @@
    2-4) — see each entry's own comment for how it maps to (or simplifies)
    its doc spec.
 
-   Wolf (streakMultiplier), Crane (shield) and Phoenix (revive) also have
-   bespoke game-loop hooks now, wired directly in game.tsx/draw.tsx rather
-   than through the collectible engine (see each entry's comment).
+   Every perk is a field on this table. That is the point of the table:
+   Wren's hint, Phoenix's revive and Baguette's guest word used to be
+   `getEquippedCompanion() === 'wren'` checks duplicated across game.tsx
+   and draw.tsx, which meant giving any *other* companion a hint was a
+   code change rather than a data entry. They are `hint`, `revive` and
+   `guestWord` now, so any companion can be handed any of them.
 
-   Wren's hint (first-letter nudge, 25% per word) is wired directly in
-   game.tsx/draw.tsx via an `isWren` equip check, same as Phoenix's revive
-   — no CompanionKit field, since it's not data other code needs to read.
+   The Mi family (Mini-Mi, Big-Mi, Rando-Mi) adds `lengthBias` — the only
+   perk here that acts on *which words get served* rather than on their
+   presentation or their payout. Its guard rail lives in review.ts.
 
    Still ambient-only, deliberately: Leviathan (stacks two other
    companions' ambients — needs multi-Season field composition, which
@@ -100,8 +103,44 @@ export interface CompanionKit {
    *  this app avoids punitive drawbacks elsewhere (see Baguette's guest
    *  word), so "or nothing" means no bonus, not a penalty. */
   ambush?: { chance: number; bonusMult: number };
+  /** Wren: a first-letter nudge on a `chance` of served words. Purely
+   *  additive UI — no economy or heart interaction, so it runs in both
+   *  modes. A quiet nudge, not a crutch. */
+  hint?: { chance: number };
+  /** Phoenix: survive reaching 0 hearts, `perMatch` times per run,
+   *  instead of ending it. The strongest perk in the set. */
+  revive?: { perMatch: number };
+  /** Sir Baguette: occasionally show the served word's counterpart in
+   *  another language beside it. Saying it too pays `bonusTokens`;
+   *  ignoring it costs nothing — strictly upside, and deliberately so.
+   *
+   *  Guest words are ephemeral exposure: they must never reach the
+   *  Leitner queue, lifetime counts or per-language counters, or they
+   *  would trip checkPolyglotBadge() fraudulently. See docs/EVENTS.md's
+   *  invariant, which generalises exactly this rule. */
+  guestWord?: { lang: string; chance: number; bonusTokens: number };
+  /**
+   * The Mi family: bias *which* words get served by length.
+   *
+   * The only perk here that acts on the words themselves rather than on
+   * their presentation or their payout. `strength` is 0-1.
+   *
+   * Guard rail, enforced in review.ts: this is a **tiebreaker inside the
+   * set the scheduler already considers eligible**, never an override of
+   * it. `pickNextIndex()` stays in charge of what is *due for review*;
+   * a companion may nudge which of those comes up next and nothing more.
+   * A companion must never be able to starve the review queue.
+   */
+  lengthBias?: {
+    prefer: 'short' | 'long' | 'random';
+    strength: number;
+    /** Extra tokens per letter beyond `from`, for companions paid by length. */
+    lengthBonus?: { from: number; perLetter: number };
+  };
   copy: {
     quips: string[];
+    /** Replaces the generic "Game Over" headline while equipped. */
+    onGameOver?: string;
   };
 }
 
@@ -181,6 +220,7 @@ export const COMPANION_KITS: CompanionKit[] = [
       opacity: 0.35,
       cost: 0,
     },
+    hint: { chance: 0.25 },
     copy: { quips: ["Chirp! You're doing great.", 'Small steps count.'] },
   },
   {
@@ -435,6 +475,7 @@ export const COMPANION_KITS: CompanionKit[] = [
       opacity: 0.4,
       cost: 0,
     },
+    revive: { perMatch: 1 },
     copy: { quips: ['Reborn every run.', 'Rise and keep going.'] },
   },
   {
@@ -453,6 +494,77 @@ export const COMPANION_KITS: CompanionKit[] = [
     },
     copy: { quips: ['From the depths, respect.', 'Unstoppable.'] },
   },
+  /* ── The Mi family ──────────────────────────────────────────────
+     Three siblings from the lore, and the first companions whose
+     mechanic is about the *words themselves* rather than decoration.
+     Each handles a length band: they seek those words out and pay for
+     them. See `lengthBias` above for the guard rail that keeps this a
+     nudge rather than a hijack of the review queue. */
+  {
+    id: 'mini-mi',
+    name: 'Mini-Mi',
+    ambient: {
+      id: 'companion-mini-mi',
+      name: 'Mini-Mi — tiny motes',
+      blurb: 'Small bright specks scatter around Mini-Mi.',
+      glyphs: ['·', '✦'],
+      motion: { gravity: -3, terminalVelocity: 14, spinSpeed: 0, wander: 1.6, flicker: 0.5, swayAmplitude: 8, swayFrequency: 0.4 },
+      baseCount: 12,
+      sizeRange: [4, 8],
+      opacity: 0.5,
+      cost: 0,
+    },
+    // The small one — handles tiny words, and serves more of them.
+    lengthBias: { prefer: 'short', strength: 0.8 },
+    copy: { quips: ['Small and quick!', 'Little words count too.'] },
+  },
+  {
+    id: 'big-mi',
+    name: 'Big-Mi',
+    ambient: {
+      id: 'companion-big-mi',
+      name: 'Big-Mi — heavy blocks',
+      blurb: 'Big slow shapes drift past Big-Mi.',
+      glyphs: ['▉', '◼'],
+      motion: { gravity: 5, terminalVelocity: 18, spinSpeed: 6, wander: 0.1, flicker: 0, swayAmplitude: 10, swayFrequency: 0.1 },
+      baseCount: 5,
+      sizeRange: [18, 30],
+      opacity: 0.25,
+      cost: 0,
+    },
+    // The large one — handles big words, and finally makes the hardest
+    // words the most valuable ones.
+    lengthBias: {
+      prefer: 'long',
+      strength: 0.8,
+      lengthBonus: { from: 5, perLetter: 2 },
+    },
+    copy: { quips: ['Big word? Bring it.', 'The long ones pay best.'] },
+  },
+  {
+    id: 'rando-mi',
+    name: 'Rando-Mi',
+    ambient: {
+      id: 'companion-rando-mi',
+      name: 'Rando-Mi — unpredictable motes',
+      blurb: 'Nothing around Rando-Mi keeps the same size twice.',
+      glyphs: ['✦', '◆', '▪'],
+      motion: { gravity: 2, terminalVelocity: 30, spinSpeed: 90, wander: 2.2, flicker: 0.7, swayAmplitude: 26, swayFrequency: 0.5 },
+      baseCount: 9,
+      sizeRange: [5, 26],
+      opacity: 0.4,
+      cost: 0,
+    },
+    // The unpredictable sibling — length swings turn to turn, and the
+    // swing itself is the mechanic, so the bias is re-rolled per word
+    // rather than derived from length (see review.ts's lengthFactor).
+    lengthBias: {
+      prefer: 'random',
+      strength: 1,
+      lengthBonus: { from: 6, perLetter: 3 },
+    },
+    copy: { quips: ['Who knows what is next!', 'Roll with it.'] },
+  },
   {
     id: 'sir-baguette',
     name: 'Sir Baguette',
@@ -467,7 +579,11 @@ export const COMPANION_KITS: CompanionKit[] = [
       opacity: 0.4,
       cost: 0,
     },
-    copy: { quips: ['Magnifique, mon ami!', 'A little crusty, a lot proud.'] },
+    guestWord: { lang: 'fr', chance: 0.2, bonusTokens: 2 },
+    copy: {
+      quips: ['Magnifique, mon ami!', 'A little crusty, a lot proud.'],
+      onGameOver: "C'est la vie.",
+    },
   },
 ];
 

@@ -128,9 +128,29 @@ export interface CompanionKit {
   pacing?: { hitMs: number; restartMs: number };
   charge?: { per: 'collect' | 'correct'; needed: number };
   onCharged?: CompanionAbility;
+
+  // ── perks, all optional, all stackable ──
+  streakMultiplier?: { at: number; mult: number }[];   // Wolf
+  shield?: { foldsNeeded: number };                    // Crane
+  burstChance?: { chance: number; extraMult: number }; // Sparrow
+  ambush?: { chance: number; bonusMult: number };      // Tiger
+  hint?: { chance: number };                           // Wren
+  revive?: { perMatch: number };                       // Phoenix
+  guestWord?: { lang: string; chance: number; bonusTokens: number }; // Baguette
+  lengthBias?: {                                       // the Mi family
+    prefer: 'short' | 'long' | 'random';
+    strength: number;
+    lengthBonus?: { from: number; perLetter: number };
+  };
+
   copy: { quips: string[]; onCorrect?: string; onGameOver?: string };
 }
 ```
+
+**The perk block is the whole point of the table.** None of these are tied to
+the companion they were designed for — any of them can be handed to any
+companion by editing one row. The moment a perk needs an `id === 'x'` check in
+a page, this document has been violated and the perk belongs up here instead.
 
 ### Every collectible needs a per-match cap
 
@@ -304,6 +324,48 @@ Same kit, no new engine work.
 
 Phoenix's revive is the strongest perk in the set. It belongs behind its
 existing 20,000-word gate in `TOTAL_MILESTONES`, and should stay there.
+
+**Every one of these is a field on the kit, and that is deliberate.** Wren's
+hint, Phoenix's revive and Baguette's guest word were originally
+`getEquippedCompanion() === 'wren'` checks duplicated across `game.tsx` and
+`draw.tsx` — which meant giving *any other* companion a hint was a code change
+rather than a data entry, exactly the failure this document exists to prevent.
+They are `hint`, `revive` and `guestWord` now. There are no equip-id checks
+left in either page.
+
+The guest-word lookup went with them: `counterpartWord()` takes a target
+language rather than hardcoding French, so a guest word in any language can be
+handed to any companion.
+
+---
+
+## The Mi family — three siblings, one new axis
+
+Mini-Mi, Big-Mi and Rando-Mi are from the lore, and they are the first
+companions whose mechanic is about **the words themselves** rather than how
+those words look or what they pay. Each *handles* a length band: it seeks those
+words out, and it pays for them.
+
+| Companion | Handles | Mechanic |
+| --- | --- | --- |
+| **Mini-Mi** | Tiny words | Serves more short words — quick and light |
+| **Big-Mi** | Big words | Serves more long words *and* pays per extra letter, so the hardest words are finally worth the most |
+| **Rando-Mi** | Anything | Length swings turn to turn; the swing is re-rolled per word, and the payout scales with the swing |
+
+### The guard rail
+
+`lengthBias` is a **tiebreaker inside the set the Leitner scheduler already
+considers eligible — never an override of it.** `pickNextIndex()` stays in
+charge of what is *due for review*; a companion may only nudge which of those
+comes up next.
+
+This is enforced by construction rather than by convention: `lengthFactor()` in
+`review.ts` is bounded to `[0.5, 1.5]` and can never return zero, so no
+companion can remove a word from consideration. A word you genuinely need to
+review stays reachable no matter who is equipped.
+
+The length bonus is paid on the word actually *answered*, not the word served,
+so it cannot be farmed by re-rolling.
 
 ---
 

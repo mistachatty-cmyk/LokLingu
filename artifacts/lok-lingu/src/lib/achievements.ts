@@ -17,6 +17,18 @@
 
 import type { Tier } from './roadmap';
 import { currentSessionBestWords, categoryWordCount, getUnlockedAchievements, setAchievementUnlocked, setCompanionUnlocked } from '../hooks/use-celebration';
+import { getAllNotes } from './journal';
+
+/**
+ * How many words of a given length band the player has ever answered
+ * correctly. The Mi family's unlocks are earned by actually working
+ * through words of that shape, which is the whole point of the siblings.
+ */
+function wordsAnsweredInLengthBand(min: number, max: number): number {
+  return getAllNotes().filter(
+    (n) => n.correctCount > 0 && n.word.length >= min && n.word.length <= max,
+  ).length;
+}
 
 export interface Achievement {
   id: string;
@@ -76,7 +88,49 @@ export const CATEGORY_ACHIEVEMENTS: Achievement[] = [
   },
 ];
 
-export const ALL_ACHIEVEMENTS: Achievement[] = [...SESSION_ACHIEVEMENTS, ...CATEGORY_ACHIEVEMENTS];
+/**
+ * The Mi family's unlocks. Length-band achievements rather than
+ * language/category ones, matching what the siblings actually do — you
+ * earn Big-Mi by getting through big words.
+ */
+export const LENGTH_ACHIEVEMENTS: Achievement[] = [
+  {
+    id: 'mi-short-words',
+    title: 'Mini-Mi',
+    detail: 'Correctly answer 25 words of four letters or fewer.',
+    glyph: '🔹',
+    tier: 'uncommon',
+    check: () => wordsAnsweredInLengthBand(1, 4) >= 25,
+    rewardLabel: 'Mini-Mi companion',
+  },
+  {
+    id: 'mi-long-words',
+    title: 'Big-Mi',
+    detail: 'Correctly answer 25 words of eight letters or more.',
+    glyph: '🔶',
+    tier: 'rare',
+    check: () => wordsAnsweredInLengthBand(8, Infinity) >= 25,
+    rewardLabel: 'Big-Mi companion',
+  },
+  {
+    id: 'mi-any-words',
+    title: 'Rando-Mi',
+    detail: 'Earn both of the other siblings — Rando-Mi only shows up once they have.',
+    glyph: '🎲',
+    tier: 'epic',
+    check: () => {
+      const done = getUnlockedAchievements();
+      return done.includes('mi-short-words') && done.includes('mi-long-words');
+    },
+    rewardLabel: 'Rando-Mi companion',
+  },
+];
+
+export const ALL_ACHIEVEMENTS: Achievement[] = [
+  ...SESSION_ACHIEVEMENTS,
+  ...CATEGORY_ACHIEVEMENTS,
+  ...LENGTH_ACHIEVEMENTS,
+];
 
 // Some achievements also unlock a LOK_COMPANIONS entry (roadmap.ts).
 // Kept as a side-table here rather than a field on Achievement so
@@ -84,6 +138,9 @@ export const ALL_ACHIEVEMENTS: Achievement[] = [...SESSION_ACHIEVEMENTS, ...CATE
 // the companion id just has to match LOK_COMPANIONS' title-derived id.
 const ACHIEVEMENT_COMPANION_UNLOCKS: Record<string, string> = {
   'fr-food-baguette': 'sir-baguette',
+  'mi-short-words': 'mini-mi',
+  'mi-long-words': 'big-mi',
+  'mi-any-words': 'rando-mi',
 };
 
 /** Runs every achievement's predicate and persists any newly-met ones. */

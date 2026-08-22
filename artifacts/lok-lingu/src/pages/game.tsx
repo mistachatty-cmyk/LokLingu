@@ -11,7 +11,7 @@ import { useSettings } from '@/hooks/use-settings';
 import { useDevMode } from '@/hooks/use-dev-mode';
 import { useEconomy } from '@/hooks/use-economy';
 import { consumeSkip, FREE_SKIPS_PER_MATCH, earnTokens } from '@/lib/economy';
-import { frenchCounterpart, GUEST_WORD_CHANCE } from '@/lib/companion-guest-word';
+import { counterpartWord } from '@/lib/companion-guest-word';
 import type { WordEntry } from '@/lib/offline-data';
 import { currentWords, freeSkipsForLevel } from '@/lib/levels';
 import { effectiveLevelState, currentPrestige, prestigeIcon } from '@/lib/prestige';
@@ -181,28 +181,34 @@ export default function Game() {
   livesRef.current = lives;
   const heartsModeRef = useRef(heartsMode);
   heartsModeRef.current = heartsMode;
-  // Phoenix's marquee perk: once per match, revive from 0 hearts instead
-  // of ending the run. One-shot equip read + one-shot per-mount use flag,
-  // same pattern as isBaguette below.
-  const [isPhoenix] = useState(() => getEquippedCompanion() === 'phoenix');
-  const phoenixUsedRef = useRef(false);
+  /* The equipped kit, read once per mount. Every companion perk below is
+     a field on it — there are no `getEquippedCompanion() === 'x'` checks
+     left, which is what makes handing any perk to any companion a data
+     edit rather than a change here. */
+  const [kit] = useState(() => getCompanionKit(getEquippedCompanion() ?? '') ?? null);
+  // Revive (Phoenix): survive 0 hearts instead of ending the run.
+  const reviveLeftRef = useRef(kit?.revive?.perMatch ?? 0);
+  /* Read through a ref by the scheduler, which runs inside callbacks with
+     their own dependency arrays. */
+  const kitRef = useRef(kit);
+  kitRef.current = kit;
   // Wolf's pack bonus: escalating token multiplier while a streak holds.
   // wolfStreakRef tracks correct-in-a-row independent of `streak` state
   // (which lags a render behind inside the same synchronous handler) and
   // resets to 0 on any miss.
-  const [wolfTiers] = useState(() => getCompanionKit(getEquippedCompanion() ?? '')?.streakMultiplier);
+  const wolfTiers = kit?.streakMultiplier;
   const wolfStreakRef = useRef(0);
   // Crane's fold-a-crane shield: foldRef counts correct-in-a-row (reset on
   // an unshielded miss, same as Wolf's streak); reaching foldsNeeded grants
   // a shield that absorbs the next miss outright.
-  const [craneShield] = useState(() => getCompanionKit(getEquippedCompanion() ?? '')?.shield);
+  const craneShield = kit?.shield;
   const craneFoldRef = useRef(0);
   const craneShieldActiveRef = useRef(false);
   // Sparrow: per-hit chance of a doubled-rate burst.
-  const [sparrowBurst] = useState(() => getCompanionKit(getEquippedCompanion() ?? '')?.burstChance);
+  const sparrowBurst = kit?.burstChance;
   // Tiger: rolled once per served word (like Wren's hint); a flagged word
   // pays a bonus on a correct answer only.
-  const [tigerAmbush] = useState(() => getCompanionKit(getEquippedCompanion() ?? '')?.ambush);
+  const tigerAmbush = kit?.ambush;
   const ambushActiveRef = useRef(false);
   const stopListeningRef = useRef<() => void>(() => {});
 
@@ -269,39 +275,38 @@ export default function Game() {
   const categoryRef = useRef(category);
   categoryRef.current = category;
 
-  // Sir Baguette's guest word — strictly upside, see companion-guest-word.ts.
-  // One-shot equip read, matching the rest of this file's companion checks.
-  const [isBaguette] = useState(() => getEquippedCompanion() === 'sir-baguette');
+  // Guest word (Sir Baguette) — strictly upside, see companion-guest-word.ts.
+  const guestKit = kit?.guestWord;
   const [guestWord, setGuestWord] = useState<WordEntry | null>(null);
   const guestWordRef = useRef<WordEntry | null>(null);
   guestWordRef.current = guestWord;
   useEffect(() => {
-    if (!isBaguette || !currentWord) {
+    if (!guestKit || !currentWord) {
       setGuestWord(null);
       return;
     }
     setGuestWord(
-      Math.random() < GUEST_WORD_CHANCE
-        ? frenchCounterpart(currentWord.word, language, category)
+      Math.random() < guestKit.chance
+        ? counterpartWord(currentWord.word, language, guestKit.lang, category)
         : null,
     );
     // Only the word identity should retrigger the roll, not every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isBaguette, currentWord?.word, language, category]);
+  }, [guestKit, currentWord?.word, language, category]);
 
-  // Wren's hint: "feathers land on the word and gently nudge a hint (first
+  // Hint (Wren): "feathers land on the word and gently nudge a hint (first
   // letter)". A quiet nudge, not a crutch — rolled per word, same pattern
-  // as Baguette's guest word above, purely additive UI (no economy/heart
+  // as the guest word above, purely additive UI (no economy/heart
   // interaction, so no reason to gate it to voice mode only).
-  const [isWren] = useState(() => getEquippedCompanion() === 'wren');
+  const hintKit = kit?.hint;
   const [wrenHint, setWrenHint] = useState<string | null>(null);
   useEffect(() => {
-    if (!isWren || !currentWord?.word) {
+    if (!hintKit || !currentWord?.word) {
       setWrenHint(null);
       return;
     }
-    setWrenHint(Math.random() < 0.25 ? currentWord.word[0] : null);
-  }, [isWren, currentWord?.word]);
+    setWrenHint(Math.random() < hintKit.chance ? currentWord.word[0] : null);
+  }, [hintKit, currentWord?.word]);
 
   // Tiger's ambush — rolled per word, same pattern as Wren's hint.
   const [ambushFlagged, setAmbushFlagged] = useState(false);
@@ -359,6 +364,9 @@ export default function Game() {
       languageRef.current,
       words.map((w) => w.word),
       recentRef.current,
+      // The Mi family. A tiebreaker inside the set the scheduler already
+      // considers eligible — see review.ts's bound on lengthFactor.
+      kitRef.current?.lengthBias,
     );
     recentRef.current = [...recentRef.current, next].slice(-4);
     setWordIndex(next);
@@ -486,6 +494,15 @@ export default function Game() {
       const ambushBonus = ambushHit && tigerAmbush ? Math.round(rate * tigerAmbush.bonusMult) : 0;
       if (ambushBonus > 0) earnTokens(ambushBonus);
       ambushActiveRef.current = false;
+      // Big-Mi: the hardest words are finally worth the most. Paid on the
+      // word actually answered, so it can't be farmed by re-rolling.
+      const lb = kitRef.current?.lengthBias?.lengthBonus;
+      const answered = currentWordRef.current?.word ?? '';
+      const lengthBonus =
+        lb && answered.length > lb.from
+          ? Math.round((answered.length - lb.from) * lb.perLetter)
+          : 0;
+      if (lengthBonus > 0) earnTokens(lengthBonus);
       // Crane's fold-a-crane shield.
       let craneReady = false;
       if (craneShield && !craneShieldActiveRef.current) {
@@ -507,7 +524,9 @@ export default function Game() {
               ? `+${rate + sparrowBonus} ⚡`
               : wolfBonus > 0
                 ? `+${rate + wolfBonus} 🐺`
-                : `+${rate}`;
+                : lengthBonus > 0
+                  ? `+${rate + lengthBonus} 📏`
+                  : `+${rate}`;
       setTokenLabel((prev) => ({ key: prev.key + 1, text: labelText }));
       // Physics tokens launch from wherever the counter actually sits, so
       // they read as coming out of the HUD rather than from nowhere.
@@ -556,8 +575,8 @@ export default function Game() {
         livesRef.current = next;
         setLives(next);
         if (next <= 0) {
-          if (isPhoenix && !phoenixUsedRef.current) {
-            phoenixUsedRef.current = true;
+          if (reviveLeftRef.current > 0) {
+            reviveLeftRef.current -= 1;
             livesRef.current = 1;
             setLives(1);
             setTokenLabel((prev) => ({ key: prev.key + 1, text: '🔥 Reborn!' }));
@@ -784,7 +803,7 @@ export default function Game() {
         >
           <div>
             <h2 className="text-4xl font-black text-destructive uppercase tracking-widest">
-              {isBaguette ? "C'est la vie." : 'Game Over'}
+              {kit?.copy.onGameOver ?? 'Game Over'}
             </h2>
             <p className="text-muted-foreground mt-1">
               {runSummary.correct} word{runSummary.correct !== 1 ? 's' : ''} correct.

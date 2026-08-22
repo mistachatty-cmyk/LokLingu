@@ -141,6 +141,26 @@ export const LOK_COMPANIONS: Milestone[] = [
     reward: 'companion', rewardLabel: 'Sir Baguette companion', live: true,
     glyph: '🥖', tier: 'legendary',
   },
+  /* The Mi family — see docs/COMPANIONS.md. Earned by working through
+     words of the shape each sibling handles, not by a words-total gate. */
+  {
+    at: 0, track: 'total', title: 'Mini-Mi',
+    detail: 'The small one. Handles tiny words, and serves more of them.',
+    reward: 'companion', rewardLabel: 'Mini-Mi companion', live: true,
+    glyph: '🔹', tier: 'uncommon',
+  },
+  {
+    at: 0, track: 'total', title: 'Big-Mi',
+    detail: 'The large one. Handles big words, and pays per extra letter — the hardest words are finally worth the most.',
+    reward: 'companion', rewardLabel: 'Big-Mi companion', live: true,
+    glyph: '🔶', tier: 'rare',
+  },
+  {
+    at: 0, track: 'total', title: 'Rando-Mi',
+    detail: 'The unpredictable sibling. Length swings turn to turn, and the payout scales with the swing.',
+    reward: 'companion', rewardLabel: 'Rando-Mi companion', live: true,
+    glyph: '🎲', tier: 'epic',
+  },
 ];
 
 export const ALL_MILESTONES = [...MATCH_MILESTONES, ...TOTAL_MILESTONES];
