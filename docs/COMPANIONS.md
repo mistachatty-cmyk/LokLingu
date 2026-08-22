@@ -21,6 +21,11 @@ to prove it does not cover them, does not steal a pointer event from them, and
 does not slow the answer loop below its own configured pace.
 
 An effect that obscures the word has not added charm — it has broken the app.
+
+**Amended by [`EVENTS.md`](./EVENTS.md).** Random events may obscure the word,
+but only while answering is blocked and only when clearing the obstruction is
+the event's own win condition. The guarantee this rule exists to protect — you
+are never asked to answer a word you cannot read — is unchanged.
 That constraint is why the collectible layer has a forbidden zone rather than
 spawning wherever it likes, and why draw mode confines collectibles to the
 margins outside the canvas.
