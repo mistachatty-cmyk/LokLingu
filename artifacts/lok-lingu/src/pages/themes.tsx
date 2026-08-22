@@ -37,6 +37,7 @@ import {
   resolveMotion,
 } from '@/lib/token-motions';
 import { TokenMotionPreview } from '@/components/token-motion-preview';
+import { SeasonPreview } from '@/components/season-preview';
 
 const SHOP_SECTIONS: NavSection[] = [
   { id: 'shop-stacks', label: 'Stacks' },
@@ -542,9 +543,25 @@ function TokenSkinShop() {
     if (previewDismissRef.current) window.clearTimeout(previewDismissRef.current);
     previewDismissRef.current = window.setTimeout(() => setPreviewedSkin(null), 2200);
   };
+  // The idle glyph under each card's animation stays visible so the card
+  // isn't blank at rest — but that means it also sits on top of the pile
+  // animation while one's playing. Fades it out per-card for the same
+  // window the animation itself runs, then restores it. Scoped to just the
+  // tapped card's id, so no other card's idle glyph is touched.
+  const [previewAnimating, setPreviewAnimating] = useState<Record<string, boolean>>({});
+  const idleFadeRef = useRef<Record<string, number>>({});
+  const flashPreview = (id: string) => {
+    setPreviewAnimating((p) => ({ ...p, [id]: true }));
+    const existing = idleFadeRef.current[id];
+    if (existing) window.clearTimeout(existing);
+    idleFadeRef.current[id] = window.setTimeout(() => {
+      setPreviewAnimating((p) => ({ ...p, [id]: false }));
+    }, 2200);
+  };
   useEffect(() => {
     return () => {
       if (previewDismissRef.current) window.clearTimeout(previewDismissRef.current);
+      Object.values(idleFadeRef.current).forEach((t) => window.clearTimeout(t));
     };
   }, []);
   const [purchaseConfirm, setPurchaseConfirm] = useState<string | null>(null);
@@ -622,6 +639,7 @@ function TokenSkinShop() {
   const handleCard = (skin: TokenSkin) => {
     playSound();
     bump(skin.id);
+    flashPreview(skin.id);
 
     // If already owned or equipped, just equip it
     if (ownsSkin(skin.id, level) || owned.includes(skin.id)) {
@@ -756,8 +774,13 @@ function TokenSkinShop() {
                   >
                     {/* Live preview stage — the real components, contained. */}
                     <div className="relative mb-2 h-20 overflow-hidden rounded-lg bg-background/60 flex items-center justify-center">
-                      {/* Static glyph base — always visible underneath animations */}
-                      <span className="absolute inset-0 flex items-center justify-center text-2xl opacity-40">
+                      {/* Static glyph base — visible at rest, fades out while this
+                          card's own animation plays so it doesn't sit on top of it. */}
+                      <span
+                        className={`absolute inset-0 flex items-center justify-center text-2xl transition-opacity duration-300 ${
+                          previewAnimating[skin.id] ? 'opacity-0' : 'opacity-40'
+                        }`}
+                      >
                         {skin.glyph}
                       </span>
 
@@ -1194,11 +1217,12 @@ function SeasonShop() {
               }`}
             >
               {isSelected && <Check className="absolute top-2 right-2 w-3.5 h-3.5 text-primary" />}
-              <div className="text-2xl mb-1 flex gap-0.5">
-                {season.glyphs.slice(0, 3).map((g, i) => (
-                  <span key={i} style={{ opacity: 1 - i * 0.28 }}>{g}</span>
-                ))}
+
+              {/* Live preview stage — the real createField ambient engine, contained. */}
+              <div className="relative mb-2 h-16 overflow-hidden rounded-lg bg-background/60">
+                <SeasonPreview season={season} />
               </div>
+
               <div className="font-bold text-xs uppercase tracking-wide">{season.name}</div>
               <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">{season.blurb}</p>
               <div className="mt-2 text-[10px] font-mono uppercase tracking-widest">
