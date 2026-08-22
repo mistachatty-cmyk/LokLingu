@@ -40,6 +40,9 @@ import { GameWord } from '@/components/game-word';
 import { TokenPhysicsLayer, spawnTokenAt } from '@/components/token-physics-layer';
 import { CompanionWidget } from '@/components/companion-widget';
 import { CompanionLayer } from '@/components/companion-layer';
+import { EventDirector } from '@/components/event-director';
+import { useAnswerGate } from '@/hooks/use-answer-gate';
+import type { WordPresentation } from '@/lib/word-effects';
 import { resolveWordSet, CUSTOM_SET_KEY, CUSTOM_ORDER_KEY } from '@/lib/wordsets';
 
 type NormalWord = { word: string; translation: string; pronunciation?: string };
@@ -310,6 +313,18 @@ export default function Game() {
 
   const lockedRef = useRef(false);
 
+  /* ── companion events ────────────────────────────────────────────
+     The gate is the single way an event suspends answering. It also
+     aborts the live recognition session on acquire: `handleResult`
+     returns early while locked, so without this the mic stays hot and
+     silently swallows whatever the player says at a blocked screen. */
+  const [presentation, setPresentation] = useState<WordPresentation | null>(null);
+  const gate = useAnswerGate({
+    onAcquire: () => abortSessionRef.current(),
+  });
+  const gateRef = useRef(gate);
+  gateRef.current = gate;
+
   /* ── review scheduling ──────────────────────────────────────────
      Everything attempted this run, for the end-of-session summary. */
   const sessionLogRef = useRef<SessionEntry[]>([]);
@@ -404,7 +419,9 @@ export default function Game() {
   const [typedAnswer, setTypedAnswer] = useState('');
 
   const handleResult = useCallback((spoken: string, isFinal: boolean) => {
-    if (lockedRef.current || speechMutedRef.current) return;
+    // gateRef, not gate: handleResult has an empty dep array and must not
+    // close over a stale gate identity.
+    if (lockedRef.current || speechMutedRef.current || gateRef.current.isBlocked()) return;
     const target = currentWordRef.current?.word;
     if (!target || !spoken) return;
 
@@ -854,6 +871,12 @@ export default function Game() {
         wordCount={celebration.matchCount}
         onReward={(label) => setTokenLabel((prev) => ({ key: prev.key + 1, text: label }))}
       />
+      <EventDirector
+        wordCount={celebration.matchCount}
+        gate={gate}
+        onPresentation={setPresentation}
+        onNotice={(text) => setTokenLabel((prev) => ({ key: prev.key + 1, text }))}
+      />
       <CompanionWidget side="left" />
 
       {summary && (
@@ -936,6 +959,7 @@ export default function Game() {
           pronunciation={currentWord.pronunciation}
           feedback={feedback}
           animKey={wordIndex}
+          presentation={presentation ?? undefined}
         />
 
         {/* Sir Baguette's guest word — strictly a bonus. Say the target word

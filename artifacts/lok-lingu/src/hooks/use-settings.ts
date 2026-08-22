@@ -11,6 +11,8 @@ export type CursorId =
 
 export type MatchTolerance = "strict" | "normal" | "loose";
 export type ResponseSpeed = "fast" | "normal" | "relaxed";
+/** How often companion events interrupt a run. `off` disables them entirely. */
+export type EventFrequency = "off" | "low" | "normal" | "high";
 
 export interface GameSettings {
   heartsMode: boolean;
@@ -20,6 +22,7 @@ export interface GameSettings {
   ttsVolume: number; // 0–1
   ttsRate: number;   // 0.5–1.5
   responseSpeed: ResponseSpeed;
+  eventFrequency: EventFrequency;
 }
 
 const KEYS: Record<keyof GameSettings, string> = {
@@ -30,6 +33,7 @@ const KEYS: Record<keyof GameSettings, string> = {
   ttsVolume:      "lok-lingu-tts-volume",
   ttsRate:        "lok-lingu-tts-rate",
   responseSpeed:  "lok-lingu-response-speed",
+  eventFrequency: "lok-lingu-event-frequency",
 };
 
 const DEFAULTS: GameSettings = {
@@ -40,6 +44,7 @@ const DEFAULTS: GameSettings = {
   ttsVolume:     1,
   ttsRate:       0.85,
   responseSpeed: "fast",
+  eventFrequency: "normal",
 };
 
 function read<T>(key: string, def: T, parse: (v: string) => T): T {
@@ -70,6 +75,9 @@ export function useSettings() {
   const [responseSpeed, _setResponseSpeed] = useState<ResponseSpeed>(() =>
     read(KEYS.responseSpeed, DEFAULTS.responseSpeed, (v) => v as ResponseSpeed)
   );
+  const [eventFrequency, _setEventFrequency] = useState<EventFrequency>(() =>
+    read(KEYS.eventFrequency, DEFAULTS.eventFrequency, (v) => v as EventFrequency)
+  );
 
   function set<K extends keyof GameSettings>(key: K, val: GameSettings[K]) {
     localStorage.setItem(KEYS[key], String(val));
@@ -80,9 +88,10 @@ export function useSettings() {
     if (key === "ttsVolume")      _setTtsVolume(val as number);
     if (key === "ttsRate")        _setTtsRate(val as number);
     if (key === "responseSpeed")  _setResponseSpeed(val as ResponseSpeed);
+    if (key === "eventFrequency") _setEventFrequency(val as EventFrequency);
   }
 
-  return { heartsMode, autoSpeak, cursor, matchTolerance, ttsVolume, ttsRate, responseSpeed, set };
+  return { heartsMode, autoSpeak, cursor, matchTolerance, ttsVolume, ttsRate, responseSpeed, eventFrequency, set };
 }
 
 /** Read settings without a hook (for non-React code) */
@@ -95,5 +104,6 @@ export function readSettings(): GameSettings {
     ttsVolume:     read(KEYS.ttsVolume,     DEFAULTS.ttsVolume,     parseFloat),
     ttsRate:       read(KEYS.ttsRate,       DEFAULTS.ttsRate,       parseFloat),
     responseSpeed: read(KEYS.responseSpeed, DEFAULTS.responseSpeed, (v) => v as ResponseSpeed),
+    eventFrequency:read(KEYS.eventFrequency,DEFAULTS.eventFrequency,(v) => v as EventFrequency),
   };
 }

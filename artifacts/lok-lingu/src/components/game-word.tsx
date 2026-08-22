@@ -91,12 +91,17 @@ export function GameWord({
           (_m, rem) => `${(parseFloat(rem) * effectiveScale).toFixed(2)}rem)`,
         );
 
-  const filters = [
+  // Presentation filters and the hit-flash both target CSS `filter`, and
+  // framer-motion writes `animate` values as inline style — so a blur set
+  // via `style` is silently clobbered the moment the brightness flash
+  // animates. They have to be composed into a single string instead.
+  const filterPrefix = [
     presentation?.blur ? `blur(${presentation.blur}px)` : '',
     presentation?.invert ? 'invert(1)' : '',
   ]
     .filter(Boolean)
     .join(' ');
+  const withPrefix = (f: string) => (filterPrefix ? `${filterPrefix} ${f}` : f);
 
   return (
     <AnimatePresence mode="wait">
@@ -122,20 +127,26 @@ export function GameWord({
             color: presentation?.tint ?? (feedback === 'idle' ? 'var(--word-color)' : undefined),
             ['--word-size-mobile' as string]: scaleCeiling(size.mobile),
             ['--word-size-desktop' as string]: scaleCeiling(size.desktop),
-            filter: filters || undefined,
           }}
           // flipX rides in `animate`, not `style` — framer-motion writes the
           // element's `transform` itself, so an inline transform here would
-          // be clobbered the moment any effect animates.
+          // be clobbered the moment any effect animates. Same reasoning
+          // applies to `filter`, hence withPrefix() on every branch.
           animate={{
             ...(presentation?.flipX ? { scaleX: -1 } : {}),
             ...(prefersReducedMotion
-              ? {}
+              ? { filter: withPrefix('brightness(1)') }
               : block
-                ? block.animate
+                ? { ...block.animate, filter: withPrefix('brightness(1)') }
                 : feedback === 'hit'
-                  ? { filter: ['brightness(1)', 'brightness(1.7)', 'brightness(1)'] }
-                  : { filter: 'brightness(1)' }),
+                  ? {
+                      filter: [
+                        withPrefix('brightness(1)'),
+                        withPrefix('brightness(1.7)'),
+                        withPrefix('brightness(1)'),
+                      ],
+                    }
+                  : { filter: withPrefix('brightness(1)') }),
           }}
           transition={block ? block.transition : { duration: 0.22, ease: 'easeOut' }}
         >
