@@ -299,6 +299,38 @@ reinforce success, not to demand more of the player.
 | Space Invaders — clear the wave to continue | T1 |
 | Baguette storm on a long clean streak | T0 |
 
+### Five new ideas — proposed, not yet scoped
+
+Genuinely new, not from the earlier brainstorm rounds this doc already
+absorbed. Deliberately left as ideas rather than built this round —
+each needs a real design pass (verified against the primitives, tiered,
+checked against the invariant) the same way every shipped event was.
+
+- **Paper Trail** — a paper airplane carrying the word sails across the
+  screen on a curve; catch it before it exits for double tokens, or let
+  it go for nothing lost. A slash-to-catch cousin of Bot-Loko and Mirror
+  Mode's "answer it as-is or catch the bonus" shape, but the object
+  itself is the reward this time, not a threat.
+- **Split Decision** — the word briefly forks into two near-identical
+  spellings (one real, one with a plausible letter swap); tap the
+  correct one before it's safe to answer. Teaches spelling attention the
+  same way Word Search's decoys teach vocabulary — the wrong option is
+  the lesson, not just a trap.
+- **Echo** — after a correct answer, the word is spoken back once more,
+  softly, in reverse-fade — a celebratory audio flourish with zero
+  interaction and zero cost, in the spirit of The Toast and The Encore.
+- **The Weigh Station** — not an event but a companion trait candidate:
+  a small on-screen scale that tips toward "balanced" as recent accuracy
+  holds steady; staying balanced for N words grants a one-time streak-
+  break immunity, the same shape as Crane's shield but earned by
+  consistency rather than an unbroken streak.
+- **Night Market** — not an event at all: a rotating shop idea. One
+  random skin or motion the player doesn't yet own appears at a
+  discount for 24 hours, refreshing daily. A genuinely different system
+  from anything above (needs a real-time refresh clock and its own shop
+  section), noted here so it isn't lost rather than because it's ready
+  to build.
+
 ---
 
 ## Verification checklist
