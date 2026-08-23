@@ -330,6 +330,12 @@ export default function Game() {
      returns early while locked, so without this the mic stays hot and
      silently swallows whatever the player says at a blocked screen. */
   const [presentation, setPresentation] = useState<WordPresentation | null>(null);
+  // Mirror Mode's double-tokens payoff reads this at the moment a correct
+  // answer lands — handleResult has an empty dep array (see its own
+  // comment below), so a plain closure over `presentation` would see
+  // whatever it was on first render, not the live value.
+  const presentationRef = useRef(presentation);
+  presentationRef.current = presentation;
   const gate = useAnswerGate({
     onAcquire: () => abortSessionRef.current(),
   });
@@ -514,6 +520,10 @@ export default function Game() {
           ? Math.round((answered.length - lb.from) * lb.perLetter)
           : 0;
       if (lengthBonus > 0) earnTokens(lengthBonus);
+      // Mirror Mode: answering while the word is still flipped pays double
+      // rather than the swipe-to-unflip convenience path.
+      const mirrorBonus = presentationRef.current?.flipX ? rate : 0;
+      if (mirrorBonus > 0) earnTokens(mirrorBonus);
       // Crane's fold-a-crane shield.
       let craneReady = false;
       if (craneShield && !craneShieldActiveRef.current) {
@@ -537,7 +547,9 @@ export default function Game() {
                 ? `+${rate + wolfBonus} 🐺`
                 : lengthBonus > 0
                   ? `+${rate + lengthBonus} 📏`
-                  : `+${rate}`;
+                  : mirrorBonus > 0
+                    ? `+${rate + mirrorBonus} 🪞`
+                    : `+${rate}`;
       setTokenLabel((prev) => ({ key: prev.key + 1, text: labelText }));
       // Physics tokens launch from wherever the counter actually sits, so
       // they read as coming out of the HUD rather than from nowhere.

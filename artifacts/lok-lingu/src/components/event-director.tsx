@@ -17,6 +17,9 @@ import { BlurredWord } from '@/components/events/blurred-word';
 import { ScratchCard } from '@/components/events/scratch-card';
 import { BotLoko } from '@/components/events/bot-loko';
 import { Eclipse } from '@/components/events/eclipse';
+import { MirrorMode } from '@/components/events/mirror-mode';
+import { LightSwitch } from '@/components/events/light-switch';
+import { AntColony } from '@/components/events/ant-colony';
 
 /* ------------------------------------------------------------------
    The event director — one owner for when a beat fires and what it may do.
@@ -186,6 +189,42 @@ export function EventDirector({
         <Eclipse
           durationMs={active.durationMs}
           onPresentation={onPresentation}
+          onDone={finish}
+        />
+      );
+
+    case 'mirror-mode':
+      return (
+        <MirrorMode
+          durationMs={active.durationMs}
+          onPresentation={onPresentation}
+          onDone={finish}
+        />
+      );
+
+    case 'light-switch':
+      return (
+        <LightSwitch
+          durationMs={active.durationMs}
+          onPresentation={onPresentation}
+          onDone={finish}
+        />
+      );
+
+    case 'ant-colony':
+      return (
+        <AntColony
+          durationMs={active.durationMs}
+          onSquash={() => {
+            play('pop', 'mini');
+            earnTokens(2);
+            onNotice?.('+2 🐜');
+          }}
+          onEscapeBonus={() => {
+            play('chime', 'big');
+            earnTokens(20);
+            onNotice?.('🐜🐜 slipped past — +20 ✨');
+          }}
           onDone={finish}
         />
       );

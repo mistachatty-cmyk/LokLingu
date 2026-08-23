@@ -138,6 +138,9 @@ snapshotting those keys before and after it runs.
 | **Blurred Word** | T0 | no | P1, with no interaction risk at all |
 | **Scratch Card** | T1 | yes | P2 `scrub` *and* a real hold on the gate |
 | **The Eclipse** | T0 | no | P1 mask + an optional P2 `tap`, with nothing to win or lose |
+| **Mirror Mode** | T0 | no | P1 `flipX` + an in-the-moment answer bonus, not just presentation |
+| **Light Switch** | T1 | no | P1 `invert` + a single-tap resolve gesture |
+| **Ant Colony** | T0 | no | Several independently-moving P2 targets on one surface, with two payout paths |
 | **Bot-Loko** | T2 | no | P2 `slash` under time pressure, with a real stake |
 
 ### Blurred Word
@@ -170,6 +173,43 @@ It is the gentlest interactive event in the catalogue on purpose. Blurred Word
 proves presentation alone; this proves presentation plus an optional gesture
 that can never fail — the point being that *not every event needs stakes to
 justify existing.*
+
+### Mirror Mode
+
+The word renders flipped (`scaleX(-1)`, reusing `flipX` — already wired
+into `GameWord`'s `animate`). A swipe unflips it early, purely as a
+convenience; left alone, it stays flipped for the whole beat, and answering
+it correctly *while it is still flipped* pays double the normal rate. The
+host page's own answer handler reads the live `presentation.flipX` at the
+moment a correct answer lands — the same place every other in-the-moment
+bonus (Tiger's ambush, the Mi family's length bonus) is computed — so the
+event component itself owns only the flip state and the early-clear
+gesture, not the payout.
+
+### Light Switch
+
+The word inverts (the existing composed-filter `invert`) until a tap
+flips it back. Unlike Mirror Mode there is no reward for leaving it
+inverted — nothing to lose by clearing it immediately, so the only
+decision is whether you can already read it inverted.
+
+Scoped to the word itself rather than "the whole screen" as the original
+brainstorm phrased it: inverting the entire viewport would fight every
+other effect's contrast assumptions (mask overlays, tints), and a
+word-scoped invert already delivers the same jarring, instantly-readable
+-once-flipped beat without that cost.
+
+### Ant Colony
+
+Five ants cross the bottom edge, staggered, left to right. Tap one to
+smash it for a small bonus (+2). Let two reach the far edge untouched and
+they leave a bigger payout behind (+20) on their way out — so ignoring it
+entirely isn't a loss, it's a smaller, later payout instead of a
+tap-driven one. Every branch pays; nothing here can cost anything.
+
+Proves the primitives can host *several independently-moving targets on
+one surface* rather than just one (Bot-Loko) — each ant tracks its own
+position and hit-tests independently against a shared `GestureSurface`.
 
 ### Bot-Loko
 
@@ -226,11 +266,9 @@ Each is a data row plus a small stage component against the primitives above.
 | **Fogged Glass** — condensation creeps in from the edges; wipe it clear | P2 scrub | T1 |
 | **The Slip** — the word slides toward one edge on ice; flick it back (it re-enters from the far side, never lost) | P1 + P2 slash | T1 |
 | **Signal Loss** — the word degrades to static; drag an antenna until it locks sharp | P1 `glitch` + P2 | T1 |
-| **Mirror Mode** — the word renders flipped; swipe to unflip, or answer it flipped for double tokens | P1 `flipX` | T0 |
 | Ink splatter | P1 mask + P2 scrub | T1 |
 | Tomato splat | P1 mask | T0 |
 | Lights out — tap to relight, node bar filling on the right | P2 tap | T1 |
-| Light switch — the screen inverts until flipped back | P1 `invert` + P2 tap | T1 |
 | Background floats up / screen drifts away — pull it back | P2 drag | T1 |
 
 ### Affective beats
@@ -258,7 +296,6 @@ reinforce success, not to demand more of the player.
 | **Glitch Trade** — offers a deal: give up 1 skip → 3× tokens for 5 words. Declining costs nothing (T3 only because *you took it*) | T3 |
 | Repeat the word 1–5× — each utterance greys one out | T0, pays per line |
 | Fruit-ninja slash | T0 |
-| Ant colony crossing the bottom — smash for a bonus, or let two pass and they leave 20 tokens behind | T0 |
 | Space Invaders — clear the wave to continue | T1 |
 | Baguette storm on a long clean streak | T0 |
 

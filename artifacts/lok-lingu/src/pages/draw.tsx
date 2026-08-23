@@ -176,6 +176,9 @@ export default function Draw() {
      schedules the next word — so overloading it to mean "an event is
      blocking" would desync the whole loop. The gate is separate. */
   const [presentation, setPresentation] = useState<WordPresentation | null>(null);
+  // Mirror Mode's double-tokens payoff — see game.tsx's matching comment.
+  const presentationRef = useRef(presentation);
+  presentationRef.current = presentation;
   const gate = useAnswerGate({
     // Same reason as voice mode: the recogniser stays hot while blocked
     // and would silently eat whatever the player says at a locked screen.
@@ -302,6 +305,9 @@ export default function Draw() {
     const ambushBonus = ambushHit && tigerAmbush ? Math.round(rate * tigerAmbush.bonusMult) : 0;
     if (ambushBonus > 0) earnTokens(ambushBonus);
     ambushActiveRef.current = false;
+    // Mirror Mode — see game.tsx's matching comment.
+    const mirrorBonus = presentationRef.current?.flipX ? rate : 0;
+    if (mirrorBonus > 0) earnTokens(mirrorBonus);
     // Crane's fold-a-crane shield — see game.tsx's matching comment.
     let craneReady = false;
     if (craneShield && !craneShieldActiveRef.current) {
@@ -323,7 +329,9 @@ export default function Draw() {
             ? `+${rate + sparrowBonus} ⚡`
             : wolfBonus > 0
               ? `+${rate + wolfBonus} 🐺`
-              : `+${rate}`;
+              : mirrorBonus > 0
+                ? `+${rate + mirrorBonus} 🪞`
+                : `+${rate}`;
     setTokenLabel((prev) => ({ key: prev.key + 1, text: labelText }));
     spawnTokenAt(tokenAnchorRef.current);
     // Promote this word up a Leitner box before advancing.

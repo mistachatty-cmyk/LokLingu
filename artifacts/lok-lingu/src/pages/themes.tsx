@@ -758,11 +758,9 @@ function TokenSkinShop() {
           const levelLocked = skin.unlockLevel != null && level < skin.unlockLevel;
           const isEquipped = equipped.id === skin.id;
           return (
-                  <button
+                  <div
                     key={skin.id}
-                    type="button"
-                    onClick={() => handleCard(skin)}
-                    className={`relative overflow-hidden rounded-xl border p-3 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary active:scale-[0.98] ${
+                    className={`relative overflow-hidden rounded-xl border p-3 text-left transition-all ${
                       previewedSkin?.id === skin.id && !isOwned && !isEquipped
                         ? 'border-emerald-500 bg-emerald-500/10 ring-2 ring-emerald-500/50'
                         : isEquipped
@@ -772,8 +770,14 @@ function TokenSkinShop() {
                             : 'border-border bg-card hover:border-primary/40'
                     }`}
                   >
-                    {/* Live preview stage — the real components, contained. */}
-                    <div className="relative mb-2 h-20 overflow-hidden rounded-lg bg-background/60 flex items-center justify-center">
+                    {/* Live preview stage — deliberately NOT part of the clickable
+                        area. It used to sit inside the same <button> as the whole
+                        card, so a tap meant only to watch the animation counted as
+                        a buy/equip tap — pointer-events-none on this div alone
+                        wouldn't have fixed that, since the button underneath still
+                        occupies the same region. The fix is structural: only the
+                        name/price footer below is a real button now. */}
+                    <div className="pointer-events-none relative mb-2 h-20 overflow-hidden rounded-lg bg-background/60 flex items-center justify-center">
                       {/* Static glyph base — visible at rest, fades out while this
                           card's own animation plays so it doesn't sit on top of it. */}
                       <span
@@ -798,47 +802,56 @@ function TokenSkinShop() {
                       />
                     </div>
 
-                    <div className="flex flex-col gap-1">
-                      <span className="font-black text-xs uppercase tracking-wide break-words">
-                        {skin.name}
-                      </span>
-                      <div className="flex items-center justify-between gap-1">
-                        {isEquipped ? (
-                          <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
-                        ) : isOwned ? (
-                          <span className="shrink-0 text-[9px] uppercase tracking-widest text-muted-foreground">
-                            owned
-                          </span>
-                        ) : levelLocked ? (
-                          <span className="shrink-0 font-mono text-[10px] text-amber-400">
-                            Lv {skin.unlockLevel}
-                          </span>
-                        ) : (
-                          <span className="shrink-0 font-mono text-[10px] text-primary">{skin.cost}</span>
-                        )}
+                    {/* The actual buy/equip tap target — name, price, blurb and
+                        status only. Tapping the visualizer above does nothing
+                        but watch it play. */}
+                    <button
+                      type="button"
+                      onClick={() => handleCard(skin)}
+                      className="block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg active:scale-[0.98]"
+                    >
+                      <div className="flex flex-col gap-1">
+                        <span className="font-black text-xs uppercase tracking-wide break-words">
+                          {skin.name}
+                        </span>
+                        <div className="flex items-center justify-between gap-1">
+                          {isEquipped ? (
+                            <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
+                          ) : isOwned ? (
+                            <span className="shrink-0 text-[9px] uppercase tracking-widest text-muted-foreground">
+                              owned
+                            </span>
+                          ) : levelLocked ? (
+                            <span className="shrink-0 font-mono text-[10px] text-amber-400">
+                              Lv {skin.unlockLevel}
+                            </span>
+                          ) : (
+                            <span className="shrink-0 font-mono text-[10px] text-primary">{skin.cost}</span>
+                          )}
+                        </div>
                       </div>
-                    </div>
 
-                    <p className="mt-1 text-[10px] leading-snug text-muted-foreground break-words whitespace-normal">
-                      {skin.blurb}
-                    </p>
-
-                    {skin.ultimate && (
-                      <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-amber-300">
-                        <Flame className="h-2.5 w-2.5" /> Ultimate
-                      </span>
-                    )}
-
-                    {note?.id === skin.id && (
-                      <p
-                        className={`mt-1.5 text-[10px] font-bold ${
-                          note.ok ? 'text-emerald-400' : 'text-destructive'
-                        }`}
-                      >
-                        {note.text}
+                      <p className="mt-1 text-[10px] leading-snug text-muted-foreground break-words whitespace-normal">
+                        {skin.blurb}
                       </p>
-                    )}
-                  </button>
+
+                      {skin.ultimate && (
+                        <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-amber-300">
+                          <Flame className="h-2.5 w-2.5" /> Ultimate
+                        </span>
+                      )}
+
+                      {note?.id === skin.id && (
+                        <p
+                          className={`mt-1.5 text-[10px] font-bold ${
+                            note.ok ? 'text-emerald-400' : 'text-destructive'
+                          }`}
+                        >
+                          {note.text}
+                        </p>
+                      )}
+                    </button>
+                  </div>
                 );
               })}
               </div>
@@ -938,9 +951,8 @@ function MotionShop() {
           const isOwned = owned.includes(m.id);
           const isSelected = selected === m.id;
           return (
-            <button
+            <div
               key={m.id}
-              onClick={() => handleCard(m)}
               className={`relative rounded-xl border p-3 text-left transition-all ${
                 isSelected
                   ? 'border-primary bg-primary/10'
@@ -949,8 +961,11 @@ function MotionShop() {
             >
               {isSelected && <Check className="absolute top-2 right-2 w-3.5 h-3.5 text-primary" />}
 
-              {/* Live preview stage — the real token-sim physics, contained. */}
-              <div className="relative mb-2 h-16 overflow-hidden rounded-lg bg-background/60">
+              {/* Live preview stage — not part of the buy tap target. Used to
+                  share one <button> with the whole card, so watching the
+                  animation and buying/equipping were the same tap; now only
+                  the name/price footer below triggers handleCard. */}
+              <div className="pointer-events-none relative mb-2 h-16 overflow-hidden rounded-lg bg-background/60">
                 <span className="absolute inset-0 flex items-center justify-center text-lg opacity-30">
                   {skin?.glyph ?? '🪙'}
                 </span>
@@ -961,36 +976,42 @@ function MotionShop() {
                 />
               </div>
 
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-xs uppercase tracking-wide">{m.name}</span>
-                {m.ultimate && <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />}
-              </div>
-              <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">{m.blurb}</p>
-              {/* Surfacing the physics makes the differences legible rather
-                  than something you only discover after buying. */}
-              <div className="flex flex-wrap gap-1 mt-1.5">
-                {m.physics.gravity === 0 && <Tag>zero-g</Tag>}
-                {m.physics.bounces > 0 && <Tag>{m.physics.bounces} bounces</Tag>}
-                {m.physics.trail > 0 && <Tag>trail</Tag>}
-                {m.physics.fragments ? <Tag>{m.physics.fragments} frags</Tag> : null}
-                {m.physics.count > 1 && <Tag>×{m.physics.count}</Tag>}
-                {m.random && <Tag>random</Tag>}
-              </div>
-              <div className="mt-2 text-[10px] font-mono uppercase tracking-widest">
-                {isOwned ? (
-                  <span className="text-emerald-400">
-                    {isSelected ? 'Equipped' : 'Owned · Tap to equip'}
-                  </span>
-                ) : (
-                  <span className="text-amber-400">{m.cost} tokens</span>
+              <button
+                type="button"
+                onClick={() => handleCard(m)}
+                className="block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg"
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className="font-bold text-xs uppercase tracking-wide">{m.name}</span>
+                  {m.ultimate && <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />}
+                </div>
+                <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">{m.blurb}</p>
+                {/* Surfacing the physics makes the differences legible rather
+                    than something you only discover after buying. */}
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                  {m.physics.gravity === 0 && <Tag>zero-g</Tag>}
+                  {m.physics.bounces > 0 && <Tag>{m.physics.bounces} bounces</Tag>}
+                  {m.physics.trail > 0 && <Tag>trail</Tag>}
+                  {m.physics.fragments ? <Tag>{m.physics.fragments} frags</Tag> : null}
+                  {m.physics.count > 1 && <Tag>×{m.physics.count}</Tag>}
+                  {m.random && <Tag>random</Tag>}
+                </div>
+                <div className="mt-2 text-[10px] font-mono uppercase tracking-widest">
+                  {isOwned ? (
+                    <span className="text-emerald-400">
+                      {isSelected ? 'Equipped' : 'Owned · Tap to equip'}
+                    </span>
+                  ) : (
+                    <span className="text-amber-400">{m.cost} tokens</span>
+                  )}
+                </div>
+                {note?.id === m.id && (
+                  <p className={`text-[10px] mt-1 ${note.ok ? 'text-emerald-400' : 'text-destructive'}`}>
+                    {note.text}
+                  </p>
                 )}
-              </div>
-              {note?.id === m.id && (
-                <p className={`text-[10px] mt-1 ${note.ok ? 'text-emerald-400' : 'text-destructive'}`}>
-                  {note.text}
-                </p>
-              )}
-            </button>
+              </button>
+            </div>
           );
         })}
       </div>
@@ -1207,9 +1228,8 @@ function SeasonShop() {
           const isOwned = owned.includes(season.id);
           const isSelected = selected === season.id;
           return (
-            <button
+            <div
               key={season.id}
-              onClick={() => handleCard(season)}
               className={`relative rounded-xl border p-3 text-left transition-all ${
                 isSelected
                   ? 'border-primary bg-primary/10'
@@ -1218,28 +1238,35 @@ function SeasonShop() {
             >
               {isSelected && <Check className="absolute top-2 right-2 w-3.5 h-3.5 text-primary" />}
 
-              {/* Live preview stage — the real createField ambient engine, contained. */}
-              <div className="relative mb-2 h-16 overflow-hidden rounded-lg bg-background/60">
+              {/* Live preview stage — not part of the buy tap target; see
+                  MotionShop's matching comment above. */}
+              <div className="pointer-events-none relative mb-2 h-16 overflow-hidden rounded-lg bg-background/60">
                 <SeasonPreview season={season} />
               </div>
 
-              <div className="font-bold text-xs uppercase tracking-wide">{season.name}</div>
-              <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">{season.blurb}</p>
-              <div className="mt-2 text-[10px] font-mono uppercase tracking-widest">
-                {isOwned ? (
-                  <span className="text-emerald-400">
-                    {isSelected ? 'Equipped' : 'Owned · Tap to equip'}
-                  </span>
-                ) : (
-                  <span className="text-amber-400">{season.cost} tokens</span>
+              <button
+                type="button"
+                onClick={() => handleCard(season)}
+                className="block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg"
+              >
+                <div className="font-bold text-xs uppercase tracking-wide">{season.name}</div>
+                <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">{season.blurb}</p>
+                <div className="mt-2 text-[10px] font-mono uppercase tracking-widest">
+                  {isOwned ? (
+                    <span className="text-emerald-400">
+                      {isSelected ? 'Equipped' : 'Owned · Tap to equip'}
+                    </span>
+                  ) : (
+                    <span className="text-amber-400">{season.cost} tokens</span>
+                  )}
+                </div>
+                {note?.id === season.id && (
+                  <p className={`text-[10px] mt-1 ${note.ok ? 'text-emerald-400' : 'text-destructive'}`}>
+                    {note.text}
+                  </p>
                 )}
-              </div>
-              {note?.id === season.id && (
-                <p className={`text-[10px] mt-1 ${note.ok ? 'text-emerald-400' : 'text-destructive'}`}>
-                  {note.text}
-                </p>
-              )}
-            </button>
+              </button>
+            </div>
           );
         })}
       </div>

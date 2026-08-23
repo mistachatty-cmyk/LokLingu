@@ -37,7 +37,7 @@ import type { EventFrequency } from '@/hooks/use-settings';
 
 export type EventTier = 'T0' | 'T1' | 'T2' | 'T3';
 
-export type EventId = 'blurred-word' | 'scratch-card' | 'bot-loko' | 'eclipse';
+export type EventId = 'blurred-word' | 'scratch-card' | 'bot-loko' | 'eclipse' | 'mirror-mode' | 'light-switch' | 'ant-colony';
 
 export interface CompanionEventDef {
   id: EventId;
@@ -106,6 +106,42 @@ export const COMPANION_EVENTS: CompanionEventDef[] = [
     minWords: 3,
     maxPerRun: 6,
     durationMs: 4200,
+    needsPointer: true,
+  },
+  {
+    id: 'mirror-mode',
+    name: 'Mirror Mode',
+    blurb: 'The word flips. Swipe to unflip it, or answer it flipped for double tokens.',
+    tier: 'T0',
+    weight: 22,
+    blocking: false,
+    minWords: 4,
+    maxPerRun: 5,
+    durationMs: 4500,
+    needsPointer: true,
+  },
+  {
+    id: 'light-switch',
+    name: 'Light Switch',
+    blurb: 'The word inverts. Tap anywhere to flip it back.',
+    tier: 'T1',
+    weight: 18,
+    blocking: false,
+    minWords: 4,
+    maxPerRun: 5,
+    durationMs: 5000,
+    needsPointer: true,
+  },
+  {
+    id: 'ant-colony',
+    name: 'Ant Colony',
+    blurb: 'Ants cross the bottom edge — smash for a bonus, or let two through for a bigger one.',
+    tier: 'T0',
+    weight: 20,
+    blocking: false,
+    minWords: 3,
+    maxPerRun: 4,
+    durationMs: 5500,
     needsPointer: true,
   },
   {

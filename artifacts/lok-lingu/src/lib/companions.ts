@@ -704,3 +704,80 @@ export function getCompanionKit(id: string): CompanionKit | null {
 export function companionQuips(id: string): string[] {
   return KIT_BY_ID.get(id)?.copy.quips ?? DEFAULT_QUIPS;
 }
+
+/**
+ * Plain-English summary of what a companion actually does, split into
+ * upside and cost — the thing nothing in the UI told a player before this.
+ * Every perk mechanic lived only as a code comment in this file, invisible
+ * to anyone who didn't read the source.
+ *
+ * Generated from the kit's own fields rather than hand-authored per
+ * companion, on purpose: a hand-written description drifts out of sync
+ * the moment a number here changes (a tuning pass on Tiger's ambush odds
+ * would silently make its own description a lie). Reading the fields
+ * directly means the description is the mechanic.
+ */
+export interface CompanionPerkSummary {
+  positives: string[];
+  negatives: string[];
+  /** Only present once the kit passed to this function is already the
+   *  *effective* (ultimate-merged) kit — see effectiveCompanionKit(). */
+  ultimate?: string;
+}
+
+export function describeCompanionPerks(kit: CompanionKit): CompanionPerkSummary {
+  const positives: string[] = [];
+  const negatives: string[] = [];
+  const pct = (n: number) => `${Math.round(n * 100)}%`;
+
+  if (kit.pacing) {
+    positives.push(`More time to think and speak — every word waits ${(kit.pacing.hitMs / 1000).toFixed(1)}s before advancing.`);
+  }
+  if (kit.streakMultiplier?.length) {
+    const top = kit.streakMultiplier[kit.streakMultiplier.length - 1];
+    positives.push(
+      top.at === 0
+        ? `Every correct answer pays an extra ${top.mult}x tokens.`
+        : `Token pay escalates up to ${top.mult}x while your streak holds (${top.at}+ in a row).`,
+    );
+  }
+  if (kit.shield) {
+    positives.push(`Every ${kit.shield.foldsNeeded} correct answers in a row earns a shield that absorbs your next miss outright — no heart lost.`);
+  }
+  if (kit.burstChance) {
+    positives.push(`${pct(kit.burstChance.chance)} chance per correct answer of a bonus burst paying ${kit.burstChance.extraMult}x extra tokens.`);
+  }
+  if (kit.ambush) {
+    positives.push(`${pct(kit.ambush.chance)} chance a word gets flagged as an ambush — answer it right for ${kit.ambush.bonusMult}x tokens.`);
+    if (kit.ambushPenalty) {
+      negatives.push('Missing a flagged ambush word costs an extra heart on top of the normal miss.');
+    } else {
+      positives.push('Missing a flagged word costs nothing beyond the normal miss.');
+    }
+  }
+  if (kit.hint) {
+    positives.push(`${pct(kit.hint.chance)} chance of a first-letter nudge on the word.`);
+  }
+  if (kit.revive) {
+    positives.push(`Survives reaching 0 hearts ${kit.revive.perMatch === 1 ? 'once' : `${kit.revive.perMatch} times`} per run instead of ending it.`);
+  }
+  if (kit.guestWord) {
+    positives.push(`Occasionally shows the word's ${kit.guestWord.lang.toUpperCase()} counterpart alongside it — say it too for +${kit.guestWord.bonusTokens} tokens. Ignoring it costs nothing.`);
+  }
+  if (kit.lengthBias) {
+    const dir = kit.lengthBias.prefer === 'short' ? 'shorter' : kit.lengthBias.prefer === 'long' ? 'longer' : 'unpredictable-length';
+    positives.push(`Nudges the word list toward ${dir} words (never overrides what's actually due for review).`);
+    if (kit.lengthBias.lengthBonus) {
+      positives.push(`Pays extra tokens per letter beyond ${kit.lengthBias.lengthBonus.from} on the word you actually answer.`);
+    }
+  }
+  if (kit.droneAlly) {
+    positives.push('Repaired: retrieves tokens for you instead of taking a skip when its event resolves.');
+  }
+  if (positives.length === 0 && negatives.length === 0) {
+    positives.push('Ambient companion — sets the mood, no mechanical effect on the run.');
+  }
+
+  const ultimate = kit.ultimate ? `Ultimate unlocks at ${kit.ultimate.unlock} words played with this companion equipped.` : undefined;
+  return { positives, negatives, ultimate };
+}
