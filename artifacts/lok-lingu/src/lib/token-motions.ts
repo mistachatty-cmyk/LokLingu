@@ -176,6 +176,66 @@ export const TOKEN_MOTIONS: TokenMotionDef[] = [
     ultimate: true,
     random: true,
   },
+
+  /* --- FIVE MORE: filling real gaps in the vocabulary above rather than
+     more variations on the same three kinds — a near-stop hover before
+     falling, and a heavier zero-g swarm with a longer trail than Nebula. */
+  {
+    id: 'featherfall',
+    name: 'Featherfall',
+    blurb: 'Barely any gravity at all — drifts down slowly, like it weighs nothing.',
+    kind: 'ballistic',
+    cost: 150,
+    physics: {
+      gravity: 120, restitution: 0.15, drag: 0.99, speed: 90, spread: 0.4,
+      bounces: 1, count: 1, trail: 0, life: 2.6,
+    },
+  },
+  {
+    id: 'skyhook',
+    name: 'Skyhook',
+    blurb: 'Rockets up fast, hangs at the peak for a beat, then drops straight down.',
+    kind: 'ballistic',
+    cost: 220,
+    physics: {
+      gravity: 1600, restitution: 0.2, drag: 0.985, speed: 520, spread: 0.1,
+      bounces: 1, count: 1, trail: 4, life: 2.2,
+    },
+  },
+  {
+    id: 'gyre',
+    name: 'Gyre',
+    blurb: 'Weightless and heavy on the trail — a slow, wide, tumbling swarm.',
+    kind: 'zerog',
+    cost: 340,
+    physics: {
+      gravity: 0, restitution: 1, drag: 0.999, speed: 70, spread: Math.PI,
+      bounces: 0, count: 4, trail: 24, life: 4.2,
+    },
+  },
+  {
+    id: 'shrapnel',
+    name: 'Shrapnel',
+    blurb: 'A low, fast burst that sprays fragments sideways instead of up.',
+    kind: 'explode',
+    cost: 480,
+    physics: {
+      gravity: 500, restitution: 0.45, drag: 0.994, speed: 360, spread: 1.3,
+      bounces: 1, count: 1, trail: 0, fragments: 20, life: 2.4,
+    },
+  },
+  {
+    id: 'aurora',
+    name: 'Aurora',
+    blurb: 'A tall, slow rise that never quite settles — the longest trail in the shop.',
+    kind: 'zerog',
+    cost: 700,
+    physics: {
+      gravity: -30, restitution: 1, drag: 0.998, speed: 90, spread: 0.6,
+      bounces: 0, count: 3, trail: 30, life: 4.8,
+    },
+    ultimate: true,
+  },
 ];
 
 export const MOTION_BY_ID = new Map(TOKEN_MOTIONS.map((m) => [m.id, m]));

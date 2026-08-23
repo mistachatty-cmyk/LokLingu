@@ -618,6 +618,11 @@ function TokenSkinShop() {
       subcategories: [{ label: 'Partners', key: 'collab' }],
     },
     {
+      label: 'Mythic',
+      key: 'mythic',
+      subcategories: [{ label: 'Mythic', key: 'mythic' }],
+    },
+    {
       label: 'The Vaults',
       key: 'vault',
       subcategories: [{ label: 'Pile Effects', key: 'vault' }],
