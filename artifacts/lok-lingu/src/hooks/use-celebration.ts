@@ -59,6 +59,40 @@ export function setCompanionUnlocked(companionId: string): void {
   localStorage.setItem(STORAGE_COMPANION_PREFIX + companionId, 'true');
 }
 
+/**
+ * Lifetime words answered correctly while `companionId` was the equipped
+ * companion — the unlock gate for that companion's ultimate tier (see
+ * `CompanionKit.ultimate` in lib/companions.ts). A separate prefix from
+ * STORAGE_COMPANION_PREFIX above: that one is an unlock *flag* ("do you
+ * own this companion"), this is a *counter* ("how much have you played
+ * with it equipped") — conflating them would mean equipping a companion
+ * for the first time overwrites whatever unlock flag already lived at
+ * that key.
+ */
+const STORAGE_COMPANION_WORDS_PREFIX = 'lok-lingu-companion-words-';
+
+export function companionWordsPlayed(companionId: string): number {
+  return parseInt(localStorage.getItem(STORAGE_COMPANION_WORDS_PREFIX + companionId) || '0');
+}
+
+/** Call once per correct answer, only while `companionId` is equipped. */
+export function incrementCompanionWords(companionId: string): void {
+  const next = companionWordsPlayed(companionId) + 1;
+  localStorage.setItem(STORAGE_COMPANION_WORDS_PREFIX + companionId, String(next));
+}
+
+/** Lifetime Bot-Loko intercepts across every run — the unlock gate for the
+ *  Bot-Loko companion itself (see the 'botloko-caught' achievement). */
+const STORAGE_BOTLOKO_INTERCEPTS = 'lok-lingu-botloko-intercepts';
+
+export function botLokoInterceptsCount(): number {
+  return parseInt(localStorage.getItem(STORAGE_BOTLOKO_INTERCEPTS) || '0');
+}
+
+export function incrementBotLokoIntercepts(): void {
+  localStorage.setItem(STORAGE_BOTLOKO_INTERCEPTS, String(botLokoInterceptsCount() + 1));
+}
+
 export function getUnlockedCompanions(): string[] {
   const result: string[] = [];
   for (let i = 0; i < localStorage.length; i++) {

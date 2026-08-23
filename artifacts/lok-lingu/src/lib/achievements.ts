@@ -16,7 +16,7 @@
 ------------------------------------------------------------------ */
 
 import type { Tier } from './roadmap';
-import { currentSessionBestWords, categoryWordCount, getUnlockedAchievements, setAchievementUnlocked, setCompanionUnlocked } from '../hooks/use-celebration';
+import { currentSessionBestWords, categoryWordCount, getUnlockedAchievements, setAchievementUnlocked, setCompanionUnlocked, botLokoInterceptsCount } from '../hooks/use-celebration';
 import { getAllNotes } from './journal';
 
 /**
@@ -126,10 +126,30 @@ export const LENGTH_ACHIEVEMENTS: Achievement[] = [
   },
 ];
 
+/**
+ * The Bot-Loko companion's unlock. The achievement itself is deliberately
+ * visible (unlike the companion card it grants, which is `secret` — see
+ * roadmap.ts's LOK_COMPANIONS entry) — it's the trail of breadcrumbs that
+ * lets a player discover the hidden companion at all, rather than a second
+ * layer of the same secret.
+ */
+export const BOTLOKO_ACHIEVEMENTS: Achievement[] = [
+  {
+    id: 'botloko-caught',
+    title: 'Caught Red-Handed',
+    detail: 'Intercept Bot-Loko 5 times.',
+    glyph: '🦇',
+    tier: 'rare',
+    check: () => botLokoInterceptsCount() >= 5,
+    rewardLabel: 'Bot-Loko companion',
+  },
+];
+
 export const ALL_ACHIEVEMENTS: Achievement[] = [
   ...SESSION_ACHIEVEMENTS,
   ...CATEGORY_ACHIEVEMENTS,
   ...LENGTH_ACHIEVEMENTS,
+  ...BOTLOKO_ACHIEVEMENTS,
 ];
 
 // Some achievements also unlock a LOK_COMPANIONS entry (roadmap.ts).
@@ -141,6 +161,7 @@ const ACHIEVEMENT_COMPANION_UNLOCKS: Record<string, string> = {
   'mi-short-words': 'mini-mi',
   'mi-long-words': 'big-mi',
   'mi-any-words': 'rando-mi',
+  'botloko-caught': 'bot-loko',
 };
 
 /** Runs every achievement's predicate and persists any newly-met ones. */

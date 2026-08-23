@@ -103,6 +103,14 @@ export interface CompanionKit {
    *  this app avoids punitive drawbacks elsewhere (see Baguette's guest
    *  word), so "or nothing" means no bonus, not a penalty. */
   ambush?: { chance: number; bonusMult: number };
+  /** Tiger's ultimate only: a missed *flagged* word costs an extra heart on
+   *  top of the normal miss. Never set on a base kit — the ambush banner is
+   *  the telegraph, and only unlocking the ultimate is the opt-in. */
+  ambushPenalty?: boolean;
+  /** Bot-Loko's ultimate only: repaired, the drone now retrieves *for* the
+   *  player instead of taking a skip on escape — see event-director.tsx's
+   *  `bot-loko` case. */
+  droneAlly?: boolean;
   /** Wren: a first-letter nudge on a `chance` of served words. Purely
    *  additive UI — no economy or heart interaction, so it runs in both
    *  modes. A quiet nudge, not a crutch. */
@@ -142,6 +150,34 @@ export interface CompanionKit {
     /** Replaces the generic "Game Over" headline while equipped. */
     onGameOver?: string;
   };
+  /**
+   * Unlocked by playing `unlock` words with this companion equipped — an
+   * investment in one character, not a purchase. `overrides` is merged
+   * shallowly over the base kit's fields once unlocked, so an ultimate is
+   * still just kit data: amplify the identity in both directions (per the
+   * design brief), not a second, disconnected companion.
+   *
+   * Applied once per mount, at the same point the base kit is read — not
+   * live mid-run — so crossing the threshold takes effect on the *next*
+   * run, matching every other one-shot equip read in this file's callers.
+   */
+  ultimate?: {
+    unlock: number;
+    overrides: Partial<CompanionKit>;
+  };
+}
+
+/** `kit` with its ultimate's overrides applied, if `wordsPlayed` clears the
+ *  unlock threshold. Shallow-merges `overrides` over `kit` field by field —
+ *  every ultimate below only touches independent perk fields, so this never
+ *  needs to be deeper than one level. */
+export function effectiveCompanionKit(
+  kit: CompanionKit | null,
+  wordsPlayed: number,
+): CompanionKit | null {
+  if (!kit?.ultimate) return kit;
+  if (wordsPlayed < kit.ultimate.unlock) return kit;
+  return { ...kit, ...kit.ultimate.overrides };
 }
 
 /** Highest tier whose `at` <= streak, or 1 (no bonus) if none qualify. */
@@ -205,6 +241,17 @@ export const COMPANION_KITS: CompanionKit[] = [
       burst: { every: 10, count: [8, 14], sound: 'rattle' },
     },
     copy: { quips: ["No rush. You've got this.", 'Slow and steady.', 'Take your time.'] },
+    // Calm becomes lucrative: even more time to think, and a flat 2.5x on
+    // every hit (streakMultiplier's existing `at: 0` tier — always active,
+    // no streak required — is exactly a flat multiplier, so this needed no
+    // new field). Amplifies NiNi's identity in both directions, per brief.
+    ultimate: {
+      unlock: 400,
+      overrides: {
+        pacing: { hitMs: 1500, restartMs: 1200 },
+        streakMultiplier: [{ at: 0, mult: 2.5 }],
+      },
+    },
   },
   {
     id: 'wren',
@@ -381,6 +428,18 @@ export const COMPANION_KITS: CompanionKit[] = [
     },
     ambush: { chance: 0.08, bonusMult: 3 },
     copy: { quips: ['Roar! Ferocious focus.', 'Keep the momentum.'] },
+    // Ambushes 3x more often and pays 5x — but a missed flagged word now
+    // costs an extra heart on top of the normal miss (ambushPenalty). T3:
+    // telegraphed (the ambush banner already renders whenever one is
+    // flagged) and opt-in (only a player who equipped and levelled Tiger
+    // to 400 words has this active at all).
+    ultimate: {
+      unlock: 400,
+      overrides: {
+        ambush: { chance: 0.24, bonusMult: 5 },
+        ambushPenalty: true,
+      },
+    },
   },
   {
     id: 'whale',
@@ -564,6 +623,19 @@ export const COMPANION_KITS: CompanionKit[] = [
       lengthBonus: { from: 6, perLetter: 3 },
     },
     copy: { quips: ['Who knows what is next!', 'Roll with it.'] },
+    // The brief's live mid-word reflow ("size fluctuates as you look at
+    // it") needs a presentation channel outside the event director, which
+    // doesn't exist yet — see docs/COMPANIONS.md's Mi family section. This
+    // amplifies the existing per-word swing instead: `strength: 1` is
+    // already the max lengthFactor's [0.5, 1.5] bound allows, so the
+    // ultimate widens the payoff for a big swing rather than the swing
+    // itself.
+    ultimate: {
+      unlock: 400,
+      overrides: {
+        lengthBias: { prefer: 'random', strength: 1, lengthBonus: { from: 4, perLetter: 4 } },
+      },
+    },
   },
   {
     id: 'sir-baguette',
@@ -583,6 +655,40 @@ export const COMPANION_KITS: CompanionKit[] = [
     copy: {
       quips: ['Magnifique, mon ami!', 'A little crusty, a lot proud.'],
       onGameOver: "C'est la vie.",
+    },
+  },
+  /* ── Bot-Loko ────────────────────────────────────────────────────
+     Promoted from event-only antagonist (companion-events.ts,
+     docs/EVENTS.md's lore) to a hidden, achievement-gated companion —
+     see roadmap.ts's LOK_COMPANIONS entry (`secret: true`) and
+     roadmap.tsx's GalleryCard, which renders it as `❔`/`???` with only a
+     cryptic hint until unlocked.
+
+     Deliberately understated at base tier: its identity is the event, not
+     a stat line, matching "not malicious, mis-specified" rather than
+     "a companion that happens to also be a debuff." The payoff is the
+     ultimate — see `droneAlly` and event-director.tsx's `bot-loko` case. */
+  {
+    id: 'bot-loko',
+    name: 'Bot-Loko',
+    ambient: {
+      id: 'companion-bot-loko',
+      name: 'Bot-Loko — stray sparks',
+      blurb: 'Faint circuit sparks drift and flicker around Bot-Loko.',
+      glyphs: ['✨', '·'],
+      motion: { gravity: -2, terminalVelocity: 12, spinSpeed: 20, wander: 0.8, flicker: 0.9, swayAmplitude: 10, swayFrequency: 0.3 },
+      baseCount: 5,
+      sizeRange: [4, 9],
+      opacity: 0.35,
+      cost: 0,
+    },
+    copy: { quips: ['eep — still recalibrating.', 'Sorry about your tokens. Really.'] },
+    // Repaired, it retrieves *for* the player instead of taking a skip on
+    // escape — the lore's whole payoff. See event-director.tsx's
+    // `bot-loko` case, gated on `droneAlly`.
+    ultimate: {
+      unlock: 400,
+      overrides: { droneAlly: true },
     },
   },
 ];

@@ -35,6 +35,13 @@ export interface Milestone {
   glyph?: string;
   /** Rarity — drives which emblem-* animation a gallery card gets. */
   tier?: Tier;
+  /** Hidden until unlocked: the gallery card shows `❔`/`???`/`secretHint`
+   *  instead of the real glyph/title/progress. Bot-Loko's whole point is
+   *  discovering it exists, not counting down to it. */
+  secret?: boolean;
+  /** Shown in place of the progress line while `secret` and locked — a
+   *  cryptic nudge, not a spoiler of the unlock condition itself. */
+  secretHint?: string;
 }
 
 /**
@@ -160,6 +167,17 @@ export const LOK_COMPANIONS: Milestone[] = [
     detail: 'The unpredictable sibling. Length swings turn to turn, and the payout scales with the swing.',
     reward: 'companion', rewardLabel: 'Rando-Mi companion', live: true,
     glyph: '🎲', tier: 'epic',
+  },
+  /* Hidden — see docs/EVENTS.md's Bot-Loko lore and companions.ts's own
+     comment. Nothing about it renders on the gallery card until unlocked;
+     GalleryCard checks `secret` for that. */
+  {
+    at: 0, track: 'total', title: 'Bot-Loko',
+    detail: 'A retrieval drone with a firmware fault — see docs/EVENTS.md for the full lore.',
+    reward: 'companion', rewardLabel: 'Bot-Loko companion', live: true,
+    glyph: '🦇', tier: 'rare',
+    secret: true,
+    secretHint: 'Something keeps circling your skips. Catch it in the act.',
   },
 ];
 

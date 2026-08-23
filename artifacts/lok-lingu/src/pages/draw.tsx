@@ -19,7 +19,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { DrawCanvas, type DrawCanvasHandle } from '@/components/draw-canvas';
-import { useCelebration, incrementCategoryLifetime, incrementTotalGames, getEquippedCompanion } from '@/hooks/use-celebration';
+import { useCelebration, incrementCategoryLifetime, incrementTotalGames, getEquippedCompanion, companionWordsPlayed, incrementCompanionWords } from '@/hooks/use-celebration';
 import { checkNightOwl, checkPerfectGame, checkSpeedDemon } from '@/lib/session-achievements';
 import { useSettings } from '@/hooks/use-settings';
 import { useCelebrationSound } from '@/hooks/use-celebration-sound';
@@ -47,7 +47,7 @@ import {
   type SessionEntry,
 } from '@/lib/review';
 import { consumeHeart, earnTokens } from '@/lib/economy';
-import { getCompanionKit, currentStreakMultiplier } from '@/lib/companions';
+import { getCompanionKit, currentStreakMultiplier, effectiveCompanionKit } from '@/lib/companions';
 
 const INK_COLORS = [
   { label: 'Primary', value: 'hsl(var(--primary))' },
@@ -197,9 +197,13 @@ export default function Draw() {
   // declared but nothing read it, so draw mode's three lives were always
   // on with no way to turn them off.
   const { heartsMode } = useSettings();
-  /* The equipped kit, read once per mount — see game.tsx's matching
-     comment. Every perk is a field on it; no equip-id checks remain. */
-  const [kit] = useState(() => getCompanionKit(getEquippedCompanion() ?? '') ?? null);
+  /* The equipped kit, read once per mount and resolved through
+     effectiveCompanionKit() — see game.tsx's matching comment. Every perk
+     is a field on it; no equip-id checks remain. */
+  const [equippedId] = useState(() => getEquippedCompanion());
+  const [kit] = useState(() =>
+    effectiveCompanionKit(getCompanionKit(equippedId ?? '') ?? null, companionWordsPlayed(equippedId ?? '')),
+  );
   // Revive (Phoenix): survive 0 hearts instead of ending the run.
   const reviveLeftRef = useRef(kit?.revive?.perMatch ?? 0);
   /* Read through a ref by the scheduler, which runs inside callbacks with
@@ -282,6 +286,8 @@ export default function Draw() {
     setCount((prev) => prev + 1);
     const { milestoneHit, tokenBonus } = celebration.incrementMatch(language);
     incrementCategoryLifetime(language, category);
+    // Ultimate unlock progress — see game.tsx's matching comment.
+    if (equippedId) incrementCompanionWords(equippedId);
     const rate = celebration.boostActive ? 4 : 2;
     // Wolf's pack bonus — see game.tsx's matching comment.
     wolfStreakRef.current += 1;
@@ -384,7 +390,12 @@ export default function Draw() {
     // With hearts off this is endless practice — a miss still shakes and
     // clears the canvas, it just never ends the run. A shielded miss is
     // treated the same way regardless of hearts mode.
-    const newLives = heartsMode && !shielded ? lives - 1 : lives;
+    // Tiger's ultimate only — see game.tsx's matching comment.
+    const ambushPenalty = kitRef.current?.ambushPenalty && ambushActiveRef.current ? 1 : 0;
+    const newLives = heartsMode && !shielded ? lives - 1 - ambushPenalty : lives;
+    if (ambushPenalty > 0) {
+      setTokenLabel((prev) => ({ key: prev.key + 1, text: '🐅 Ambush missed — extra heart lost!' }));
+    }
     setLives(newLives);
     setTimeout(() => {
       if (heartsMode && !shielded && newLives <= 0) {
@@ -663,6 +674,7 @@ export default function Draw() {
         // The canvas owns the pointer here, so a non-blocking gesture event
         // would quietly swallow strokes mid-drawing.
         pointerFree={false}
+        botLokoAlly={kit?.id === 'bot-loko' && !!kit?.droneAlly}
       />
       <CompanionWidget side="left" />
 

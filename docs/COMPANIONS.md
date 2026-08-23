@@ -367,6 +367,90 @@ review stays reachable no matter who is equipped.
 The length bonus is paid on the word actually *answered*, not the word served,
 so it cannot be farmed by re-rolling.
 
+**Not built: live mid-word reflow.** Rando-Mi's ultimate (below) amplifies
+the per-word swing rather than making length fluctuate *while a word is on
+screen*, which the brief originally asked for. That needs a presentation
+channel outside the event director — today only `EventDirector` ever calls
+`onPresentation`, on its own `durationMs` cadence, and a per-word live shift
+would have to arbitrate against whatever event is active to avoid two writers
+fighting over `maskPct`/`effect`. Real, but out of scope for now — the same
+"don't build a shallow reskin" honesty as Leviathan's ambient-only note below.
+
+---
+
+## Ultimate companions
+
+Unlocked by playing `unlock` words (400, currently, for every ultimate below)
+with that companion equipped — an investment in one character, not a
+purchase. `CompanionKit.ultimate: { unlock, overrides }` shallow-merges
+`overrides` over the base kit once the threshold clears;
+`effectiveCompanionKit(kit, wordsPlayed)` (`companions.ts`) is the one place
+that merge happens. Applied **once per mount**, from the words-played count
+at the *start* of the run — not live mid-run — so crossing the threshold
+takes effect on the *next* run. `companionWordsPlayed`/`incrementCompanionWords`
+(`use-celebration.ts`) track the counter, keyed separately from the
+companion-*unlock* flag prefix (a count and a boolean have no business
+sharing a key).
+
+Per the design brief, an ultimate amplifies the identity in **both**
+directions rather than just making a companion stronger:
+
+| Companion | Ultimate |
+| --- | --- |
+| **NiNi** | Even slower pacing (1500/1200ms) *and* a flat 2.5x token multiplier — expressed as `streakMultiplier: [{ at: 0, mult: 2.5 }]`, reusing the existing always-active-tier mechanism rather than a new field. Calm becomes lucrative. |
+| **Tiger** | Ambush 3x more often (0.08 → 0.24) and pays 5x (3x → 5x) — but a missed *flagged* word now costs an extra heart on top of the normal miss (`ambushPenalty`). This is the one **T3** ultimate: telegraphed by the ambush banner every equipped player already sees, and opt-in because only unlocking the ultimate turns the penalty on at all. |
+| **Rando-Mi** | `strength: 1` (already the max `lengthFactor`'s bound allows) plus a bigger `lengthBonus`. See the "not built" note above for the live-reflow version this was scoped down from. |
+| **Bot-Loko** | See below — flips the drone from thief to ally. |
+
+---
+
+## Bot-Loko: hidden companion, event-to-companion promotion
+
+Bot-Loko started as event-only (`companion-events.ts`, full lore in
+`docs/EVENTS.md`). This is its promotion to a real, equippable
+`CompanionKit` entry — deliberately understated at base tier (an ambient of
+faint circuit sparks, quips, no functional perk), because its identity *is*
+the event, not a stat line. The payoff lives entirely in its ultimate.
+
+**Unlock: 5 lifetime Bot-Loko intercepts**, tracked independent of whether
+Bot-Loko is even equipped that run (`botLokoInterceptsCount()`, incremented
+inside `event-director.tsx`'s `onIntercept`). Achievement
+`'botloko-caught'` (`achievements.ts`) grants it via the same
+`ACHIEVEMENT_COMPANION_UNLOCKS` side-table Sir Baguette and the Mi family
+use.
+
+**Hidden until unlocked** — new territory for the roadmap gallery.
+`Milestone` gained `secret?: boolean` / `secretHint?: string`; `GalleryCard`
+(`roadmap.tsx`) renders `❔` in place of the glyph, `'???'` in place of the
+title, and `secretHint` in place of the numeric progress line (a hidden
+companion showing "4/5" would spoil its own unlock condition) whenever
+`secret && !unlocked`. Once unlocked it renders exactly like any other
+card — the secret is discovering it exists, not its content.
+`'botloko-caught'` itself is **not** hidden — its title ("Caught
+Red-Handed") and detail are the trail of breadcrumbs that let a player find
+the secret at all, rather than a second layer of the same secret.
+
+**The ultimate — `droneAlly: true`.** Repaired, Bot-Loko now retrieves
+*for* the player: `event-director.tsx`'s `bot-loko` case branches on a new
+`botLokoAlly` prop (computed by the host page as `kit?.id === 'bot-loko' &&
+!!kit?.droneAlly`) and, on escape, pays a reward instead of taking a skip.
+Everyone who hasn't unlocked it — which is everyone who hasn't equipped and
+levelled Bot-Loko to 400 words, itself gated behind 5 intercepts — sees the
+event exactly as EVENTS.md documents it, unchanged.
+
+**Not built: companion event-weighting.** The original plan sketch had
+`CompanionKit.events?: EventBinding[]` and `RollContext.weightMults`
+(`companion-events.ts`) so a companion could bias *which* events fire more
+while equipped — e.g. Bot-Loko making its own event more common.
+`weightMults` is fully implemented inside `rollEvent()` but **no caller ever
+passes it** — confirmed by reading every call site. Flagging this
+explicitly rather than letting it look finished: it needs a design pass on
+which companions bias which events before it's worth wiring up.
+
+**Not built: Echo Vault / Supernova Prime.** The two "ultimate token skins"
+from the original brainstorm are a Vault/shop cosmetic system, unrelated to
+companions — explicitly out of scope for this round.
+
 ---
 
 ## Rare cosmetic drops

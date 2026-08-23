@@ -359,7 +359,7 @@ function PrestigeLadder({ prestige }: { prestige: number }) {
 
 function GalleryCard({
   glyph, title, at, unit, unlocked, distance, animation, tier,
-  equippable, equipped, onToggleEquip, companionId,
+  equippable, equipped, onToggleEquip, companionId, secret, secretHint,
 }: {
   glyph: string;
   title: string;
@@ -378,13 +378,23 @@ function GalleryCard({
    *  createField()-backed preview the shop's Season cards use, since a
    *  companion's `ambient` field is already a `Season` (see companions.ts). */
   companionId?: string;
+  /** Hidden while locked: real glyph/title/progress are replaced by
+   *  `❔`/`???`/`secretHint`. Once unlocked, renders exactly like any
+   *  other card — the secret is discovering it exists, not its content. */
+  secret?: boolean;
+  secretHint?: string;
 }) {
   const reduce = useReducedMotion();
-  // How close a locked card is to unlocking, for the progress sliver.
-  const progress = Math.min(1, Math.max(0, 1 - distance / Math.max(1, at)));
+  const hidden = secret && !unlocked;
+  // How close a locked card is to unlocking, for the progress sliver. A
+  // hidden card shows no numeric countdown — that would leak the unlock
+  // condition as a "4/5" spoiler — so its sliver just stays empty.
+  const progress = hidden ? 0 : Math.min(1, Math.max(0, 1 - distance / Math.max(1, at)));
   const glow = unlocked && tier === 'mythic';
   const showEquip = unlocked && equippable;
   const ambient = unlocked && companionId ? getCompanionKit(companionId)?.ambient : null;
+  const displayGlyph = hidden ? '❔' : glyph;
+  const displayTitle = hidden ? '???' : title;
   return (
     <motion.div
       initial={reduce ? false : { opacity: 0, scale: 0.92 }}
@@ -402,9 +412,9 @@ function GalleryCard({
         className={`relative text-4xl leading-none ${unlocked ? (animation ?? '') : 'grayscale opacity-30'}`}
         aria-hidden
       >
-        {glyph}
+        {displayGlyph}
       </span>
-      <span className="line-clamp-1 text-[11px] font-black uppercase tracking-wide">{title}</span>
+      <span className="line-clamp-1 text-[11px] font-black uppercase tracking-wide">{displayTitle}</span>
       {unlocked ? (
         showEquip ? (
           <span className={`flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest ${equipped ? 'text-primary' : 'text-muted-foreground'}`}>
@@ -415,6 +425,10 @@ function GalleryCard({
             <Check className="h-2.5 w-2.5" /> earned
           </span>
         )
+      ) : hidden ? (
+        <span className="line-clamp-2 px-1 text-[9px] italic leading-tight text-muted-foreground">
+          {secretHint}
+        </span>
       ) : (
         <span className="font-mono text-[9px] tabular-nums text-muted-foreground">
           {distance.toLocaleString()} {unit} to go
@@ -474,6 +488,8 @@ function Gallery({
                 equipped={equippedCompanion === companionId}
                 onToggleEquip={() => onToggleEquip(companionId)}
                 companionId={companionId}
+                secret={m.secret}
+                secretHint={m.secretHint}
               />
             );
           })}
@@ -569,6 +585,8 @@ function Gallery({
                 equipped={equippedCompanion === companionId}
                 onToggleEquip={() => onToggleEquip(companionId)}
                 companionId={companionId}
+                secret={m.secret}
+                secretHint={m.secretHint}
               />
             );
           })}

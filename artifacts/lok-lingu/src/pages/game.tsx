@@ -19,8 +19,8 @@ import { gameWordFontSize } from '@/lib/word-sizing';
 import { getSelectedEmblem, earnedEmblems } from '@/lib/emblems';
 import { speakWord, matchWord, primeVoices, toLocale } from '@/lib/speech-utils';
 import { useTheme } from '@/hooks/use-theme';
-import { useCelebration, incrementCategoryLifetime, incrementTotalGames, getEquippedCompanion } from '@/hooks/use-celebration';
-import { getCompanionKit, currentStreakMultiplier } from '@/lib/companions';
+import { useCelebration, incrementCategoryLifetime, incrementTotalGames, getEquippedCompanion, companionWordsPlayed, incrementCompanionWords } from '@/hooks/use-celebration';
+import { getCompanionKit, currentStreakMultiplier, effectiveCompanionKit } from '@/lib/companions';
 import { checkNightOwl, checkPerfectGame, checkSpeedDemon } from '@/lib/session-achievements';
 import { useCelebrationSound } from '@/hooks/use-celebration-sound';
 import { CelebrationEffect } from '@/components/celebration-effect';
@@ -164,13 +164,6 @@ export default function Game() {
     [playerLevel],
   );
   const { responseSpeed, heartsMode } = useSettings();
-  // NiNi overrides the response-speed setting entirely while equipped — a
-  // tier slower than 'relaxed', more time to think and speak. One-shot
-  // read (equipping only happens via full navigation to /roadmap).
-  const [equippedPacing] = useState(
-    () => getCompanionKit(getEquippedCompanion() ?? '')?.pacing ?? null,
-  );
-  const timing = equippedPacing ?? SPEED_TIMING[responseSpeed];
 
   // Voice mode had no survival mechanic at all — a miss flashed red and the
   // run simply continued until the player stopped the mic themselves. Draw
@@ -181,17 +174,30 @@ export default function Game() {
   livesRef.current = lives;
   const heartsModeRef = useRef(heartsMode);
   heartsModeRef.current = heartsMode;
-  /* The equipped kit, read once per mount. Every companion perk below is
-     a field on it — there are no `getEquippedCompanion() === 'x'` checks
-     left, which is what makes handing any perk to any companion a data
-     edit rather than a change here. */
-  const [kit] = useState(() => getCompanionKit(getEquippedCompanion() ?? '') ?? null);
+  /* The equipped kit, read once per mount and resolved through
+     effectiveCompanionKit() — a companion whose lifetime word count with
+     it equipped clears its `ultimate.unlock` gets that ultimate's fields
+     shallow-merged over the base kit. Every companion perk below reads
+     off this one object; there are no `getEquippedCompanion() === 'x'`
+     checks left, which is what makes handing any perk to any companion a
+     data edit rather than a change here. */
+  const [equippedId] = useState(() => getEquippedCompanion());
+  const [kit] = useState(() =>
+    effectiveCompanionKit(getCompanionKit(equippedId ?? '') ?? null, companionWordsPlayed(equippedId ?? '')),
+  );
   // Revive (Phoenix): survive 0 hearts instead of ending the run.
   const reviveLeftRef = useRef(kit?.revive?.perMatch ?? 0);
   /* Read through a ref by the scheduler, which runs inside callbacks with
      their own dependency arrays. */
   const kitRef = useRef(kit);
   kitRef.current = kit;
+  // NiNi overrides the response-speed setting entirely while equipped — a
+  // tier slower than 'relaxed', more time to think and speak; NiNi's
+  // ultimate slows it further (see companions.ts). Reads off the same
+  // effective kit `equippedPacing` used to compute separately, so an
+  // unlocked ultimate now actually takes effect.
+  const equippedPacing = kit?.pacing ?? null;
+  const timing = equippedPacing ?? SPEED_TIMING[responseSpeed];
   // Wolf's pack bonus: escalating token multiplier while a streak holds.
   // wolfStreakRef tracks correct-in-a-row independent of `streak` state
   // (which lags a render behind inside the same synchronous handler) and
@@ -477,6 +483,11 @@ export default function Game() {
       // incrementLifetimeWords call is not needed here (it would double-count).
       const { milestoneHit, tokenBonus } = celebrationRef.current.incrementMatch(languageRef.current);
       incrementCategoryLifetime(languageRef.current, categoryRef.current);
+      // Ultimate unlock progress — a companion's own equipped-words count,
+      // separate from any lifetime/category counter above. See
+      // effectiveCompanionKit()'s doc comment for why this is read fresh
+      // next mount rather than applied mid-run.
+      if (equippedId) incrementCompanionWords(equippedId);
       const rate = boostActiveRef.current ? 4 : 2;
       // Wolf's pack bonus — extra tokens layered on top of the normal
       // award (see currentStreakMultiplier's doc comment for why this
@@ -571,9 +582,17 @@ export default function Game() {
       // Survival: mirrors draw mode's three hearts. Off, this is unchanged
       // endless practice — the run only ever ends when the mic is stopped.
       if (heartsModeRef.current) {
-        const next = livesRef.current - 1;
+        // Tiger's ultimate only: missing a *flagged* ambush word costs an
+        // extra heart on top of the normal miss — see companions.ts's
+        // ambushPenalty doc comment for why this is safe as a T3 beat
+        // (telegraphed by the ambush banner, opt-in via the ultimate gate).
+        const penalty = kitRef.current?.ambushPenalty && ambushActiveRef.current ? 1 : 0;
+        const next = livesRef.current - 1 - penalty;
         livesRef.current = next;
         setLives(next);
+        if (penalty > 0) {
+          setTokenLabel((prev) => ({ key: prev.key + 1, text: '🐅 Ambush missed — extra heart lost!' }));
+        }
         if (next <= 0) {
           if (reviveLeftRef.current > 0) {
             reviveLeftRef.current -= 1;
@@ -895,6 +914,7 @@ export default function Game() {
         gate={gate}
         onPresentation={setPresentation}
         onNotice={(text) => setTokenLabel((prev) => ({ key: prev.key + 1, text }))}
+        botLokoAlly={kit?.id === 'bot-loko' && !!kit?.droneAlly}
       />
       <CompanionWidget side="left" />
 

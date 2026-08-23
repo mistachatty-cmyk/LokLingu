@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSettings } from '@/hooks/use-settings';
 import { useCelebrationSound } from '@/hooks/use-celebration-sound';
 import { consumeSkip, earnTokens } from '@/lib/economy';
+import { incrementBotLokoIntercepts } from '@/hooks/use-celebration';
 import {
   EVENT_BY_ID,
   EVENT_COOLDOWN_MS,
@@ -72,6 +73,14 @@ interface Props {
    * instead of mounting a surface that eats canvas strokes.
    */
   pointerFree?: boolean;
+  /**
+   * True once the equipped companion is Bot-Loko with its ultimate
+   * unlocked (`droneAlly` — see companions.ts). Flips the `bot-loko`
+   * event's escape outcome from a skip cost to a reward: the lore payoff
+   * of repairing the drone's firmware. Everyone else sees the event
+   * exactly as documented in docs/EVENTS.md.
+   */
+  botLokoAlly?: boolean;
 }
 
 export function EventDirector({
@@ -80,6 +89,7 @@ export function EventDirector({
   onPresentation,
   onNotice,
   pointerFree = true,
+  botLokoAlly = false,
 }: Props) {
   const { eventFrequency } = useSettings();
   const { play } = useCelebrationSound();
@@ -201,8 +211,20 @@ export function EventDirector({
             play('pop', 'big');
             earnTokens(8);
             onNotice?.('+8 🦇');
+            // Lifetime count, independent of whether this run has Bot-Loko
+            // equipped at all — it's the unlock gate for the companion
+            // itself (see achievements.ts's 'botloko-caught').
+            incrementBotLokoIntercepts();
           }}
           onEscape={() => {
+            if (botLokoAlly) {
+              // The lore payoff: repaired, it now retrieves *for* the
+              // player instead of taking from them.
+              earnTokens(5);
+              play('chime', 'mini');
+              onNotice?.('🦇 brought you 5 ✨');
+              return;
+            }
             // T2: costs a skip and nothing more. If there are none to
             // take, the drone leaves empty-handed rather than escalating
             // to a heart — the tier is the contract.
