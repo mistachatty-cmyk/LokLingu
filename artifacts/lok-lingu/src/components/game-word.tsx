@@ -102,6 +102,23 @@ export function GameWord({
     .filter(Boolean)
     .join(' ');
   const withPrefix = (f: string) => (filterPrefix ? `${filterPrefix} ${f}` : f);
+  // The word is on screen far more often than any effect is active on it —
+  // an idle word with feedback:'idle' and no presentation is the default
+  // state, not a transient one. Forcing `filter: brightness(1)` into
+  // `animate` unconditionally (as every branch below used to) makes
+  // framer-motion write a `filter` inline style and keep this element on
+  // its own GPU-composited layer permanently, even when brightness(1) is
+  // a no-op. Combined with `text-shadow` (word-glow) that's exactly the
+  // CSS shape iOS Safari's compositor is known to occasionally drop a
+  // repaint for under CPU/GPU pressure — and starting a new
+  // SpeechRecognition session (use-speech-engine.ts's restart loop) is
+  // real, native, CPU-heavy work. Reported as the word vanishing for a
+  // beat right as the mic flips from "Listening…" to "Ready…" and
+  // restarts — reproduced by frame-extracting a screen recording and
+  // confirming the blank window lines up exactly with that state flip.
+  // Only animate `filter` when something is actually filtering: a blur/
+  // invert prefix, or the hit-flash itself.
+  const hasFilterEffect = filterPrefix !== '' || feedback === 'hit';
 
   return (
     <AnimatePresence mode="wait">
@@ -134,19 +151,18 @@ export function GameWord({
           // applies to `filter`, hence withPrefix() on every branch.
           animate={{
             ...(presentation?.flipX ? { scaleX: -1 } : {}),
-            ...(prefersReducedMotion
-              ? { filter: withPrefix('brightness(1)') }
-              : block
-                ? { ...block.animate, filter: withPrefix('brightness(1)') }
-                : feedback === 'hit'
-                  ? {
-                      filter: [
-                        withPrefix('brightness(1)'),
-                        withPrefix('brightness(1.7)'),
-                        withPrefix('brightness(1)'),
-                      ],
-                    }
-                  : { filter: withPrefix('brightness(1)') }),
+            ...(block ? block.animate : {}),
+            ...(!hasFilterEffect
+              ? {}
+              : prefersReducedMotion || feedback !== 'hit'
+                ? { filter: withPrefix('brightness(1)') }
+                : {
+                    filter: [
+                      withPrefix('brightness(1)'),
+                      withPrefix('brightness(1.7)'),
+                      withPrefix('brightness(1)'),
+                    ],
+                  }),
           }}
           transition={block ? block.transition : { duration: 0.22, ease: 'easeOut' }}
         >
