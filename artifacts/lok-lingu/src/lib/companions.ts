@@ -145,6 +145,22 @@ export interface CompanionKit {
     /** Extra tokens per letter beyond `from`, for companions paid by length. */
     lengthBonus?: { from: number; perLetter: number };
   };
+  /** Robot: speaks a short spoken compliment via speakWord() after a
+   *  correct answer. Muted-wrapped by the caller so the recognizer never
+   *  hears its own praise. Purely additive — no economy interaction. */
+  complimenter?: boolean;
+  /** Robot: grants +1 skip every `skipEvery` correct answers this run,
+   *  layered on top of the normal award the same way Wolf's pack bonus
+   *  and Sparrow's burst are — never a change to the award itself. */
+  skipEvery?: number;
+  /** Crane's glow: the companion widget's glow intensity scales with the
+   *  current in-run streak while this is true. Purely visual — no economy
+   *  or answer-gating interaction, so it costs nothing to add to anyone. */
+  glowOnStreak?: boolean;
+  /** Sprout: a plant on the companion widget advances one stage every
+   *  `every` words answered correctly this run; every `bloomEvery` words
+   *  it blooms, rolls one `rewards` entry, and resets to stage 0. */
+  growth?: { every: number; bloomEvery: number; rewards: RewardRoll[] };
   copy: {
     quips: string[];
     /** Replaces the generic "Game Over" headline while equipped. */
@@ -269,6 +285,12 @@ export const COMPANION_KITS: CompanionKit[] = [
     },
     hint: { chance: 0.25 },
     copy: { quips: ["Chirp! You're doing great.", 'Small steps count.'] },
+    // Wren's nudge, much more often — the gentle assist becomes the
+    // headline feature rather than an occasional courtesy.
+    ultimate: {
+      unlock: 400,
+      overrides: { hint: { chance: 0.6 } },
+    },
   },
   {
     id: 'sparrow',
@@ -286,6 +308,12 @@ export const COMPANION_KITS: CompanionKit[] = [
     },
     burstChance: { chance: 0.12, extraMult: 1 },
     copy: { quips: ['Quick as ever!', "Let's keep going."] },
+    // Nearly a third of hits now burst, and each burst pays double what it
+    // used to — Sparrow goes from "occasional flourish" to "usually on".
+    ultimate: {
+      unlock: 400,
+      overrides: { burstChance: { chance: 0.35, extraMult: 2 } },
+    },
   },
   {
     id: 'otter',
@@ -330,6 +358,33 @@ export const COMPANION_KITS: CompanionKit[] = [
       },
     },
     copy: { quips: ['Splash! Having fun yet?', "You've got this."] },
+    // The raft lands every 3rd bubble instead of every 5th, and pays out
+    // roughly double — Otter's "clear a few before any surface" identity,
+    // amplified rather than replaced.
+    ultimate: {
+      unlock: 400,
+      overrides: {
+        collectible: {
+          glyph: '🫧',
+          spawnEveryMs: [1600, 3000],
+          maxOnScreen: 6,
+          origin: 'top',
+          sizeRange: [16, 26],
+          capPerRun: 30,
+          rewards: [
+            { kind: 'tokens', weight: 90, amount: [1, 3] },
+            { kind: 'heart', weight: 8 },
+            { kind: 'skin', weight: 2, seasonId: 'fireflies' },
+          ],
+          charge: {
+            capacity: 3,
+            burstCount: [10, 16],
+            sound: 'splash',
+            bonusRewards: [{ kind: 'tokens', weight: 100, amount: [20, 38] }],
+          },
+        },
+      },
+    },
   },
   {
     id: 'fox',
@@ -370,6 +425,32 @@ export const COMPANION_KITS: CompanionKit[] = [
       },
     },
     copy: { quips: ['Yip! Nearly there.', 'Sneaky good streak.'] },
+    // The hidden bonus lands on every 2nd leaf instead of every 3rd, and
+    // pays noticeably more when it does.
+    ultimate: {
+      unlock: 400,
+      overrides: {
+        collectible: {
+          glyph: '🍁',
+          spawnEveryMs: [2000, 3600],
+          maxOnScreen: 4,
+          origin: 'edges',
+          sizeRange: [18, 28],
+          capPerRun: 15,
+          rewards: [
+            { kind: 'tokens', weight: 88, amount: [2, 6] },
+            { kind: 'skip', weight: 10 },
+            { kind: 'skin', weight: 2, seasonId: 'leaves' },
+          ],
+          charge: {
+            capacity: 2,
+            burstCount: [8, 12],
+            sound: 'pop',
+            bonusRewards: [{ kind: 'tokens', weight: 100, amount: [25, 45] }],
+          },
+        },
+      },
+    },
   },
   {
     id: 'crane',
@@ -386,7 +467,16 @@ export const COMPANION_KITS: CompanionKit[] = [
       cost: 0,
     },
     shield: { foldsNeeded: 10 },
+    // The folded paper catches more light the longer the current streak
+    // holds — a purely additive glow on the companion widget, reusing
+    // the same streak ref the shield-fold count already tracks.
+    glowOnStreak: true,
     copy: { quips: ['Graceful as always.', 'Steady wins it.'] },
+    // Folds twice as fast, so the shield is up far more often.
+    ultimate: {
+      unlock: 400,
+      overrides: { shield: { foldsNeeded: 5 } },
+    },
   },
   {
     id: 'wolf',
@@ -411,6 +501,17 @@ export const COMPANION_KITS: CompanionKit[] = [
       { at: 30, mult: 3 },
     ],
     copy: { quips: ['Awoo! Pack is proud.', "Don't stop now."] },
+    // The pack kicks in sooner and tops out much higher.
+    ultimate: {
+      unlock: 400,
+      overrides: {
+        streakMultiplier: [
+          { at: 3, mult: 2 },
+          { at: 10, mult: 3 },
+          { at: 20, mult: 5 },
+        ],
+      },
+    },
   },
   {
     id: 'tiger',
@@ -478,6 +579,31 @@ export const COMPANION_KITS: CompanionKit[] = [
       },
     },
     copy: { quips: ['A deep breath, then on.', 'Making waves out there.'] },
+    // The breach lands roughly twice as often, and pays roughly twice as
+    // much when it does — "very rare, very large" becomes "rare, huge".
+    ultimate: {
+      unlock: 400,
+      overrides: {
+        collectible: {
+          glyph: '🫧',
+          spawnEveryMs: [3200, 5200],
+          maxOnScreen: 3,
+          origin: 'top',
+          sizeRange: [22, 34],
+          capPerRun: 12,
+          rewards: [
+            { kind: 'tokens', weight: 98, amount: [2, 5] },
+            { kind: 'skin', weight: 2, seasonId: 'snow' },
+          ],
+          charge: {
+            capacity: 4,
+            burstCount: [24, 36],
+            sound: 'ascend',
+            bonusRewards: [{ kind: 'tokens', weight: 100, amount: [100, 200] }],
+          },
+        },
+      },
+    },
   },
   {
     id: 'dragon',
@@ -519,6 +645,32 @@ export const COMPANION_KITS: CompanionKit[] = [
       },
     },
     copy: { quips: ['Legendary pace.', 'Fire it up!'] },
+    // The bottle fills much faster and the cash-in is far bigger — the
+    // hoard-and-cash-in loop tightens rather than staying occasional.
+    ultimate: {
+      unlock: 400,
+      overrides: {
+        collectible: {
+          glyph: '🔥',
+          spawnEveryMs: [1800, 3400],
+          maxOnScreen: 5,
+          origin: 'top',
+          sizeRange: [20, 32],
+          capPerRun: 40,
+          rewards: [
+            { kind: 'tokens', weight: 88, amount: [1, 4] },
+            { kind: 'skip', weight: 10 },
+            { kind: 'skin', weight: 2, seasonId: 'embers' },
+          ],
+          charge: {
+            capacity: 12,
+            burstCount: [24, 36],
+            sound: 'gong',
+            bonusRewards: [{ kind: 'tokens', weight: 100, amount: [80, 150] }],
+          },
+        },
+      },
+    },
   },
   {
     id: 'phoenix',
@@ -536,6 +688,11 @@ export const COMPANION_KITS: CompanionKit[] = [
     },
     revive: { perMatch: 1 },
     copy: { quips: ['Reborn every run.', 'Rise and keep going.'] },
+    // A second life per run — the strongest perk in the set, doubled.
+    ultimate: {
+      unlock: 400,
+      overrides: { revive: { perMatch: 2 } },
+    },
   },
   {
     id: 'leviathan',
@@ -552,6 +709,78 @@ export const COMPANION_KITS: CompanionKit[] = [
       cost: 0,
     },
     copy: { quips: ['From the depths, respect.', 'Unstoppable.'] },
+  },
+  {
+    id: 'robot',
+    name: 'Robot',
+    ambient: {
+      id: 'companion-robot',
+      name: 'Robot — drifting sparks',
+      blurb: 'Small mechanical sparks tick and drift around Robot.',
+      glyphs: ['⚙️', '✦'],
+      motion: { gravity: 0, terminalVelocity: 10, spinSpeed: 40, wander: 0.4, flicker: 0.5, swayAmplitude: 6, swayFrequency: 0.5 },
+      baseCount: 6,
+      sizeRange: [6, 12],
+      opacity: 0.4,
+      cost: 0,
+    },
+    // Just gives compliments — a spoken line via speakWord() after every
+    // correct answer, muted-wrapped by the caller so the recognizer never
+    // hears itself. Precise and reliable is the whole fantasy, which is
+    // also why the skip cadence below is a flat "every N", not a roll.
+    complimenter: true,
+    skipEvery: 12,
+    copy: { quips: ['Compliment generated: nice work.', 'Efficiency: optimal.'] },
+    // Compliments more often and the skip cadence tightens.
+    ultimate: {
+      unlock: 400,
+      overrides: { skipEvery: 6 },
+    },
+  },
+  {
+    id: 'sprout',
+    name: 'Sprout',
+    ambient: {
+      id: 'companion-sprout',
+      name: 'Sprout — floating pollen',
+      blurb: 'Pollen drifts lazily around Sprout.',
+      glyphs: ['🌱', '·'],
+      motion: { gravity: -5, terminalVelocity: 10, spinSpeed: 0, wander: 0.6, flicker: 0.3, swayAmplitude: 10, swayFrequency: 0.2 },
+      baseCount: 5,
+      sizeRange: [4, 8],
+      opacity: 0.35,
+      cost: 0,
+    },
+    // A plant grows out of Sprout: one stage every 10 words, blooms and
+    // pays out every 30 (3 stages), then resets to grow again. Rendered by
+    // companion-widget.tsx as a small stage indicator beside the avatar.
+    growth: {
+      every: 10,
+      bloomEvery: 30,
+      rewards: [
+        { kind: 'tokens', weight: 55, amount: [10, 25] },
+        { kind: 'skip', weight: 20 },
+        { kind: 'heart', weight: 15 },
+        { kind: 'skin', weight: 10, seasonId: 'leaves' },
+      ],
+    },
+    copy: { quips: ['Growing steady.', 'Nearly ready to bloom!'] },
+    // Blooms twice as often and the payout table skews richer.
+    ultimate: {
+      unlock: 400,
+      overrides: {
+        growth: {
+          every: 10,
+          bloomEvery: 15,
+          rewards: [
+            { kind: 'tokens', weight: 50, amount: [20, 45] },
+            { kind: 'skip', weight: 20 },
+            { kind: 'heart', weight: 15 },
+            { kind: 'skin', weight: 15, seasonId: 'leaves' },
+          ],
+        },
+      },
+    },
   },
   /* ── The Mi family ──────────────────────────────────────────────
      Three siblings from the lore, and the first companions whose
@@ -576,6 +805,13 @@ export const COMPANION_KITS: CompanionKit[] = [
     // The small one — handles tiny words, and serves more of them.
     lengthBias: { prefer: 'short', strength: 0.8 },
     copy: { quips: ['Small and quick!', 'Little words count too.'] },
+    // Strength maxes out — short words dominate the queue as hard as
+    // lengthBias is ever allowed to push it (review.ts's tiebreaker-only
+    // guard rail is what keeps this from starving due words).
+    ultimate: {
+      unlock: 400,
+      overrides: { lengthBias: { prefer: 'short', strength: 1 } },
+    },
   },
   {
     id: 'big-mi',
@@ -599,6 +835,13 @@ export const COMPANION_KITS: CompanionKit[] = [
       lengthBonus: { from: 5, perLetter: 2 },
     },
     copy: { quips: ['Big word? Bring it.', 'The long ones pay best.'] },
+    // Max strength, and each extra letter pays double.
+    ultimate: {
+      unlock: 400,
+      overrides: {
+        lengthBias: { prefer: 'long', strength: 1, lengthBonus: { from: 5, perLetter: 4 } },
+      },
+    },
   },
   {
     id: 'rando-mi',
@@ -652,9 +895,43 @@ export const COMPANION_KITS: CompanionKit[] = [
       cost: 0,
     },
     guestWord: { lang: 'fr', chance: 0.2, bonusTokens: 2 },
+    // Baguette Storm: reuses the exact physics-burst mechanism NiNi's
+    // bamboo explosion already built (companion-layer.tsx's `wordCount %
+    // every` trigger) rather than a new consecutive-streak tracker — the
+    // doc's "long clean streak" becomes "every 15 correct answers this
+    // run", the same simplification pattern Otter's raft and Fox's shell
+    // game already document. Bread, not bamboo; a bigger burst.
+    collectible: {
+      glyph: '🥖',
+      spawnEveryMs: [1e9, 1e9], // no slow tap-to-collect half — storm only
+      maxOnScreen: 0,
+      origin: 'bottom',
+      sizeRange: [18, 26],
+      capPerRun: 0,
+      rewards: [],
+      burst: { every: 15, count: [10, 16], sound: 'rattle' },
+    },
     copy: {
       quips: ['Magnifique, mon ami!', 'A little crusty, a lot proud.'],
       onGameOver: "C'est la vie.",
+    },
+    // Doubles down on the guest-word charm and the storm comes every 10
+    // instead of every 15.
+    ultimate: {
+      unlock: 400,
+      overrides: {
+        guestWord: { lang: 'fr', chance: 0.4, bonusTokens: 5 },
+        collectible: {
+          glyph: '🥖',
+          spawnEveryMs: [1e9, 1e9],
+          maxOnScreen: 0,
+          origin: 'bottom',
+          sizeRange: [18, 26],
+          capPerRun: 0,
+          rewards: [],
+          burst: { every: 10, count: [14, 22], sound: 'rattle' },
+        },
+      },
     },
   },
   /* ── Bot-Loko ────────────────────────────────────────────────────

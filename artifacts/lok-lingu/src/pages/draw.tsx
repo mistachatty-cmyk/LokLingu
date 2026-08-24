@@ -46,7 +46,9 @@ import {
   summarise,
   type SessionEntry,
 } from '@/lib/review';
-import { consumeHeart, earnTokens } from '@/lib/economy';
+import { consumeHeart, earnTokens, addSkips } from '@/lib/economy';
+import { rollReward, grantReward } from '@/lib/companion-rewards';
+import { COMPANION_COMPLIMENT_EVENT } from '@/components/companion-widget';
 import { getCompanionKit, currentStreakMultiplier, effectiveCompanionKit } from '@/lib/companions';
 
 const INK_COLORS = [
@@ -222,6 +224,9 @@ export default function Draw() {
   const tigerAmbush = kit?.ambush;
   const ambushActiveRef = useRef(false);
   const [ambushFlagged, setAmbushFlagged] = useState(false);
+  const growthKit = kit?.growth;
+  const growthWordsRef = useRef(0);
+  const [growthStage, setGrowthStage] = useState(0);
   const { play: playSound } = useCelebrationSound();
   const { theme } = useTheme();
 
@@ -308,6 +313,26 @@ export default function Draw() {
     // Mirror Mode — see game.tsx's matching comment.
     const mirrorBonus = presentationRef.current?.flipX ? rate : 0;
     if (mirrorBonus > 0) earnTokens(mirrorBonus);
+    // Robot / Sprout — see game.tsx's matching comment.
+    if (kitRef.current?.complimenter) {
+      window.dispatchEvent(new CustomEvent(COMPANION_COMPLIMENT_EVENT));
+    }
+    const skipEvery = kitRef.current?.skipEvery;
+    if (skipEvery && celebration.matchCount > 0 && celebration.matchCount % skipEvery === 0) {
+      addSkips(1);
+    }
+    let growthBloomLabel: string | null = null;
+    if (growthKit) {
+      growthWordsRef.current += 1;
+      if (growthWordsRef.current >= growthKit.bloomEvery) {
+        growthWordsRef.current = 0;
+        setGrowthStage(0);
+        growthBloomLabel = `🌸 ${grantReward(rollReward(growthKit.rewards))}`;
+        playSound('chime', 'big');
+      } else {
+        setGrowthStage(Math.floor(growthWordsRef.current / growthKit.every));
+      }
+    }
     // Crane's fold-a-crane shield — see game.tsx's matching comment.
     let craneReady = false;
     if (craneShield && !craneShieldActiveRef.current) {
@@ -319,7 +344,9 @@ export default function Draw() {
         playSound('chime', 'big');
       }
     }
-    const labelText = craneReady
+    const labelText = growthBloomLabel
+      ? growthBloomLabel
+      : craneReady
       ? '🕊️ Shield ready!'
       : milestoneHit && tokenBonus > 0
         ? `+${tokenBonus} 🎁`
@@ -684,7 +711,7 @@ export default function Draw() {
         pointerFree={false}
         botLokoAlly={kit?.id === 'bot-loko' && !!kit?.droneAlly}
       />
-      <CompanionWidget side="left" />
+      <CompanionWidget side="left" streak={count} growthStage={growthStage} />
 
       {wordPopActive && <WordPop onComplete={() => setWordPopActive(false)} />}
 

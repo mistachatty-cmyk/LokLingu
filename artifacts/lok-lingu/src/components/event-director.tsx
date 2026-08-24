@@ -20,6 +20,11 @@ import { Eclipse } from '@/components/events/eclipse';
 import { MirrorMode } from '@/components/events/mirror-mode';
 import { LightSwitch } from '@/components/events/light-switch';
 import { AntColony } from '@/components/events/ant-colony';
+import { TomatoSplat } from '@/components/events/tomato-splat';
+import { InkSplatter } from '@/components/events/ink-splatter';
+import { FruitSlash } from '@/components/events/fruit-slash';
+import { LightsOut } from '@/components/events/lights-out';
+import { ILoveYou } from '@/components/events/i-love-you';
 
 /* ------------------------------------------------------------------
    The event director — one owner for when a beat fires and what it may do.
@@ -271,6 +276,63 @@ export function EventDirector({
             play('thud', 'mini');
             onNotice?.(took ? '🦇 took a skip' : '🦇 found nothing');
           }}
+          onDone={finish}
+        />
+      );
+
+    case 'tomato-splat':
+      return (
+        <TomatoSplat
+          durationMs={active.durationMs}
+          onPresentation={onPresentation}
+          onDone={finish}
+        />
+      );
+
+    case 'ink-splatter':
+      return (
+        <InkSplatter
+          onProgress={(pct) => onPresentation(pct > 0 ? { maskPct: pct, tint: '#312e81' } : null)}
+          onCleared={() => {
+            play('lock', 'mini');
+            earnTokens(3);
+            onNotice?.('+3 ✨');
+            finish();
+          }}
+        />
+      );
+
+    case 'fruit-slash':
+      return (
+        <FruitSlash
+          durationMs={active.durationMs}
+          onHit={() => {
+            play('pop', 'big');
+            earnTokens(6);
+            onNotice?.('+6 🍉');
+          }}
+          onDone={finish}
+        />
+      );
+
+    case 'lights-out':
+      return (
+        <LightsOut
+          onPresentation={onPresentation}
+          onCleared={() => {
+            play('chime', 'big');
+            finish();
+          }}
+        />
+      );
+
+    case 'i-love-you':
+      return (
+        <ILoveYou
+          durationMs={active.durationMs}
+          onPresentation={onPresentation}
+          onAwww={() => play('awww', 'big')}
+          onApplause={() => play('applause', 'big')}
           onDone={finish}
         />
       );

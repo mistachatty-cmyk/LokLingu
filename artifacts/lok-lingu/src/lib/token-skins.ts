@@ -176,6 +176,48 @@ export const TOKEN_SKINS: TokenSkin[] = [
     motion: 'pile',
     duration: 1.2,
   },
+  /* Two ultimate skins, level-gated, unpurchasable. Both reuse the
+     existing look/motion axes only — no new engine work. The full spec's
+     per-coin live word-stamping (Echo Vault) and a periodic full-screen
+     chromatic bloom (Supernova Prime) would need real changes to
+     token-vault-layer.tsx's rendering pipeline; documented as future work
+     in docs/COMPANIONS.md rather than silently simplified. What ships
+     here is the Eternal Vault's persistence plus a distinct, headline-
+     worthy look for each. */
+  {
+    id: 'vault-echo',
+    name: 'The Echo Vault',
+    blurb:
+      "The hoard persists like the Eternal Vault, but every coin glows like a memory rather than metal — a permanent, ever-growing record of everything you've earned. Earned at level 92 — it cannot be bought.",
+    cost: 0,
+    category: 'vault',
+    ultimate: true,
+    unlockLevel: 92,
+    persistent: true,
+    glyph: '✨',
+    scale: 1.15,
+    halo: '0 0 20px 6px rgba(250, 204, 21, 0.35)',
+    outline: '0 0 10px var(--word-color)',
+    motion: 'pile',
+    duration: 1.3,
+  },
+  {
+    id: 'supernova-prime',
+    name: 'Supernova Prime',
+    blurb:
+      'The Supernova, upgraded — a bigger detonation, a denser fragment shower, and a prismatic halo that reads as one continuous bloom. Earned at level 96 — it cannot be bought.',
+    cost: 0,
+    category: 'mythic',
+    ultimate: true,
+    unlockLevel: 96,
+    glyph: '🌟',
+    scale: 1.3,
+    halo: '0 0 26px 10px rgba(168, 85, 247, 0.4)',
+    outline: '0 0 12px var(--word-color)',
+    motion: 'burst',
+    particles: 22,
+    duration: 1.6,
+  },
 
   /* --- FOOD: CULTURE-SPECIFIC --- */
   {

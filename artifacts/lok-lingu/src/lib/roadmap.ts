@@ -168,6 +168,18 @@ export const LOK_COMPANIONS: Milestone[] = [
     reward: 'companion', rewardLabel: 'Rando-Mi companion', live: true,
     glyph: '🎲', tier: 'epic',
   },
+  {
+    at: 0, track: 'total', title: 'Robot',
+    detail: 'Precise, reliable, and generous with compliments. Generates a skip on a fixed schedule instead of a roll.',
+    reward: 'companion', rewardLabel: 'Robot companion', live: true,
+    glyph: '🤖', tier: 'uncommon',
+  },
+  {
+    at: 0, track: 'total', title: 'Sprout',
+    detail: 'A plant grows out of Sprout as you play — every 10 words a stage, every 30 a bloom and a reward.',
+    reward: 'companion', rewardLabel: 'Sprout companion', live: true,
+    glyph: '🌱', tier: 'uncommon',
+  },
   /* Hidden — see docs/EVENTS.md's Bot-Loko lore and companions.ts's own
      comment. Nothing about it renders on the gallery card until unlocked;
      GalleryCard checks `secret` for that. */

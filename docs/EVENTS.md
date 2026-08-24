@@ -142,6 +142,11 @@ snapshotting those keys before and after it runs.
 | **Light Switch** | T1 | no | P1 `invert` + a single-tap resolve gesture |
 | **Ant Colony** | T0 | no | Several independently-moving P2 targets on one surface, with two payout paths |
 | **Bot-Loko** | T2 | no | P2 `slash` under time pressure, with a real stake |
+| **Tomato Splat** | T0 | no | A cosmetic P1 mask + tint, zero interaction |
+| **Ink Splatter** | T1 | yes | Scratch Card's mask+scrub+gate shape, reskinned and re-tuned |
+| **Fruit Slash** | T0 | no | Bot-Loko's flight+slash shape with the stakes removed entirely |
+| **Lights Out** | T1 | yes | A counted P2 `tap` ×10 with its own progress UI, not just a mask |
+| **I Love You** | T0 | no | A fixed-timeline affective beat — see its own section for the scope simplification |
 
 ### Blurred Word
 
@@ -242,6 +247,57 @@ tokens rather than your answers or your streak; and it sets up the ultimate —
 repair the firmware and Bot-Loko starts retrieving coins **for** you.
 
 Intercepted, it emits an apologetic squeak and drops what it took.
+
+### Tomato Splat
+
+A tomato flies in and splats across the word for ~1.8s, tinted and masked
+via P1, then fades on its own. No gesture, no gate, no win condition — the
+original brainstorm's "distraction" is scoped to a word-local tint rather
+than the whole viewport, same discipline as Light Switch: fighting every
+other overlay for the entire screen buys nothing a word-scoped effect
+doesn't already deliver.
+
+### Ink Splatter
+
+Mechanically Scratch Card with different skin and a lower clear threshold
+(50% vs. 60%) — wipe the ink away (P2 `scrub`, or three taps under reduced
+motion) before answering unlocks. Shipped as its own event rather than a
+Scratch Card variant because the doc's catalogue named it separately and
+the tuning genuinely differs, but it is intentionally *not* a third new
+primitive — reuse, not reinvention.
+
+### Fruit Slash
+
+A fruit arcs across the screen on a throw, not a targeted flight; slash it
+(P2 `slash`) for a bonus. This is Bot-Loko's exact flight-and-hit-test
+shape with every stake removed — T0, not T2 — so missing it costs nothing
+at all. Reduced motion parks it mid-arc and tappable, same as Bot-Loko.
+
+### Lights Out
+
+The word goes dark (`maskPct: 1`); ten taps (P2 `tap`, counted) bring it
+back up, each one lifting the mask a step and filling one node on a bar
+rendered by the event itself. The "whole screen goes dark" framing from the
+brainstorm is scoped to the word, matching Light Switch and Tomato Splat's
+established discipline rather than fighting the rest of the UI for control
+of the viewport.
+
+### I Love You
+
+The word is replaced with "I love you" for a fixed ~3.4s beat: an audible
+`awww` at 35% in, "I love you too" slides in beside it, `applause` closes
+it out, then the real word returns. T0, non-blocking, zero interaction.
+
+**Scope simplification, stated plainly:** the brief described *saying* "I
+love you" as the trigger — which would mean the actual answer target
+becomes "I love you" for that turn, the same shape as Sir Baguette's guest
+word. Building that safely means touching the grading path in
+`game.tsx`/`draw.tsx` and guarding it against the learning-data invariant
+above (never let it reach the Leitner queue or lifetime/category counters).
+That is real, scoped work for a future pass, not something to bolt on
+quietly here. What shipped instead is a fixed-timeline affective beat in
+the same family as The Toast and The Cheer below — all upside, nothing
+graded, no risk to the invariant.
 
 ---
 

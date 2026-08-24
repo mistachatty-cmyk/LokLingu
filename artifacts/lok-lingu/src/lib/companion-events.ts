@@ -37,7 +37,7 @@ import type { EventFrequency } from '@/hooks/use-settings';
 
 export type EventTier = 'T0' | 'T1' | 'T2' | 'T3';
 
-export type EventId = 'blurred-word' | 'scratch-card' | 'bot-loko' | 'eclipse' | 'mirror-mode' | 'light-switch' | 'ant-colony';
+export type EventId = 'blurred-word' | 'scratch-card' | 'bot-loko' | 'eclipse' | 'mirror-mode' | 'light-switch' | 'ant-colony' | 'tomato-splat' | 'ink-splatter' | 'fruit-slash' | 'lights-out' | 'i-love-you';
 
 export interface CompanionEventDef {
   id: EventId;
@@ -155,6 +155,64 @@ export const COMPANION_EVENTS: CompanionEventDef[] = [
     maxPerRun: 2,
     durationMs: 5200,
     needsPointer: true,
+  },
+  {
+    id: 'tomato-splat',
+    name: 'Tomato Splat',
+    blurb: 'A tomato splats across the word, then fades. Purely cosmetic.',
+    tier: 'T0',
+    weight: 30,
+    blocking: false,
+    minWords: 3,
+    maxPerRun: 6,
+    durationMs: 1800,
+  },
+  {
+    id: 'ink-splatter',
+    name: 'Ink Splatter',
+    blurb: 'Ink covers the word — wipe it clear to answer.',
+    tier: 'T1',
+    weight: 22,
+    blocking: true,
+    minWords: 5,
+    maxPerRun: 3,
+    durationMs: 6000,
+    needsPointer: true,
+  },
+  {
+    id: 'fruit-slash',
+    name: 'Fruit Slash',
+    blurb: 'A fruit sails across the screen. Slash it for a bonus — missing costs nothing.',
+    tier: 'T0',
+    weight: 26,
+    blocking: false,
+    minWords: 4,
+    maxPerRun: 6,
+    durationMs: 3200,
+    needsPointer: true,
+  },
+  {
+    id: 'lights-out',
+    name: 'Lights Out',
+    blurb: 'The word goes dark. Tap ten times to bring the lights back up.',
+    tier: 'T1',
+    weight: 18,
+    blocking: true,
+    minWords: 5,
+    maxPerRun: 3,
+    durationMs: 8000,
+    needsPointer: true,
+  },
+  {
+    id: 'i-love-you',
+    name: 'I Love You',
+    blurb: 'The word becomes "I love you" for a beat — an awww, a reply, applause.',
+    tier: 'T0',
+    weight: 10,
+    blocking: false,
+    minWords: 6,
+    maxPerRun: 2,
+    durationMs: 3400,
   },
 ];
 

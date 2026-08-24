@@ -10,7 +10,9 @@ import { useSpeechEngine } from '@/hooks/use-speech-engine';
 import { useSettings } from '@/hooks/use-settings';
 import { useDevMode } from '@/hooks/use-dev-mode';
 import { useEconomy } from '@/hooks/use-economy';
-import { consumeSkip, FREE_SKIPS_PER_MATCH, earnTokens } from '@/lib/economy';
+import { consumeSkip, FREE_SKIPS_PER_MATCH, earnTokens, addSkips } from '@/lib/economy';
+import { rollReward, grantReward } from '@/lib/companion-rewards';
+import { COMPANION_COMPLIMENT_EVENT } from '@/components/companion-widget';
 import { counterpartWord } from '@/lib/companion-guest-word';
 import type { WordEntry } from '@/lib/offline-data';
 import { currentWords, freeSkipsForLevel } from '@/lib/levels';
@@ -217,6 +219,12 @@ export default function Game() {
   const tigerAmbush = kit?.ambush;
   const ambushActiveRef = useRef(false);
   const stopListeningRef = useRef<() => void>(() => {});
+  // Sprout's plant: advances one stage every `every` correct words, blooms
+  // (rolls a reward, resets to 0) every `bloomEvery`. Reset each run since
+  // it's flavor tied to this session, not a persistent counter.
+  const growthKit = kit?.growth;
+  const growthWordsRef = useRef(0);
+  const [growthStage, setGrowthStage] = useState(0);
 
   // Stable ref so handleResult can call abortSession without it being in
   // the dependency array. abortSession is declared after useSpeechEngine,
@@ -524,6 +532,32 @@ export default function Game() {
       // rather than the swipe-to-unflip convenience path.
       const mirrorBonus = presentationRef.current?.flipX ? rate : 0;
       if (mirrorBonus > 0) earnTokens(mirrorBonus);
+      // Robot: an automatic compliment, and a skip on a fixed cadence
+      // rather than a roll — precise and reliable is the whole fantasy.
+      if (kitRef.current?.complimenter) {
+        window.dispatchEvent(new CustomEvent(COMPANION_COMPLIMENT_EVENT));
+      }
+      const skipEvery = kitRef.current?.skipEvery;
+      if (skipEvery && celebrationRef.current.matchCount > 0 && celebrationRef.current.matchCount % skipEvery === 0) {
+        addSkips(1);
+      }
+      // Sprout: one stage per `every` words; a full set of stages blooms —
+      // rolls one reward, resets to 0 and grows again. The label is folded
+      // into the priority chain below rather than set here directly, since
+      // that chain's own setTokenLabel call would otherwise clobber it.
+      let growthBloomLabel: string | null = null;
+      if (growthKit) {
+        growthWordsRef.current += 1;
+        if (growthWordsRef.current >= growthKit.bloomEvery) {
+          growthWordsRef.current = 0;
+          setGrowthStage(0);
+          const roll = rollReward(growthKit.rewards);
+          growthBloomLabel = `🌸 ${grantReward(roll)}`;
+          playSound('chime', 'big');
+        } else {
+          setGrowthStage(Math.floor(growthWordsRef.current / growthKit.every));
+        }
+      }
       // Crane's fold-a-crane shield.
       let craneReady = false;
       if (craneShield && !craneShieldActiveRef.current) {
@@ -535,7 +569,9 @@ export default function Game() {
           playSound('chime', 'big');
         }
       }
-      const labelText = craneReady
+      const labelText = growthBloomLabel
+        ? growthBloomLabel
+        : craneReady
         ? '🕊️ Shield ready!'
         : milestoneHit && tokenBonus > 0
           ? `+${tokenBonus} 🎁`
@@ -928,7 +964,7 @@ export default function Game() {
         onNotice={(text) => setTokenLabel((prev) => ({ key: prev.key + 1, text }))}
         botLokoAlly={kit?.id === 'bot-loko' && !!kit?.droneAlly}
       />
-      <CompanionWidget side="left" />
+      <CompanionWidget side="left" streak={streak} growthStage={growthStage} />
 
       {summary && (
         <SessionSummaryCard

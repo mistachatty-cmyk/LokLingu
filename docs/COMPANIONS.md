@@ -401,6 +401,21 @@ directions rather than just making a companion stronger:
 | **Tiger** | Ambush 3x more often (0.08 → 0.24) and pays 5x (3x → 5x) — but a missed *flagged* word now costs an extra heart on top of the normal miss (`ambushPenalty`). This is the one **T3** ultimate: telegraphed by the ambush banner every equipped player already sees, and opt-in because only unlocking the ultimate turns the penalty on at all. |
 | **Rando-Mi** | `strength: 1` (already the max `lengthFactor`'s bound allows) plus a bigger `lengthBonus`. See the "not built" note above for the live-reflow version this was scoped down from. |
 | **Bot-Loko** | See below — flips the drone from thief to ally. |
+| **Wren** | Hint chance 0.25 → 0.6 — the gentle nudge becomes the headline rather than an occasional courtesy. |
+| **Sparrow** | Burst chance 0.12 → 0.35, extra multiplier 1x → 2x. |
+| **Otter** | The raft lands every 3rd bubble instead of every 5th, and pays roughly double. |
+| **Fox** | The hidden bonus lands on every 2nd leaf instead of every 3rd, and pays noticeably more. |
+| **Crane** | Folds needed 10 → 5 — the shield is up far more often. (Crane's `glowOnStreak` is a base-kit field, not gated behind this.) |
+| **Wolf** | Streak tiers start sooner and top out higher (3/10/20 words at 2x/3x/5x, vs. the base kit's 5/15/30 at 1.5x/2x/3x). |
+| **Whale** | The breach lands roughly twice as often (charge 8 → 4) and pays roughly twice as much. |
+| **Amber** | The bottle fills much faster (charge 25 → 12) for a far bigger cash-in. |
+| **Phoenix** | `revive.perMatch` 1 → 2 — a second life per run. |
+| **Mini-Mi** | `lengthBias.strength` 0.8 → 1 (max the guard rail allows). |
+| **Big-Mi** | `lengthBias.strength` 0.8 → 1, `lengthBonus.perLetter` 2 → 4. |
+| **Sir Baguette** | `guestWord.chance` 0.2 → 0.4, `bonusTokens` 2 → 5, and Baguette Storm (see below) fires every 10 words instead of every 15. |
+| **Robot** | `skipEvery` 12 → 6 — compliments and skips both come around twice as often. |
+| **Sprout** | Blooms every 15 words instead of every 30, and the reward table skews richer. |
+| **Leviathan** | Deliberately none — see "Still ambient-only" above; needs multi-Season composition `field.ts` doesn't support yet. |
 
 ---
 
@@ -447,9 +462,67 @@ passes it** — confirmed by reading every call site. Flagging this
 explicitly rather than letting it look finished: it needs a design pass on
 which companions bias which events before it's worth wiring up.
 
-**Not built: Echo Vault / Supernova Prime.** The two "ultimate token skins"
-from the original brainstorm are a Vault/shop cosmetic system, unrelated to
-companions — explicitly out of scope for this round.
+**Echo Vault / Supernova Prime — built, in `lib/token-skins.ts`.** The two
+"ultimate token skins" from the original brainstorm, level-gated
+(92/96) and unpurchasable, same pattern as The Eternal Vault. Both reuse
+the existing look/motion axes only: Echo Vault is a persistent, glowing
+pile skin; Supernova Prime is a denser `burst` with a bigger halo. The
+full spec's live per-coin word-stamping (Echo Vault) and a periodic
+full-screen chromatic bloom (Supernova Prime) would need real changes to
+`token-vault-layer.tsx`'s rendering pipeline — flagged here as future work
+rather than silently simplified.
+
+---
+
+## New companions and traits (this pass)
+
+Three new fields on `CompanionKit`, each carried by exactly one companion
+so far but usable by any future one, same as every other trait:
+
+- **`complimenter?: boolean`** — an automatic spoken-style compliment
+  after every correct answer, distinct from the existing tap-to-talk quip.
+  Implemented as a DOM event (`COMPANION_COMPLIMENT_EVENT`,
+  `companion-widget.tsx`) the correct-answer handler dispatches and the
+  widget listens for — kept decoupled from `game.tsx`/`draw.tsx`'s
+  internals the same way `ECONOMY_EVENT` decouples the wallet from
+  whichever screen changed it. Carried by **Robot**.
+- **`skipEvery?: number`** — grants +1 skip every N correct answers this
+  run, on a fixed cadence rather than a roll (Wolf/Sparrow's mechanism is
+  a per-hit chance; this is deliberately not that — precision is the
+  point). Carried by **Robot** (every 12, ultimate: every 6).
+- **`glowOnStreak?: boolean`** — the companion widget's glow intensity
+  scales with the current in-run streak (capped at 30) while true. Purely
+  visual, no economy interaction. Carried by **Crane** (the folded paper
+  catching more light the longer the streak holds).
+- **`growth?: { every, bloomEvery, rewards }`** — a plant on the
+  companion widget advances one stage every `every` correct words;
+  reaching `bloomEvery` rolls one `rewards` entry (via
+  `companion-rewards.ts`'s existing `rollReward`/`grantReward`, the same
+  functions NiNi's rare-drop slot uses) and resets to grow again. Carried
+  by **Sprout** (every 10, blooms at 30; ultimate blooms at 15 with a
+  richer table).
+
+### Robot 🤖
+
+Ambient: drifting mechanical sparks. No collectible, no presentation
+effect — precision and reliability are the whole fantasy, carried entirely
+by `complimenter` + `skipEvery`.
+
+### Sprout 🌱
+
+Ambient: floating pollen. Its `growth` field is the only mechanic —
+deliberately the first companion whose payoff is a visible, staged object
+on the widget itself rather than a number.
+
+### Sir Baguette: Baguette Storm
+
+Reuses NiNi's exact physics-burst mechanism (`CollectibleKit.burst`,
+`companion-layer.tsx`'s `wordCount % every` trigger) rather than a new
+consecutive-streak tracker. The brief's "long clean streak" becomes "every
+15 correct answers this run" (10 on the ultimate) — the same
+simplified-from-spec pattern already used for Otter's raft and Fox's shell
+game, stated plainly rather than silently deviating. Bread, not bamboo; a
+bigger burst (10–16 pieces vs. bamboo's 8–14).
 
 ---
 
