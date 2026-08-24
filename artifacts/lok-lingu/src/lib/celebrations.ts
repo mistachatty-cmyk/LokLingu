@@ -2,7 +2,7 @@ export type CelebrationIntensity = 'mini' | 'big' | 'suBang';
 
 export type CelebrationAnimType = 'burst' | 'rain' | 'float' | 'wave' | 'bounce' | 'shake' | 'stampede' | 'glass';
 
-export type SoundProfile = 'burst' | 'thud' | 'clink' | 'whoosh' | 'boing' | 'chime' | 'splash' | 'gong' | 'rattle' | 'ascend' | 'tri-tone' | 'pop' | 'swoosh' | 'lock' | 'complete';
+export type SoundProfile = 'burst' | 'thud' | 'clink' | 'whoosh' | 'boing' | 'chime' | 'splash' | 'gong' | 'rattle' | 'ascend' | 'tri-tone' | 'pop' | 'swoosh' | 'lock' | 'complete' | 'awww' | 'applause';
 
 export interface CelebrationDef {
   id: string;

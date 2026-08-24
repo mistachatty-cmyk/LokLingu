@@ -35,6 +35,13 @@ export interface Milestone {
   glyph?: string;
   /** Rarity — drives which emblem-* animation a gallery card gets. */
   tier?: Tier;
+  /** Hidden until unlocked: the gallery card shows `❔`/`???`/`secretHint`
+   *  instead of the real glyph/title/progress. Bot-Loko's whole point is
+   *  discovering it exists, not counting down to it. */
+  secret?: boolean;
+  /** Shown in place of the progress line while `secret` and locked — a
+   *  cryptic nudge, not a spoiler of the unlock condition itself. */
+  secretHint?: string;
 }
 
 /**
@@ -140,6 +147,49 @@ export const LOK_COMPANIONS: Milestone[] = [
     detail: 'A baguette in a beret with a magnificent mustache. Earned, not found — awarded for mastering 50 French food words.',
     reward: 'companion', rewardLabel: 'Sir Baguette companion', live: true,
     glyph: '🥖', tier: 'legendary',
+  },
+  /* The Mi family — see docs/COMPANIONS.md. Earned by working through
+     words of the shape each sibling handles, not by a words-total gate. */
+  {
+    at: 0, track: 'total', title: 'Mini-Mi',
+    detail: 'The small one. Handles tiny words, and serves more of them.',
+    reward: 'companion', rewardLabel: 'Mini-Mi companion', live: true,
+    glyph: '🔹', tier: 'uncommon',
+  },
+  {
+    at: 0, track: 'total', title: 'Big-Mi',
+    detail: 'The large one. Handles big words, and pays per extra letter — the hardest words are finally worth the most.',
+    reward: 'companion', rewardLabel: 'Big-Mi companion', live: true,
+    glyph: '🔶', tier: 'rare',
+  },
+  {
+    at: 0, track: 'total', title: 'Rando-Mi',
+    detail: 'The unpredictable sibling. Length swings turn to turn, and the payout scales with the swing.',
+    reward: 'companion', rewardLabel: 'Rando-Mi companion', live: true,
+    glyph: '🎲', tier: 'epic',
+  },
+  {
+    at: 0, track: 'total', title: 'Robot',
+    detail: 'Precise, reliable, and generous with compliments. Generates a skip on a fixed schedule instead of a roll.',
+    reward: 'companion', rewardLabel: 'Robot companion', live: true,
+    glyph: '🤖', tier: 'uncommon',
+  },
+  {
+    at: 0, track: 'total', title: 'Sprout',
+    detail: 'A plant grows out of Sprout as you play — every 10 words a stage, every 30 a bloom and a reward.',
+    reward: 'companion', rewardLabel: 'Sprout companion', live: true,
+    glyph: '🌱', tier: 'uncommon',
+  },
+  /* Hidden — see docs/EVENTS.md's Bot-Loko lore and companions.ts's own
+     comment. Nothing about it renders on the gallery card until unlocked;
+     GalleryCard checks `secret` for that. */
+  {
+    at: 0, track: 'total', title: 'Bot-Loko',
+    detail: 'A retrieval drone with a firmware fault — see docs/EVENTS.md for the full lore.',
+    reward: 'companion', rewardLabel: 'Bot-Loko companion', live: true,
+    glyph: '🦇', tier: 'rare',
+    secret: true,
+    secretHint: 'Something keeps circling your skips. Catch it in the act.',
   },
 ];
 

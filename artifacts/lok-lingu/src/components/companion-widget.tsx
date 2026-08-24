@@ -1,9 +1,14 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { EyeOff } from 'lucide-react';
 import { getEquippedCompanion } from '@/hooks/use-celebration';
 import { TOTAL_MILESTONES, LOK_COMPANIONS } from '@/lib/roadmap';
-import { companionQuips } from '@/lib/companions';
+import { companionQuips, getCompanionKit } from '@/lib/companions';
+
+/** Robot's compliment fires from the correct-answer handler in game.tsx/
+ *  draw.tsx — a plain DOM event keeps the widget decoupled from either
+ *  page's internals, the same way ECONOMY_EVENT decouples the wallet. */
+export const COMPANION_COMPLIMENT_EVENT = 'lok-companion-compliment';
 
 const ALL_COMPANION_MILESTONES = [...TOTAL_MILESTONES, ...LOK_COMPANIONS].filter(
   (m) => m.reward === 'companion',
@@ -29,12 +34,23 @@ function companionGlyph(id: string): string | null {
  * or instead of showing the quip. Nothing about equip state, positioning,
  * or the on/off toggle needs to change for that.
  */
-export function CompanionWidget({ side = 'left' }: { side?: 'left' | 'right' }) {
+export function CompanionWidget({
+  side = 'left',
+  streak = 0,
+  growthStage = 0,
+}: {
+  side?: 'left' | 'right';
+  /** Current in-run correct-answer streak — drives Crane's glowOnStreak. */
+  streak?: number;
+  /** Sprout's plant: 0..stagesTotal-1, current growth stage this run. */
+  growthStage?: number;
+}) {
   const [equippedId] = useState(() => getEquippedCompanion());
   const [visible, setVisible] = useState(true);
   const [quip, setQuip] = useState<string | null>(null);
 
   const glyph = useMemo(() => (equippedId ? companionGlyph(equippedId) : null), [equippedId]);
+  const kit = useMemo(() => (equippedId ? getCompanionKit(equippedId) : null), [equippedId]);
 
   const handleActivate = useCallback(() => {
     if (!equippedId) return;
@@ -43,9 +59,23 @@ export function CompanionWidget({ side = 'left' }: { side?: 'left' | 'right' }) 
     window.setTimeout(() => setQuip(null), 2200);
   }, [equippedId]);
 
+  // Robot: an automatic compliment after a correct answer, distinct from
+  // the tap-to-talk quip above — this one fires on its own.
+  useEffect(() => {
+    if (!kit?.complimenter) return;
+    const onCompliment = () => handleActivate();
+    window.addEventListener(COMPANION_COMPLIMENT_EVENT, onCompliment);
+    return () => window.removeEventListener(COMPANION_COMPLIMENT_EVENT, onCompliment);
+  }, [kit?.complimenter, handleActivate]);
+
   if (!equippedId || !glyph) return null;
 
   const sideClass = side === 'left' ? 'left-5' : 'right-5';
+  // Crane's glow: intensity ramps with the streak, capped at 30 so it
+  // reads as "brighter the better you're doing" rather than unbounded.
+  const glowIntensity = kit?.glowOnStreak ? Math.min(streak / 30, 1) : 0;
+  const growthKit = kit?.growth;
+  const growthStagesTotal = growthKit ? Math.round(growthKit.bloomEvery / growthKit.every) : 0;
 
   if (!visible) {
     return (
@@ -83,6 +113,11 @@ export function CompanionWidget({ side = 'left' }: { side?: 'left' | 'right' }) 
           data-testid="companion-widget"
           onClick={handleActivate}
           aria-label="Talk to your companion"
+          style={
+            glowIntensity > 0
+              ? { boxShadow: `0 0 ${8 + glowIntensity * 20}px ${glowIntensity * 6}px rgba(250, 204, 21, ${0.25 + glowIntensity * 0.4})` }
+              : undefined
+          }
           className="flex h-14 w-14 items-center justify-center rounded-full border border-foreground/15 bg-background/70 text-2xl leading-none backdrop-blur transition-all duration-300 hover:border-primary active:scale-95"
         >
           <span aria-hidden>{glyph}</span>
@@ -96,6 +131,15 @@ export function CompanionWidget({ side = 'left' }: { side?: 'left' | 'right' }) 
           <EyeOff size={10} />
         </button>
       </div>
+      {growthKit && growthStagesTotal > 0 && (
+        <div className="flex gap-0.5" aria-label="Growth progress" data-testid="companion-growth">
+          {Array.from({ length: growthStagesTotal }).map((_, i) => (
+            <span key={i} className={`text-[10px] leading-none ${i < growthStage ? 'opacity-100' : 'opacity-25'}`} aria-hidden>
+              🌱
+            </span>
+          ))}
+        </div>
+      )}
       <span className="text-[9px] uppercase tracking-[0.2em] opacity-75">Buddy</span>
     </div>
   );

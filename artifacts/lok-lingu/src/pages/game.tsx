@@ -10,8 +10,10 @@ import { useSpeechEngine } from '@/hooks/use-speech-engine';
 import { useSettings } from '@/hooks/use-settings';
 import { useDevMode } from '@/hooks/use-dev-mode';
 import { useEconomy } from '@/hooks/use-economy';
-import { consumeSkip, FREE_SKIPS_PER_MATCH, earnTokens } from '@/lib/economy';
-import { frenchCounterpart, GUEST_WORD_CHANCE } from '@/lib/companion-guest-word';
+import { consumeSkip, FREE_SKIPS_PER_MATCH, earnTokens, addSkips } from '@/lib/economy';
+import { rollReward, grantReward } from '@/lib/companion-rewards';
+import { COMPANION_COMPLIMENT_EVENT } from '@/components/companion-widget';
+import { counterpartWord } from '@/lib/companion-guest-word';
 import type { WordEntry } from '@/lib/offline-data';
 import { currentWords, freeSkipsForLevel } from '@/lib/levels';
 import { effectiveLevelState, currentPrestige, prestigeIcon } from '@/lib/prestige';
@@ -19,8 +21,8 @@ import { gameWordFontSize } from '@/lib/word-sizing';
 import { getSelectedEmblem, earnedEmblems } from '@/lib/emblems';
 import { speakWord, matchWord, primeVoices, toLocale } from '@/lib/speech-utils';
 import { useTheme } from '@/hooks/use-theme';
-import { useCelebration, incrementCategoryLifetime, incrementTotalGames, getEquippedCompanion } from '@/hooks/use-celebration';
-import { getCompanionKit, currentStreakMultiplier } from '@/lib/companions';
+import { useCelebration, incrementCategoryLifetime, incrementTotalGames, getEquippedCompanion, companionWordsPlayed, incrementCompanionWords } from '@/hooks/use-celebration';
+import { getCompanionKit, currentStreakMultiplier, effectiveCompanionKit } from '@/lib/companions';
 import { checkNightOwl, checkPerfectGame, checkSpeedDemon } from '@/lib/session-achievements';
 import { useCelebrationSound } from '@/hooks/use-celebration-sound';
 import { CelebrationEffect } from '@/components/celebration-effect';
@@ -40,6 +42,9 @@ import { GameWord } from '@/components/game-word';
 import { TokenPhysicsLayer, spawnTokenAt } from '@/components/token-physics-layer';
 import { CompanionWidget } from '@/components/companion-widget';
 import { CompanionLayer } from '@/components/companion-layer';
+import { EventDirector } from '@/components/event-director';
+import { useAnswerGate } from '@/hooks/use-answer-gate';
+import type { WordPresentation } from '@/lib/word-effects';
 import { resolveWordSet, CUSTOM_SET_KEY, CUSTOM_ORDER_KEY } from '@/lib/wordsets';
 
 type NormalWord = { word: string; translation: string; pronunciation?: string };
@@ -161,13 +166,6 @@ export default function Game() {
     [playerLevel],
   );
   const { responseSpeed, heartsMode } = useSettings();
-  // NiNi overrides the response-speed setting entirely while equipped — a
-  // tier slower than 'relaxed', more time to think and speak. One-shot
-  // read (equipping only happens via full navigation to /roadmap).
-  const [equippedPacing] = useState(
-    () => getCompanionKit(getEquippedCompanion() ?? '')?.pacing ?? null,
-  );
-  const timing = equippedPacing ?? SPEED_TIMING[responseSpeed];
 
   // Voice mode had no survival mechanic at all — a miss flashed red and the
   // run simply continued until the player stopped the mic themselves. Draw
@@ -178,30 +176,55 @@ export default function Game() {
   livesRef.current = lives;
   const heartsModeRef = useRef(heartsMode);
   heartsModeRef.current = heartsMode;
-  // Phoenix's marquee perk: once per match, revive from 0 hearts instead
-  // of ending the run. One-shot equip read + one-shot per-mount use flag,
-  // same pattern as isBaguette below.
-  const [isPhoenix] = useState(() => getEquippedCompanion() === 'phoenix');
-  const phoenixUsedRef = useRef(false);
+  /* The equipped kit, read once per mount and resolved through
+     effectiveCompanionKit() — a companion whose lifetime word count with
+     it equipped clears its `ultimate.unlock` gets that ultimate's fields
+     shallow-merged over the base kit. Every companion perk below reads
+     off this one object; there are no `getEquippedCompanion() === 'x'`
+     checks left, which is what makes handing any perk to any companion a
+     data edit rather than a change here. */
+  const [equippedId] = useState(() => getEquippedCompanion());
+  const [kit] = useState(() =>
+    effectiveCompanionKit(getCompanionKit(equippedId ?? '') ?? null, companionWordsPlayed(equippedId ?? '')),
+  );
+  // Revive (Phoenix): survive 0 hearts instead of ending the run.
+  const reviveLeftRef = useRef(kit?.revive?.perMatch ?? 0);
+  /* Read through a ref by the scheduler, which runs inside callbacks with
+     their own dependency arrays. */
+  const kitRef = useRef(kit);
+  kitRef.current = kit;
+  // NiNi overrides the response-speed setting entirely while equipped — a
+  // tier slower than 'relaxed', more time to think and speak; NiNi's
+  // ultimate slows it further (see companions.ts). Reads off the same
+  // effective kit `equippedPacing` used to compute separately, so an
+  // unlocked ultimate now actually takes effect.
+  const equippedPacing = kit?.pacing ?? null;
+  const timing = equippedPacing ?? SPEED_TIMING[responseSpeed];
   // Wolf's pack bonus: escalating token multiplier while a streak holds.
   // wolfStreakRef tracks correct-in-a-row independent of `streak` state
   // (which lags a render behind inside the same synchronous handler) and
   // resets to 0 on any miss.
-  const [wolfTiers] = useState(() => getCompanionKit(getEquippedCompanion() ?? '')?.streakMultiplier);
+  const wolfTiers = kit?.streakMultiplier;
   const wolfStreakRef = useRef(0);
   // Crane's fold-a-crane shield: foldRef counts correct-in-a-row (reset on
   // an unshielded miss, same as Wolf's streak); reaching foldsNeeded grants
   // a shield that absorbs the next miss outright.
-  const [craneShield] = useState(() => getCompanionKit(getEquippedCompanion() ?? '')?.shield);
+  const craneShield = kit?.shield;
   const craneFoldRef = useRef(0);
   const craneShieldActiveRef = useRef(false);
   // Sparrow: per-hit chance of a doubled-rate burst.
-  const [sparrowBurst] = useState(() => getCompanionKit(getEquippedCompanion() ?? '')?.burstChance);
+  const sparrowBurst = kit?.burstChance;
   // Tiger: rolled once per served word (like Wren's hint); a flagged word
   // pays a bonus on a correct answer only.
-  const [tigerAmbush] = useState(() => getCompanionKit(getEquippedCompanion() ?? '')?.ambush);
+  const tigerAmbush = kit?.ambush;
   const ambushActiveRef = useRef(false);
   const stopListeningRef = useRef<() => void>(() => {});
+  // Sprout's plant: advances one stage every `every` correct words, blooms
+  // (rolls a reward, resets to 0) every `bloomEvery`. Reset each run since
+  // it's flavor tied to this session, not a persistent counter.
+  const growthKit = kit?.growth;
+  const growthWordsRef = useRef(0);
+  const [growthStage, setGrowthStage] = useState(0);
 
   // Stable ref so handleResult can call abortSession without it being in
   // the dependency array. abortSession is declared after useSpeechEngine,
@@ -266,39 +289,38 @@ export default function Game() {
   const categoryRef = useRef(category);
   categoryRef.current = category;
 
-  // Sir Baguette's guest word — strictly upside, see companion-guest-word.ts.
-  // One-shot equip read, matching the rest of this file's companion checks.
-  const [isBaguette] = useState(() => getEquippedCompanion() === 'sir-baguette');
+  // Guest word (Sir Baguette) — strictly upside, see companion-guest-word.ts.
+  const guestKit = kit?.guestWord;
   const [guestWord, setGuestWord] = useState<WordEntry | null>(null);
   const guestWordRef = useRef<WordEntry | null>(null);
   guestWordRef.current = guestWord;
   useEffect(() => {
-    if (!isBaguette || !currentWord) {
+    if (!guestKit || !currentWord) {
       setGuestWord(null);
       return;
     }
     setGuestWord(
-      Math.random() < GUEST_WORD_CHANCE
-        ? frenchCounterpart(currentWord.word, language, category)
+      Math.random() < guestKit.chance
+        ? counterpartWord(currentWord.word, language, guestKit.lang, category)
         : null,
     );
     // Only the word identity should retrigger the roll, not every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isBaguette, currentWord?.word, language, category]);
+  }, [guestKit, currentWord?.word, language, category]);
 
-  // Wren's hint: "feathers land on the word and gently nudge a hint (first
+  // Hint (Wren): "feathers land on the word and gently nudge a hint (first
   // letter)". A quiet nudge, not a crutch — rolled per word, same pattern
-  // as Baguette's guest word above, purely additive UI (no economy/heart
+  // as the guest word above, purely additive UI (no economy/heart
   // interaction, so no reason to gate it to voice mode only).
-  const [isWren] = useState(() => getEquippedCompanion() === 'wren');
+  const hintKit = kit?.hint;
   const [wrenHint, setWrenHint] = useState<string | null>(null);
   useEffect(() => {
-    if (!isWren || !currentWord?.word) {
+    if (!hintKit || !currentWord?.word) {
       setWrenHint(null);
       return;
     }
-    setWrenHint(Math.random() < 0.25 ? currentWord.word[0] : null);
-  }, [isWren, currentWord?.word]);
+    setWrenHint(Math.random() < hintKit.chance ? currentWord.word[0] : null);
+  }, [hintKit, currentWord?.word]);
 
   // Tiger's ambush — rolled per word, same pattern as Wren's hint.
   const [ambushFlagged, setAmbushFlagged] = useState(false);
@@ -309,6 +331,37 @@ export default function Game() {
   }, [tigerAmbush, currentWord?.word]);
 
   const lockedRef = useRef(false);
+
+  /* ── companion events ────────────────────────────────────────────
+     The gate is the single way an event suspends answering. It also
+     aborts the live recognition session on acquire: `handleResult`
+     returns early while locked, so without this the mic stays hot and
+     silently swallows whatever the player says at a blocked screen. */
+  const [presentation, setPresentation] = useState<WordPresentation | null>(null);
+  // A non-blocking event's presentation (Tomato Splat's tint, Eclipse's
+  // mask, Fruit Slash's — none, but Mirror Mode's flipX etc.) is owned by
+  // EventDirector and normally cleared by its own escape hatch. But a
+  // non-blocking event doesn't hold the answer gate, so a fast correct
+  // answer can advance to the *next* word before that timer fires — and
+  // since `presentation` isn't otherwise tied to which word is showing,
+  // the new word would inherit the outgoing word's tint/mask/blur for a
+  // beat, reading as a glitch on the transition. Owning the reset here,
+  // keyed on the word actually changing, closes that gap without EventDirector
+  // needing to know anything about word-advance timing.
+  useEffect(() => {
+    setPresentation(null);
+  }, [wordIndex]);
+  // Mirror Mode's double-tokens payoff reads this at the moment a correct
+  // answer lands — handleResult has an empty dep array (see its own
+  // comment below), so a plain closure over `presentation` would see
+  // whatever it was on first render, not the live value.
+  const presentationRef = useRef(presentation);
+  presentationRef.current = presentation;
+  const gate = useAnswerGate({
+    onAcquire: () => abortSessionRef.current(),
+  });
+  const gateRef = useRef(gate);
+  gateRef.current = gate;
 
   /* ── review scheduling ──────────────────────────────────────────
      Everything attempted this run, for the end-of-session summary. */
@@ -344,6 +397,9 @@ export default function Game() {
       languageRef.current,
       words.map((w) => w.word),
       recentRef.current,
+      // The Mi family. A tiebreaker inside the set the scheduler already
+      // considers eligible — see review.ts's bound on lengthFactor.
+      kitRef.current?.lengthBias,
     );
     recentRef.current = [...recentRef.current, next].slice(-4);
     setWordIndex(next);
@@ -404,7 +460,9 @@ export default function Game() {
   const [typedAnswer, setTypedAnswer] = useState('');
 
   const handleResult = useCallback((spoken: string, isFinal: boolean) => {
-    if (lockedRef.current || speechMutedRef.current) return;
+    // gateRef, not gate: handleResult has an empty dep array and must not
+    // close over a stale gate identity.
+    if (lockedRef.current || speechMutedRef.current || gateRef.current.isBlocked()) return;
     const target = currentWordRef.current?.word;
     if (!target || !spoken) return;
 
@@ -452,6 +510,11 @@ export default function Game() {
       // incrementLifetimeWords call is not needed here (it would double-count).
       const { milestoneHit, tokenBonus } = celebrationRef.current.incrementMatch(languageRef.current);
       incrementCategoryLifetime(languageRef.current, categoryRef.current);
+      // Ultimate unlock progress — a companion's own equipped-words count,
+      // separate from any lifetime/category counter above. See
+      // effectiveCompanionKit()'s doc comment for why this is read fresh
+      // next mount rather than applied mid-run.
+      if (equippedId) incrementCompanionWords(equippedId);
       const rate = boostActiveRef.current ? 4 : 2;
       // Wolf's pack bonus — extra tokens layered on top of the normal
       // award (see currentStreakMultiplier's doc comment for why this
@@ -469,6 +532,45 @@ export default function Game() {
       const ambushBonus = ambushHit && tigerAmbush ? Math.round(rate * tigerAmbush.bonusMult) : 0;
       if (ambushBonus > 0) earnTokens(ambushBonus);
       ambushActiveRef.current = false;
+      // Big-Mi: the hardest words are finally worth the most. Paid on the
+      // word actually answered, so it can't be farmed by re-rolling.
+      const lb = kitRef.current?.lengthBias?.lengthBonus;
+      const answered = currentWordRef.current?.word ?? '';
+      const lengthBonus =
+        lb && answered.length > lb.from
+          ? Math.round((answered.length - lb.from) * lb.perLetter)
+          : 0;
+      if (lengthBonus > 0) earnTokens(lengthBonus);
+      // Mirror Mode: answering while the word is still flipped pays double
+      // rather than the swipe-to-unflip convenience path.
+      const mirrorBonus = presentationRef.current?.flipX ? rate : 0;
+      if (mirrorBonus > 0) earnTokens(mirrorBonus);
+      // Robot: an automatic compliment, and a skip on a fixed cadence
+      // rather than a roll — precise and reliable is the whole fantasy.
+      if (kitRef.current?.complimenter) {
+        window.dispatchEvent(new CustomEvent(COMPANION_COMPLIMENT_EVENT));
+      }
+      const skipEvery = kitRef.current?.skipEvery;
+      if (skipEvery && celebrationRef.current.matchCount > 0 && celebrationRef.current.matchCount % skipEvery === 0) {
+        addSkips(1);
+      }
+      // Sprout: one stage per `every` words; a full set of stages blooms —
+      // rolls one reward, resets to 0 and grows again. The label is folded
+      // into the priority chain below rather than set here directly, since
+      // that chain's own setTokenLabel call would otherwise clobber it.
+      let growthBloomLabel: string | null = null;
+      if (growthKit) {
+        growthWordsRef.current += 1;
+        if (growthWordsRef.current >= growthKit.bloomEvery) {
+          growthWordsRef.current = 0;
+          setGrowthStage(0);
+          const roll = rollReward(growthKit.rewards);
+          growthBloomLabel = `🌸 ${grantReward(roll)}`;
+          playSound('chime', 'big');
+        } else {
+          setGrowthStage(Math.floor(growthWordsRef.current / growthKit.every));
+        }
+      }
       // Crane's fold-a-crane shield.
       let craneReady = false;
       if (craneShield && !craneShieldActiveRef.current) {
@@ -480,7 +582,9 @@ export default function Game() {
           playSound('chime', 'big');
         }
       }
-      const labelText = craneReady
+      const labelText = growthBloomLabel
+        ? growthBloomLabel
+        : craneReady
         ? '🕊️ Shield ready!'
         : milestoneHit && tokenBonus > 0
           ? `+${tokenBonus} 🎁`
@@ -490,7 +594,11 @@ export default function Game() {
               ? `+${rate + sparrowBonus} ⚡`
               : wolfBonus > 0
                 ? `+${rate + wolfBonus} 🐺`
-                : `+${rate}`;
+                : lengthBonus > 0
+                  ? `+${rate + lengthBonus} 📏`
+                  : mirrorBonus > 0
+                    ? `+${rate + mirrorBonus} 🪞`
+                    : `+${rate}`;
       setTokenLabel((prev) => ({ key: prev.key + 1, text: labelText }));
       // Physics tokens launch from wherever the counter actually sits, so
       // they read as coming out of the HUD rather than from nowhere.
@@ -535,12 +643,20 @@ export default function Game() {
       // Survival: mirrors draw mode's three hearts. Off, this is unchanged
       // endless practice — the run only ever ends when the mic is stopped.
       if (heartsModeRef.current) {
-        const next = livesRef.current - 1;
+        // Tiger's ultimate only: missing a *flagged* ambush word costs an
+        // extra heart on top of the normal miss — see companions.ts's
+        // ambushPenalty doc comment for why this is safe as a T3 beat
+        // (telegraphed by the ambush banner, opt-in via the ultimate gate).
+        const penalty = kitRef.current?.ambushPenalty && ambushActiveRef.current ? 1 : 0;
+        const next = livesRef.current - 1 - penalty;
         livesRef.current = next;
         setLives(next);
+        if (penalty > 0) {
+          setTokenLabel((prev) => ({ key: prev.key + 1, text: '🐅 Ambush missed — extra heart lost!' }));
+        }
         if (next <= 0) {
-          if (isPhoenix && !phoenixUsedRef.current) {
-            phoenixUsedRef.current = true;
+          if (reviveLeftRef.current > 0) {
+            reviveLeftRef.current -= 1;
             livesRef.current = 1;
             setLives(1);
             setTokenLabel((prev) => ({ key: prev.key + 1, text: '🔥 Reborn!' }));
@@ -767,7 +883,7 @@ export default function Game() {
         >
           <div>
             <h2 className="text-4xl font-black text-destructive uppercase tracking-widest">
-              {isBaguette ? "C'est la vie." : 'Game Over'}
+              {kit?.copy.onGameOver ?? 'Game Over'}
             </h2>
             <p className="text-muted-foreground mt-1">
               {runSummary.correct} word{runSummary.correct !== 1 ? 's' : ''} correct.
@@ -854,7 +970,14 @@ export default function Game() {
         wordCount={celebration.matchCount}
         onReward={(label) => setTokenLabel((prev) => ({ key: prev.key + 1, text: label }))}
       />
-      <CompanionWidget side="left" />
+      <EventDirector
+        wordCount={celebration.matchCount}
+        gate={gate}
+        onPresentation={setPresentation}
+        onNotice={(text) => setTokenLabel((prev) => ({ key: prev.key + 1, text }))}
+        botLokoAlly={kit?.id === 'bot-loko' && !!kit?.droneAlly}
+      />
+      <CompanionWidget side="left" streak={streak} growthStage={growthStage} />
 
       {summary && (
         <SessionSummaryCard
@@ -936,6 +1059,7 @@ export default function Game() {
           pronunciation={currentWord.pronunciation}
           feedback={feedback}
           animKey={wordIndex}
+          presentation={presentation ?? undefined}
         />
 
         {/* Sir Baguette's guest word — strictly a bonus. Say the target word
@@ -993,7 +1117,14 @@ export default function Game() {
         ) : null}
       </div>
 
-      <div className="pb-14 px-6 flex flex-col items-center gap-3 w-full">
+      {/* z-50: must sit above every event's GestureSurface (z-30/40). A
+          non-blocking event must never be able to cover the actual answer
+          controls — Home and the mic are already carved out of each
+          surface's inset, but the typed-answer fallback lives inside that
+          same band, and without this z-index the surface's explicit
+          z-index wins stacking over an unpositioned sibling regardless of
+          DOM order, silently swallowing every submit while it's up. */}
+      <div className="relative z-50 pb-14 px-6 flex flex-col items-center gap-3 w-full">
         {showTypedInput && (
           <div className="w-full max-w-sm space-y-1.5">
             {micLikelyBlocked && (

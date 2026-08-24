@@ -19,7 +19,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { DrawCanvas, type DrawCanvasHandle } from '@/components/draw-canvas';
-import { useCelebration, incrementCategoryLifetime, incrementTotalGames, getEquippedCompanion } from '@/hooks/use-celebration';
+import { useCelebration, incrementCategoryLifetime, incrementTotalGames, getEquippedCompanion, companionWordsPlayed, incrementCompanionWords } from '@/hooks/use-celebration';
 import { checkNightOwl, checkPerfectGame, checkSpeedDemon } from '@/lib/session-achievements';
 import { useSettings } from '@/hooks/use-settings';
 import { useCelebrationSound } from '@/hooks/use-celebration-sound';
@@ -32,6 +32,9 @@ import { TokenVaultLayer } from '@/components/token-vault-layer';
 import { TokenPhysicsLayer, spawnTokenAt } from '@/components/token-physics-layer';
 import { CompanionWidget } from '@/components/companion-widget';
 import { CompanionLayer } from '@/components/companion-layer';
+import { EventDirector } from '@/components/event-director';
+import { useAnswerGate } from '@/hooks/use-answer-gate';
+import type { WordPresentation } from '@/lib/word-effects';
 import { resolveWordSet, CUSTOM_SET_KEY, CUSTOM_ORDER_KEY } from '@/lib/wordsets';
 import { FALLBACK_WORDS, saveLocalScore } from '@/lib/offline-data';
 import { speakWord, matchWord } from '@/lib/speech-utils';
@@ -43,8 +46,10 @@ import {
   summarise,
   type SessionEntry,
 } from '@/lib/review';
-import { consumeHeart, earnTokens } from '@/lib/economy';
-import { getCompanionKit, currentStreakMultiplier } from '@/lib/companions';
+import { consumeHeart, earnTokens, addSkips } from '@/lib/economy';
+import { rollReward, grantReward } from '@/lib/companion-rewards';
+import { COMPANION_COMPLIMENT_EVENT } from '@/components/companion-widget';
+import { getCompanionKit, currentStreakMultiplier, effectiveCompanionKit } from '@/lib/companions';
 
 const INK_COLORS = [
   { label: 'Primary', value: 'hsl(var(--primary))' },
@@ -166,6 +171,33 @@ export default function Draw() {
   const [isRecognizing, setIsRecognizing] = useState(false);
   /** Shown only in voice-confirm mode after Done is pressed */
   const [awaitingVoice, setAwaitingVoice] = useState(false);
+
+  /* ── companion events ────────────────────────────────────────────
+     Deliberately *not* routed through `status`. Draw mode's `status`
+     is coupled to advance timing — setting it to anything but 'idle'
+     schedules the next word — so overloading it to mean "an event is
+     blocking" would desync the whole loop. The gate is separate. */
+  const [presentation, setPresentation] = useState<WordPresentation | null>(null);
+  // See game.tsx's matching comment: a non-blocking event's presentation
+  // can otherwise outlive the word it applied to and bleed onto the next
+  // one for a beat if the player answers before the event's own timer
+  // clears it.
+  useEffect(() => {
+    setPresentation(null);
+  }, [wordIndex]);
+  // Mirror Mode's double-tokens payoff — see game.tsx's matching comment.
+  const presentationRef = useRef(presentation);
+  presentationRef.current = presentation;
+  const gate = useAnswerGate({
+    // Same reason as voice mode: the recogniser stays hot while blocked
+    // and would silently eat whatever the player says at a locked screen.
+    onAcquire: () => stopListeningRef.current(),
+  });
+  const gateRef = useRef(gate);
+  gateRef.current = gate;
+  /* useSpeechEngine is initialised further down and needs `gate`, so the
+     stop function is reached through a ref rather than reordering. */
+  const stopListeningRef = useRef<() => void>(() => {});
   /** Whether voice confirmation is enabled (opt-in, default off) */
   const [voiceConfirmEnabled, setVoiceConfirmEnabled] = useState(
     () => localStorage.getItem(VOICE_CONFIRM_KEY) === 'true',
@@ -177,19 +209,31 @@ export default function Draw() {
   // declared but nothing read it, so draw mode's three lives were always
   // on with no way to turn them off.
   const { heartsMode } = useSettings();
-  // Phoenix's marquee perk: once per match, revive from 0 hearts instead
-  // of ending the run.
-  const [isPhoenix] = useState(() => getEquippedCompanion() === 'phoenix');
-  const phoenixUsedRef = useRef(false);
-  const [wolfTiers] = useState(() => getCompanionKit(getEquippedCompanion() ?? '')?.streakMultiplier);
+  /* The equipped kit, read once per mount and resolved through
+     effectiveCompanionKit() — see game.tsx's matching comment. Every perk
+     is a field on it; no equip-id checks remain. */
+  const [equippedId] = useState(() => getEquippedCompanion());
+  const [kit] = useState(() =>
+    effectiveCompanionKit(getCompanionKit(equippedId ?? '') ?? null, companionWordsPlayed(equippedId ?? '')),
+  );
+  // Revive (Phoenix): survive 0 hearts instead of ending the run.
+  const reviveLeftRef = useRef(kit?.revive?.perMatch ?? 0);
+  /* Read through a ref by the scheduler, which runs inside callbacks with
+     their own dependency arrays. */
+  const kitRef = useRef(kit);
+  kitRef.current = kit;
+  const wolfTiers = kit?.streakMultiplier;
   const wolfStreakRef = useRef(0);
-  const [craneShield] = useState(() => getCompanionKit(getEquippedCompanion() ?? '')?.shield);
+  const craneShield = kit?.shield;
   const craneFoldRef = useRef(0);
   const craneShieldActiveRef = useRef(false);
-  const [sparrowBurst] = useState(() => getCompanionKit(getEquippedCompanion() ?? '')?.burstChance);
-  const [tigerAmbush] = useState(() => getCompanionKit(getEquippedCompanion() ?? '')?.ambush);
+  const sparrowBurst = kit?.burstChance;
+  const tigerAmbush = kit?.ambush;
   const ambushActiveRef = useRef(false);
   const [ambushFlagged, setAmbushFlagged] = useState(false);
+  const growthKit = kit?.growth;
+  const growthWordsRef = useRef(0);
+  const [growthStage, setGrowthStage] = useState(0);
   const { play: playSound } = useCelebrationSound();
   const { theme } = useTheme();
 
@@ -226,20 +270,18 @@ export default function Draw() {
   const [expanded, setExpanded] = useState(false);
   currentWordRef.current = currentWord;
 
-  // Wren's hint — see game.tsx's matching comment.
-  const [isWren] = useState(() => getEquippedCompanion() === 'wren');
-  // Game-over copy only — Baguette's guest word itself stays voice-only
-  // (game.tsx), but the "C'est la vie." sign-off applies wherever a run
-  // can end while he's equipped.
-  const [isBaguette] = useState(() => getEquippedCompanion() === 'sir-baguette');
+  // Hint (Wren) — see game.tsx's matching comment. The guest word itself
+  // stays voice-only, but a companion's game-over sign-off applies
+  // wherever a run can end.
+  const hintKit = kit?.hint;
   const [wrenHint, setWrenHint] = useState<string | null>(null);
   useEffect(() => {
-    if (!isWren || !currentWord?.word) {
+    if (!hintKit || !currentWord?.word) {
       setWrenHint(null);
       return;
     }
-    setWrenHint(Math.random() < 0.25 ? currentWord.word[0] : null);
-  }, [isWren, currentWord?.word]);
+    setWrenHint(Math.random() < hintKit.chance ? currentWord.word[0] : null);
+  }, [hintKit, currentWord?.word]);
 
   // Tiger's ambush — see game.tsx's matching comment.
   useEffect(() => {
@@ -259,6 +301,8 @@ export default function Draw() {
     setCount((prev) => prev + 1);
     const { milestoneHit, tokenBonus } = celebration.incrementMatch(language);
     incrementCategoryLifetime(language, category);
+    // Ultimate unlock progress — see game.tsx's matching comment.
+    if (equippedId) incrementCompanionWords(equippedId);
     const rate = celebration.boostActive ? 4 : 2;
     // Wolf's pack bonus — see game.tsx's matching comment.
     wolfStreakRef.current += 1;
@@ -273,6 +317,29 @@ export default function Draw() {
     const ambushBonus = ambushHit && tigerAmbush ? Math.round(rate * tigerAmbush.bonusMult) : 0;
     if (ambushBonus > 0) earnTokens(ambushBonus);
     ambushActiveRef.current = false;
+    // Mirror Mode — see game.tsx's matching comment.
+    const mirrorBonus = presentationRef.current?.flipX ? rate : 0;
+    if (mirrorBonus > 0) earnTokens(mirrorBonus);
+    // Robot / Sprout — see game.tsx's matching comment.
+    if (kitRef.current?.complimenter) {
+      window.dispatchEvent(new CustomEvent(COMPANION_COMPLIMENT_EVENT));
+    }
+    const skipEvery = kitRef.current?.skipEvery;
+    if (skipEvery && celebration.matchCount > 0 && celebration.matchCount % skipEvery === 0) {
+      addSkips(1);
+    }
+    let growthBloomLabel: string | null = null;
+    if (growthKit) {
+      growthWordsRef.current += 1;
+      if (growthWordsRef.current >= growthKit.bloomEvery) {
+        growthWordsRef.current = 0;
+        setGrowthStage(0);
+        growthBloomLabel = `🌸 ${grantReward(rollReward(growthKit.rewards))}`;
+        playSound('chime', 'big');
+      } else {
+        setGrowthStage(Math.floor(growthWordsRef.current / growthKit.every));
+      }
+    }
     // Crane's fold-a-crane shield — see game.tsx's matching comment.
     let craneReady = false;
     if (craneShield && !craneShieldActiveRef.current) {
@@ -284,7 +351,9 @@ export default function Draw() {
         playSound('chime', 'big');
       }
     }
-    const labelText = craneReady
+    const labelText = growthBloomLabel
+      ? growthBloomLabel
+      : craneReady
       ? '🕊️ Shield ready!'
       : milestoneHit && tokenBonus > 0
         ? `+${tokenBonus} 🎁`
@@ -294,7 +363,9 @@ export default function Draw() {
             ? `+${rate + sparrowBonus} ⚡`
             : wolfBonus > 0
               ? `+${rate + wolfBonus} 🐺`
-              : `+${rate}`;
+              : mirrorBonus > 0
+                ? `+${rate + mirrorBonus} 🪞`
+                : `+${rate}`;
     setTokenLabel((prev) => ({ key: prev.key + 1, text: labelText }));
     spawnTokenAt(tokenAnchorRef.current);
     // Promote this word up a Leitner box before advancing.
@@ -314,7 +385,12 @@ export default function Draw() {
       // the matching logic and comment in game.tsx's advanceWord.
       const sequential = customSetId ? customOrderMode === 'sequential' : !shouldSchedule(category);
       if (!sequential && words.length > 1) {
-        const next = pickNextIndex(language, words.map((w: any) => w.word ?? String(w)), recentRef.current);
+        const next = pickNextIndex(
+          language,
+          words.map((w: any) => w.word ?? String(w)),
+          recentRef.current,
+          kitRef.current?.lengthBias,
+        );
         recentRef.current = [...recentRef.current, next].slice(-4);
         setWordIndex(next);
       } else {
@@ -356,7 +432,12 @@ export default function Draw() {
     // With hearts off this is endless practice — a miss still shakes and
     // clears the canvas, it just never ends the run. A shielded miss is
     // treated the same way regardless of hearts mode.
-    const newLives = heartsMode && !shielded ? lives - 1 : lives;
+    // Tiger's ultimate only — see game.tsx's matching comment.
+    const ambushPenalty = kitRef.current?.ambushPenalty && ambushActiveRef.current ? 1 : 0;
+    const newLives = heartsMode && !shielded ? lives - 1 - ambushPenalty : lives;
+    if (ambushPenalty > 0) {
+      setTokenLabel((prev) => ({ key: prev.key + 1, text: '🐅 Ambush missed — extra heart lost!' }));
+    }
     setLives(newLives);
     setTimeout(() => {
       if (heartsMode && !shielded && newLives <= 0) {
@@ -384,8 +465,8 @@ export default function Draw() {
         // Phoenix's marquee perk: once per match, revive instead of
         // ending the run. Checked after the banked-heart rescue (a
         // purchased heart is spent first; Phoenix is the last resort).
-        if (isPhoenix && !phoenixUsedRef.current) {
-          phoenixUsedRef.current = true;
+        if (reviveLeftRef.current > 0) {
+          reviveLeftRef.current -= 1;
           setLives(1);
           setTokenLabel((prev) => ({ key: prev.key + 1, text: '🔥 Reborn!' }));
           canvasRef.current?.clear();
@@ -412,6 +493,10 @@ export default function Draw() {
   const handleDone = useCallback(async () => {
     const canvas = canvasRef.current;
     if (!canvas || status !== 'idle' || gameOver || isRecognizing) return;
+    // A blocking event's gesture surface sits over the canvas, so strokes
+    // pause with it — but submitting is guarded here too, because the
+    // player can still reach Done through the HUD the surface leaves live.
+    if (gateRef.current.isBlocked()) return;
 
     if (canvas.getStrokes() < 1) {
       handleFailure();
@@ -470,6 +555,7 @@ export default function Draw() {
         if (speechMutedRef.current) return;
         if (!voiceConfirmRef.current) return; // voice answering off — ignore
         if (statusRef.current !== 'idle' || gameOverRef.current) return;
+        if (gateRef.current.isBlocked()) return;
         const target = currentWordRef.current?.word;
         if (!target) return;
         // No strokes gate. Voice is an *alternative* answer, not a second
@@ -509,10 +595,13 @@ export default function Draw() {
     if (micLikelyBlockedDraw) setShowTypedConfirm(true);
   }, [micLikelyBlockedDraw]);
 
+  stopListeningRef.current = stopListening;
+
   const submitTypedConfirm = useCallback(() => {
     const value = typedConfirm.trim();
     if (!value) return;
     if (statusRef.current !== 'idle' || gameOverRef.current) return;
+    if (gateRef.current.isBlocked()) return;
     const target = currentWordRef.current?.word;
     if (!target) return;
     const pronunciation = currentWordRef.current?.pronunciation as string | undefined;
@@ -619,7 +708,17 @@ export default function Draw() {
         wordCount={celebration.matchCount}
         onReward={(label) => setTokenLabel((prev) => ({ key: prev.key + 1, text: label }))}
       />
-      <CompanionWidget side="left" />
+      <EventDirector
+        wordCount={celebration.matchCount}
+        gate={gate}
+        onPresentation={setPresentation}
+        onNotice={(text) => setTokenLabel((prev) => ({ key: prev.key + 1, text }))}
+        // The canvas owns the pointer here, so a non-blocking gesture event
+        // would quietly swallow strokes mid-drawing.
+        pointerFree={false}
+        botLokoAlly={kit?.id === 'bot-loko' && !!kit?.droneAlly}
+      />
+      <CompanionWidget side="left" streak={count} growthStage={growthStage} />
 
       {wordPopActive && <WordPop onComplete={() => setWordPopActive(false)} />}
 
@@ -785,6 +884,7 @@ export default function Draw() {
                   feedback={feedback}
                   animKey={wordIndex}
                   scale={0.65}
+                  presentation={presentation ?? undefined}
                 />
                 {/* Wren's hint — a quiet nudge, not the answer. */}
                 {wrenHint && (
@@ -899,7 +999,10 @@ export default function Draw() {
                   much browser chrome a mobile in-app webview steals. The
                   backdrop keeps the canvas from showing through as content
                   scrolls underneath. */}
-              <div className="sticky bottom-0 z-20 -mx-4 px-4 py-3 flex items-center justify-center gap-3 bg-gradient-to-t from-background via-background to-transparent">
+              {/* z-50: above any event's GestureSurface (z-30/40) — Done is
+                  the one control the game cannot proceed without, and a
+                  non-blocking event must never be able to cover it. */}
+              <div className="sticky bottom-0 z-50 -mx-4 px-4 py-3 flex items-center justify-center gap-3 bg-gradient-to-t from-background via-background to-transparent">
                 <Button
                   variant="outline"
                   onClick={handleClear}
@@ -969,6 +1072,10 @@ export default function Draw() {
                 </Button>
               </div>
 
+              {/* z-50 for the same reason as the Clear/Done bar above: the
+                  typed-confirm fallback inside here is a real answer path
+                  and must win stacking over any event surface. */}
+              <div className="relative z-50">
               {/* Status area */}
               <AnimatePresence>
                 {/* Voice confirm banner (voice mode only) */}
@@ -1023,6 +1130,9 @@ export default function Draw() {
                   </motion.div>
                 )}
 
+              </AnimatePresence>
+              </div>
+              <AnimatePresence>
                 {/* Mic status (voice mode only, when not awaiting) */}
                 {voiceConfirmEnabled && !awaitingVoice && !showTypedConfirm && (
                   <motion.div
@@ -1086,7 +1196,7 @@ export default function Draw() {
             >
               <div>
                 <h2 className="text-4xl font-black text-destructive uppercase tracking-widest">
-                  {isBaguette ? "C'est la vie." : 'Game Over'}
+                  {kit?.copy.onGameOver ?? 'Game Over'}
                 </h2>
                 <p className="text-muted-foreground mt-1">
                   You drew {count} word{count !== 1 ? 's' : ''}.

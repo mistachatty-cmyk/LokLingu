@@ -176,6 +176,48 @@ export const TOKEN_SKINS: TokenSkin[] = [
     motion: 'pile',
     duration: 1.2,
   },
+  /* Two ultimate skins, level-gated, unpurchasable. Both reuse the
+     existing look/motion axes only — no new engine work. The full spec's
+     per-coin live word-stamping (Echo Vault) and a periodic full-screen
+     chromatic bloom (Supernova Prime) would need real changes to
+     token-vault-layer.tsx's rendering pipeline; documented as future work
+     in docs/COMPANIONS.md rather than silently simplified. What ships
+     here is the Eternal Vault's persistence plus a distinct, headline-
+     worthy look for each. */
+  {
+    id: 'vault-echo',
+    name: 'The Echo Vault',
+    blurb:
+      "The hoard persists like the Eternal Vault, but every coin glows like a memory rather than metal — a permanent, ever-growing record of everything you've earned. Earned at level 92 — it cannot be bought.",
+    cost: 0,
+    category: 'vault',
+    ultimate: true,
+    unlockLevel: 92,
+    persistent: true,
+    glyph: '✨',
+    scale: 1.15,
+    halo: '0 0 20px 6px rgba(250, 204, 21, 0.35)',
+    outline: '0 0 10px var(--word-color)',
+    motion: 'pile',
+    duration: 1.3,
+  },
+  {
+    id: 'supernova-prime',
+    name: 'Supernova Prime',
+    blurb:
+      'The Supernova, upgraded — a bigger detonation, a denser fragment shower, and a prismatic halo that reads as one continuous bloom. Earned at level 96 — it cannot be bought.',
+    cost: 0,
+    category: 'mythic',
+    ultimate: true,
+    unlockLevel: 96,
+    glyph: '🌟',
+    scale: 1.3,
+    halo: '0 0 26px 10px rgba(168, 85, 247, 0.4)',
+    outline: '0 0 12px var(--word-color)',
+    motion: 'burst',
+    particles: 22,
+    duration: 1.6,
+  },
 
   /* --- FOOD: CULTURE-SPECIFIC --- */
   {
@@ -478,6 +520,80 @@ export const TOKEN_SKINS: TokenSkin[] = [
     outline: '0 0 10px var(--word-color), 0 0 20px var(--word-color)',
     motion: 'rise',
     duration: 0.8,
+  },
+
+  /* --- MYTHIC: the highest tier, priced and rendered to feel like it --- */
+  {
+    id: 'phoenix-ember',
+    name: 'Phoenix Ember',
+    blurb: 'A single glowing ember that flares as it rises, as if something just hatched.',
+    cost: 900,
+    category: 'mythic',
+    ultimate: true,
+    glyph: '🔥',
+    scale: 1.2,
+    halo: 'radial-gradient(circle, rgba(255,140,0,0.5), transparent 70%)',
+    outline: '0 0 12px rgba(255,120,0,0.9)',
+    motion: 'burst',
+    particles: 10,
+    duration: 1,
+  },
+  {
+    id: 'void-shard',
+    name: 'Void Shard',
+    blurb: 'A fragment of something that shouldn\'t exist. Falls up, then folds away into nothing.',
+    cost: 950,
+    category: 'mythic',
+    ultimate: true,
+    glyph: '🔮',
+    scale: 1.15,
+    halo: 'radial-gradient(circle, rgba(120,60,220,0.45), transparent 70%)',
+    outline: '0 0 10px rgba(150,80,255,0.85)',
+    motion: 'rise',
+    duration: 1.1,
+  },
+  {
+    id: 'starfall',
+    name: 'Starfall',
+    blurb: 'A shooting star thrown skyward, trailing a small burst of its own light before it fades.',
+    cost: 1000,
+    category: 'mythic',
+    ultimate: true,
+    glyph: '🌠',
+    scale: 1.2,
+    halo: 'radial-gradient(circle, rgba(255,255,255,0.4), transparent 70%)',
+    outline: '0 0 10px rgba(255,255,255,0.8)',
+    motion: 'burst',
+    particles: 12,
+    duration: 1.1,
+  },
+  {
+    id: 'thunderhead',
+    name: 'Thunderhead',
+    blurb: 'A crackling storm cell that throws itself skyward, then loses its charge and drops.',
+    cost: 950,
+    category: 'mythic',
+    ultimate: true,
+    glyph: '⚡',
+    scale: 1.15,
+    halo: 'radial-gradient(circle, rgba(255,235,80,0.4), transparent 70%)',
+    outline: '0 0 10px rgba(255,235,80,0.85)',
+    motion: 'fall',
+    duration: 1.1,
+  },
+  {
+    id: 'deep-current',
+    name: 'Deep Current',
+    blurb: 'A pearl of ocean light. Piles like the Vault, but each one shimmers as it settles.',
+    cost: 1100,
+    category: 'mythic',
+    ultimate: true,
+    glyph: '🫧',
+    scale: 1.1,
+    halo: 'radial-gradient(circle, rgba(60,180,255,0.4), transparent 70%)',
+    outline: '0 0 8px rgba(80,190,255,0.8)',
+    motion: 'pile',
+    duration: 1.2,
   },
 ];
 

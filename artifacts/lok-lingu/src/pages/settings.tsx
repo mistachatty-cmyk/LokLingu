@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { useLocation } from 'wouter';
 import { ArrowLeft, Volume2, VolumeX, Eye, Gamepad2, User, type LucideProps } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
-import { useSettings, type ResponseSpeed, type MatchTolerance } from '@/hooks/use-settings';
+import { useSettings, type ResponseSpeed, type MatchTolerance, type EventFrequency } from '@/hooks/use-settings';
 
 const REDUCED_MOTION_KEY = 'lok-lingu-reduced-motion';
 const SHOW_TRANSLATION_KEY = 'lok-lingu-show-translation';
@@ -73,7 +73,7 @@ function ChipGroup<T extends string>({
 
 export default function SettingsPage() {
   const [, setLocation] = useLocation();
-  const { responseSpeed, matchTolerance, autoSpeak, heartsMode, set } = useSettings();
+  const { responseSpeed, matchTolerance, autoSpeak, heartsMode, eventFrequency, set } = useSettings();
 
   const [reducedMotion, setReducedMotion] = useState(() => readBool(REDUCED_MOTION_KEY, false));
   const [showTranslation, setShowTranslation] = useState(() => readBool(SHOW_TRANSLATION_KEY, true));
@@ -198,6 +198,22 @@ export default function SettingsPage() {
                 { value: 'relaxed', label: 'Relax' },
               ] as { value: ResponseSpeed; label: string }[]}
               onChange={(v) => set('responseSpeed', v)}
+            />
+          </SettingRow>
+
+          <SettingRow
+            label="Companion events"
+            sublabel="Surprise moments during a run — blurs, scratch cards, Bot-Loko"
+          >
+            <ChipGroup
+              value={eventFrequency}
+              options={[
+                { value: 'off', label: 'Off' },
+                { value: 'low', label: 'Low' },
+                { value: 'normal', label: 'Normal' },
+                { value: 'high', label: 'High' },
+              ] as { value: EventFrequency; label: string }[]}
+              onChange={(v) => set('eventFrequency', v)}
             />
           </SettingRow>
 

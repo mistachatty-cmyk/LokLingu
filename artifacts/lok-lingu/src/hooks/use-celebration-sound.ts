@@ -216,6 +216,49 @@ function playComplete(ctx: AudioContext, vol: number) {
   });
 }
 
+function playAwww(ctx: AudioContext, vol: number) {
+  // A soft, descending "awww" — two overlapping tones sliding gently down.
+  const now = ctx.currentTime;
+  [660, 440].forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, now + i * 0.05);
+    osc.frequency.exponentialRampToValueAtTime(freq * 0.7, now + i * 0.05 + 0.5);
+    gain.gain.setValueAtTime(0.0001, now + i * 0.05);
+    gain.gain.exponentialRampToValueAtTime(vol * 0.14, now + i * 0.05 + 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.05 + 0.6);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(now + i * 0.05);
+    osc.stop(now + i * 0.05 + 0.6);
+  });
+}
+
+function playApplause(ctx: AudioContext, vol: number) {
+  // Filtered noise bursts, staggered and randomized, to read as a small
+  // crowd clapping rather than a single hit.
+  const now = ctx.currentTime;
+  const claps = 10;
+  for (let i = 0; i < claps; i++) {
+    const t = now + i * 0.06 + Math.random() * 0.03;
+    const dur = 0.05 + Math.random() * 0.03;
+    const bufferSize = Math.floor(ctx.sampleRate * dur);
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let j = 0; j < bufferSize; j++) data[j] = (Math.random() * 2 - 1) * (1 - j / bufferSize);
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.value = 1800 + Math.random() * 800;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(vol * 0.2, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    src.connect(filter).connect(gain).connect(ctx.destination);
+    src.start(t);
+  }
+}
+
 const PLAY_FN: Record<SoundProfile, (ctx: AudioContext, vol: number) => void> = {
   burst: playBurst,
   thud: playThud,
@@ -232,6 +275,8 @@ const PLAY_FN: Record<SoundProfile, (ctx: AudioContext, vol: number) => void> = 
   swoosh: playSwoosh,
   lock: playLock,
   complete: playComplete,
+  awww: playAwww,
+  applause: playApplause,
 };
 
 const INTENSITY_VOL: Record<CelebrationIntensity, number> = {

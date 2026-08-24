@@ -111,10 +111,39 @@ export function accuracy(note: WordNote): number {
  * same word never appears twice in a row, which would otherwise happen
  * often once a word is stuck in box 0.
  */
+export interface LengthBias {
+  prefer: 'short' | 'long' | 'random';
+  /** 0 = no effect, 1 = the strongest nudge allowed. */
+  strength: number;
+}
+
+/**
+ * Multiplier applied to a word's selection weight for a length-biased
+ * companion (the Mi family).
+ *
+ * Bounded to [0.5, 1.5] by construction, and **never zero**. That bound
+ * is the guard rail, not a tuning choice: a companion may nudge which of
+ * the eligible words comes up next, but it must never be able to remove
+ * one from consideration. A word that is genuinely due for review stays
+ * reachable no matter who is equipped.
+ */
+function lengthFactor(bias: LengthBias, word: string, minLen: number, maxLen: number): number {
+  const s = Math.max(0, Math.min(1, bias.strength));
+  if (s === 0) return 1;
+  // Rando-Mi: the swing is the mechanic, so it is re-rolled per word
+  // rather than derived from length at all.
+  if (bias.prefer === 'random') return 1 + s * (Math.random() * 2 - 1) * 0.5;
+  if (maxLen === minLen) return 1;
+  const t = (word.length - minLen) / (maxLen - minLen);
+  const want = bias.prefer === 'long' ? t : 1 - t;
+  return 1 + s * (want * 2 - 1) * 0.5;
+}
+
 export function pickNextIndex(
   lang: string,
   words: string[],
   recent: number[] = [],
+  lengthBias?: LengthBias,
 ): number {
   if (words.length === 0) return 0;
   if (words.length === 1) return 0;
@@ -122,12 +151,20 @@ export function pickNextIndex(
   // Never exclude so much that nothing is left to choose from.
   const blocked = new Set(recent.slice(-Math.min(recent.length, Math.floor(words.length / 2))));
 
+  const lengths = words.map((w) => w.length);
+  const minLen = Math.min(...lengths);
+  const maxLen = Math.max(...lengths);
+
   let total = 0;
   const weights = words.map((word, i) => {
     if (blocked.has(i)) return 0;
     const note = getWordNote(lang, word);
     const box = boxOf(note);
-    const w = box < 0 ? UNSEEN_WEIGHT : BOX_WEIGHT[Math.min(box, MAX_BOX)];
+    const base = box < 0 ? UNSEEN_WEIGHT : BOX_WEIGHT[Math.min(box, MAX_BOX)];
+    // Length bias is a tiebreaker *inside* the eligible set, applied on
+    // top of the Leitner weight rather than replacing it — the scheduler
+    // stays in charge of what needs reviewing.
+    const w = lengthBias ? base * lengthFactor(lengthBias, word, minLen, maxLen) : base;
     total += w;
     return w;
   });

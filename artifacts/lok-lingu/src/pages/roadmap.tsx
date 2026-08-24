@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Check, Lock, Sparkles, Coins, SkipForward, Heart, PawPrint, Award, Palette, LayoutGrid, List as ListIcon, Trophy, Crown } from 'lucide-react';
+import { ArrowLeft, Check, Lock, Sparkles, Coins, SkipForward, Heart, PawPrint, Award, Palette, LayoutGrid, List as ListIcon, Trophy, Crown, Info, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/use-theme';
 import { useEconomy } from '@/hooks/use-economy';
@@ -19,7 +19,7 @@ import {
   retire, isRetired, prestigeTokenReward, payReearnBonus, wordsInCurrentCycle,
 } from '@/lib/prestige';
 import { ALL_ACHIEVEMENTS, updateAchievementUnlocks } from '@/lib/achievements';
-import { getCompanionKit } from '@/lib/companions';
+import { getCompanionKit, describeCompanionPerks } from '@/lib/companions';
 import { SeasonPreview } from '@/components/season-preview';
 
 const REWARD_ICON: Record<RewardKind, typeof Coins> = {
@@ -359,7 +359,7 @@ function PrestigeLadder({ prestige }: { prestige: number }) {
 
 function GalleryCard({
   glyph, title, at, unit, unlocked, distance, animation, tier,
-  equippable, equipped, onToggleEquip, companionId,
+  equippable, equipped, onToggleEquip, companionId, secret, secretHint,
 }: {
   glyph: string;
   title: string;
@@ -378,13 +378,26 @@ function GalleryCard({
    *  createField()-backed preview the shop's Season cards use, since a
    *  companion's `ambient` field is already a `Season` (see companions.ts). */
   companionId?: string;
+  /** Hidden while locked: real glyph/title/progress are replaced by
+   *  `❔`/`???`/`secretHint`. Once unlocked, renders exactly like any
+   *  other card — the secret is discovering it exists, not its content. */
+  secret?: boolean;
+  secretHint?: string;
 }) {
   const reduce = useReducedMotion();
-  // How close a locked card is to unlocking, for the progress sliver.
-  const progress = Math.min(1, Math.max(0, 1 - distance / Math.max(1, at)));
+  const [showInfo, setShowInfo] = useState(false);
+  const hidden = secret && !unlocked;
+  // How close a locked card is to unlocking, for the progress sliver. A
+  // hidden card shows no numeric countdown — that would leak the unlock
+  // condition as a "4/5" spoiler — so its sliver just stays empty.
+  const progress = hidden ? 0 : Math.min(1, Math.max(0, 1 - distance / Math.max(1, at)));
   const glow = unlocked && tier === 'mythic';
   const showEquip = unlocked && equippable;
   const ambient = unlocked && companionId ? getCompanionKit(companionId)?.ambient : null;
+  const kit = unlocked && companionId ? getCompanionKit(companionId) : null;
+  const perks = kit ? describeCompanionPerks(kit) : null;
+  const displayGlyph = hidden ? '❔' : glyph;
+  const displayTitle = hidden ? '???' : title;
   return (
     <motion.div
       initial={reduce ? false : { opacity: 0, scale: 0.92 }}
@@ -398,13 +411,61 @@ function GalleryCard({
       style={glow ? { boxShadow: '0 0 20px hsl(var(--primary) / 0.25)' } : undefined}
     >
       {ambient && <SeasonPreview season={ambient} />}
+      {/* What this companion actually does — positives and costs, read
+          straight off its kit data rather than hand-written copy that can
+          drift out of sync. A separate tap target from the equip toggle
+          above, so checking what a companion does doesn't equip/unequip
+          it by accident. */}
+      {perks && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowInfo((v) => !v);
+          }}
+          aria-label={`What ${title} does`}
+          className="absolute left-1.5 top-1.5 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-background/70 text-muted-foreground hover:text-foreground"
+        >
+          <Info className="h-3 w-3" />
+        </button>
+      )}
+      {perks && showInfo && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="absolute inset-0 z-20 flex flex-col justify-center gap-1.5 overflow-y-auto bg-background/95 p-2.5 text-left backdrop-blur-sm"
+        >
+          {perks.positives.map((p, i) => (
+            <p key={`p${i}`} className="flex items-start gap-1 text-[9px] leading-snug text-emerald-400">
+              <ThumbsUp className="mt-0.5 h-2.5 w-2.5 shrink-0" /> {p}
+            </p>
+          ))}
+          {perks.negatives.map((n, i) => (
+            <p key={`n${i}`} className="flex items-start gap-1 text-[9px] leading-snug text-amber-400">
+              <ThumbsDown className="mt-0.5 h-2.5 w-2.5 shrink-0" /> {n}
+            </p>
+          ))}
+          {perks.ultimate && (
+            <p className="mt-0.5 text-[9px] leading-snug text-primary">✨ {perks.ultimate}</p>
+          )}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowInfo(false);
+            }}
+            className="mt-1 self-center text-[8px] font-bold uppercase tracking-widest text-muted-foreground"
+          >
+            close
+          </button>
+        </div>
+      )}
       <span
         className={`relative text-4xl leading-none ${unlocked ? (animation ?? '') : 'grayscale opacity-30'}`}
         aria-hidden
       >
-        {glyph}
+        {displayGlyph}
       </span>
-      <span className="line-clamp-1 text-[11px] font-black uppercase tracking-wide">{title}</span>
+      <span className="line-clamp-1 text-[11px] font-black uppercase tracking-wide">{displayTitle}</span>
       {unlocked ? (
         showEquip ? (
           <span className={`flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest ${equipped ? 'text-primary' : 'text-muted-foreground'}`}>
@@ -415,6 +476,10 @@ function GalleryCard({
             <Check className="h-2.5 w-2.5" /> earned
           </span>
         )
+      ) : hidden ? (
+        <span className="line-clamp-2 px-1 text-[9px] italic leading-tight text-muted-foreground">
+          {secretHint}
+        </span>
       ) : (
         <span className="font-mono text-[9px] tabular-nums text-muted-foreground">
           {distance.toLocaleString()} {unit} to go
@@ -474,6 +539,8 @@ function Gallery({
                 equipped={equippedCompanion === companionId}
                 onToggleEquip={() => onToggleEquip(companionId)}
                 companionId={companionId}
+                secret={m.secret}
+                secretHint={m.secretHint}
               />
             );
           })}
@@ -569,6 +636,8 @@ function Gallery({
                 equipped={equippedCompanion === companionId}
                 onToggleEquip={() => onToggleEquip(companionId)}
                 companionId={companionId}
+                secret={m.secret}
+                secretHint={m.secretHint}
               />
             );
           })}
