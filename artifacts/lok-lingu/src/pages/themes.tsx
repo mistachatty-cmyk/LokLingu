@@ -529,7 +529,13 @@ interface CategoryGroup {
   subcategories: { label: string; key: string }[];
 }
 
-function TokenSkinShop() {
+function TokenSkinShop({
+  previewSkin,
+  onSetPreviewSkin,
+}: {
+  previewSkin: TokenSkin | null;
+  onSetPreviewSkin: (skin: TokenSkin | null) => void;
+}) {
   const { balance } = useEconomy();
   const { skin: equipped, refresh } = useTokenSkin();
   const level = currentLevel();
@@ -713,7 +719,7 @@ function TokenSkinShop() {
             <span>Token Skins</span>
           </div>
           <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-0.5">
-            Tap to preview · Tap again to buy
+            Tap to preview · Tap again to buy · 👁 lens it into Motion
           </p>
         </div>
         <div className="text-right space-y-1">
@@ -782,7 +788,11 @@ function TokenSkinShop() {
                         wouldn't have fixed that, since the button underneath still
                         occupies the same region. The fix is structural: only the
                         name/price footer below is a real button now. */}
-                    <div className="pointer-events-none relative mb-2 h-20 overflow-hidden rounded-lg bg-background/60 flex items-center justify-center">
+                    <div
+                      className={`pointer-events-none relative mb-2 h-20 overflow-hidden rounded-lg bg-background/60 flex items-center justify-center ${
+                        previewSkin?.id === skin.id ? 'ring-2 ring-sky-400/70' : ''
+                      }`}
+                    >
                       {/* Static glyph base — visible at rest, fades out while this
                           card's own animation plays so it doesn't sit on top of it. */}
                       <span
@@ -805,6 +815,32 @@ function TokenSkinShop() {
                         skinOverride={skin}
                         contained
                       />
+
+                      {/* The "preview lens" toggle — the one interactive element
+                          inside this pointer-events-none stage (re-enabled just
+                          for itself). Doesn't buy or equip anything; it only
+                          decides which skin's look Motion (and any other
+                          tokens-based section) renders with, so a player can
+                          browse "this skin × that motion" combos before
+                          spending anything. */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onSetPreviewSkin(previewSkin?.id === skin.id ? null : skin)
+                        }
+                        className={`pointer-events-auto absolute top-1 left-1 flex h-5 w-5 items-center justify-center rounded-full text-[10px] transition-colors ${
+                          previewSkin?.id === skin.id
+                            ? 'bg-sky-400 text-background'
+                            : 'bg-background/70 text-muted-foreground hover:text-foreground'
+                        }`}
+                        title={
+                          previewSkin?.id === skin.id
+                            ? 'Stop previewing this look elsewhere in the shop'
+                            : 'Preview this look in Motion and other sections'
+                        }
+                      >
+                        👁
+                      </button>
                     </div>
 
                     {/* The actual buy/equip tap target — name, price, blurb and
@@ -903,9 +939,19 @@ function TokenSkinShop() {
  * from the glyph. Splitting these apart is what turns a flat list of
  * near-identical skins into a look × motion cross-product.
  */
-function MotionShop() {
+function MotionShop({
+  previewSkin,
+  onClearPreviewSkin,
+}: {
+  previewSkin: TokenSkin | null;
+  onClearPreviewSkin: () => void;
+}) {
   const { balance } = useEconomy();
-  const { skin } = useTokenSkin();
+  const { skin: equippedSkin } = useTokenSkin();
+  // A lens set on the Tokens section wins over the equipped skin here —
+  // this is what lets "select a skin, see it on every motion" work without
+  // touching what's actually equipped for real gameplay.
+  const skin = previewSkin ?? equippedSkin;
   const [owned, setOwned] = useState<string[]>(getOwnedMotions);
   const [selected, setSelected] = useState(() => getSelectedMotion().id);
   const [note, setNote] = useState<{ id: string; text: string; ok: boolean } | null>(null);
@@ -950,6 +996,21 @@ function MotionShop() {
           {balance}
         </div>
       </div>
+
+      {previewSkin && (
+        <div className="flex items-center justify-between gap-2 rounded-lg border border-sky-400/50 bg-sky-400/10 px-3 py-2">
+          <p className="text-[10px] font-bold text-sky-300">
+            👁 Previewing {previewSkin.name} on every motion below — nothing bought, nothing equipped.
+          </p>
+          <button
+            type="button"
+            onClick={onClearPreviewSkin}
+            className="shrink-0 text-[10px] font-black uppercase tracking-widest text-sky-300 hover:text-sky-100"
+          >
+            Clear
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-2">
         {TOKEN_MOTIONS.map((m) => {
@@ -1286,6 +1347,16 @@ function SeasonShop() {
 
 export default function Themes() {
   const { theme, setTheme } = useTheme();
+  // A "preview lens" a player can put on any token skin — owned or not,
+  // bought or not — so every other tokens-based section (Motion today;
+  // Seasons doesn't use coin glyphs so it's not wired) renders with that
+  // skin's look instead of the equipped one. Lifted here because it has
+  // to cross from TokenSkinShop into MotionShop, two independent card
+  // grids that otherwise share no state. Deliberately separate from
+  // `previewedSkin` (TokenSkinShop's own buy-flow preview) and from
+  // actually equipping — picking a lens never spends tokens or changes
+  // what's equipped in real gameplay.
+  const [previewSkin, setPreviewSkin] = useState<TokenSkin | null>(null);
 
   const handleSelect = (t: ThemeDef, tierLocked: boolean) => {
     if (tierLocked) return;
@@ -1310,11 +1381,11 @@ export default function Themes() {
       </section>
 
       <section id="shop-tokens" className="border-t border-border pt-6 scroll-mt-20">
-        <TokenSkinShop />
+        <TokenSkinShop previewSkin={previewSkin} onSetPreviewSkin={setPreviewSkin} />
       </section>
 
       <section id="shop-motion" className="border-t border-border pt-6 scroll-mt-20">
-        <MotionShop />
+        <MotionShop previewSkin={previewSkin} onClearPreviewSkin={() => setPreviewSkin(null)} />
       </section>
 
       <section id="shop-seasons" className="border-t border-border pt-6 scroll-mt-20">
