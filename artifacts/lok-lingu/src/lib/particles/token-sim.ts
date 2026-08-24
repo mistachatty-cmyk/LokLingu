@@ -30,6 +30,17 @@ export interface SpawnRequest {
   glyph: string;
   size: number;
   motion: TokenMotionDef;
+  /**
+   * Scales both launch speed and gravity together, so the flight's shape
+   * is preserved but its spatial extent shrinks to fit a small container.
+   * Every `TokenMotionDef`'s physics values (speed ~300-500px/s, gravity
+   * up to ~1600px/s²) are tuned for a full gameplay canvas hundreds of px
+   * tall — spawned unscaled into a shop preview box a few dozen px tall,
+   * the body crosses it and exits within 1-2 frames, which reads as "the
+   * animation isn't playing" even though it fired correctly. Defaults to
+   * 1 (unscaled) so real gameplay spawns are untouched.
+   */
+  physicsScale?: number;
 }
 
 interface Body {
@@ -140,7 +151,11 @@ export function createTokenSim(canvas: HTMLCanvasElement): TokenSimHandle {
     b.maxLife = isFragment ? p.life * 0.5 : p.life;
     b.bounces = 0;
     b.maxBounces = p.bounces;
-    b.gravity = p.gravity;
+    // Gravity scales with the same factor as speed — keeps the flight's
+    // shape (parabola/bounce pattern) intact while shrinking how far it
+    // physically travels, so a small preview container can hold it. See
+    // SpawnRequest.physicsScale's doc comment for why this exists.
+    b.gravity = p.gravity * speedScale;
     b.restitution = p.restitution;
     b.drag = p.drag;
     b.isFragment = isFragment;
@@ -311,8 +326,9 @@ export function createTokenSim(canvas: HTMLCanvasElement): TokenSimHandle {
     spawn(req: SpawnRequest) {
       const p = req.motion.physics;
       const n = Math.max(1, p.count);
+      const scale = req.physicsScale ?? 1;
       for (let i = 0; i < n; i++) {
-        launch(claim(), req.x, req.y, req.glyph, req.size, req.motion);
+        launch(claim(), req.x, req.y, req.glyph, req.size, req.motion, undefined, scale);
       }
       wake();
     },

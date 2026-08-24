@@ -178,6 +178,13 @@ export default function Draw() {
      schedules the next word — so overloading it to mean "an event is
      blocking" would desync the whole loop. The gate is separate. */
   const [presentation, setPresentation] = useState<WordPresentation | null>(null);
+  // See game.tsx's matching comment: a non-blocking event's presentation
+  // can otherwise outlive the word it applied to and bleed onto the next
+  // one for a beat if the player answers before the event's own timer
+  // clears it.
+  useEffect(() => {
+    setPresentation(null);
+  }, [wordIndex]);
   // Mirror Mode's double-tokens payoff — see game.tsx's matching comment.
   const presentationRef = useRef(presentation);
   presentationRef.current = presentation;

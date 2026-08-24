@@ -37,12 +37,21 @@ export function TokenMotionPreview({ motion, glyph, animKey }: Props) {
     const canvas = canvasRef.current;
     const sim = simRef.current;
     if (!canvas || !sim) return;
+    // Every TokenMotionDef's physics (speed, gravity) is tuned for a
+    // full-height gameplay canvas — spawned unscaled here, the body would
+    // cross this small card in 1-2 frames and read as "nothing happened".
+    // Scaling both speed and gravity together by the container's height
+    // relative to a typical gameplay canvas keeps the flight's shape
+    // (parabola, bounce pattern) intact while containing it visibly.
+    const REFERENCE_CANVAS_HEIGHT = 640;
+    const physicsScale = Math.max(0.05, Math.min(1, canvas.clientHeight / REFERENCE_CANVAS_HEIGHT));
     sim.spawn({
       x: canvas.clientWidth / 2,
       y: canvas.clientHeight * 0.2,
       glyph,
       size: 22,
       motion,
+      physicsScale,
     });
     // Intentionally only re-fires on animKey — motion/glyph changing without
     // a bump shouldn't spawn anything.

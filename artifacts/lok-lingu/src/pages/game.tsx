@@ -338,6 +338,19 @@ export default function Game() {
      returns early while locked, so without this the mic stays hot and
      silently swallows whatever the player says at a blocked screen. */
   const [presentation, setPresentation] = useState<WordPresentation | null>(null);
+  // A non-blocking event's presentation (Tomato Splat's tint, Eclipse's
+  // mask, Fruit Slash's — none, but Mirror Mode's flipX etc.) is owned by
+  // EventDirector and normally cleared by its own escape hatch. But a
+  // non-blocking event doesn't hold the answer gate, so a fast correct
+  // answer can advance to the *next* word before that timer fires — and
+  // since `presentation` isn't otherwise tied to which word is showing,
+  // the new word would inherit the outgoing word's tint/mask/blur for a
+  // beat, reading as a glitch on the transition. Owning the reset here,
+  // keyed on the word actually changing, closes that gap without EventDirector
+  // needing to know anything about word-advance timing.
+  useEffect(() => {
+    setPresentation(null);
+  }, [wordIndex]);
   // Mirror Mode's double-tokens payoff reads this at the moment a correct
   // answer lands — handleResult has an empty dep array (see its own
   // comment below), so a plain closure over `presentation` would see
