@@ -781,22 +781,41 @@ function TokenSkinShop({
                             : 'border-border bg-card hover:border-primary/40'
                     }`}
                   >
-                    {/* Live preview stage — deliberately NOT part of the clickable
-                        area. It used to sit inside the same <button> as the whole
-                        card, so a tap meant only to watch the animation counted as
-                        a buy/equip tap — pointer-events-none on this div alone
-                        wouldn't have fixed that, since the button underneath still
-                        occupies the same region. The fix is structural: only the
-                        name/price footer below is a real button now. */}
+                    {/* Live preview stage. Tapping it plays the animation again —
+                        it used to be pointer-events-none entirely, which meant
+                        the one thing that looks like a "tap to watch" surface
+                        did nothing at all when tapped, reading as broken. It is
+                        still deliberately NOT the buy/equip target: its onClick
+                        only bumps the animKey and flashes the idle-glyph fade,
+                        the exact same two calls handleCard already makes before
+                        it ever branches into equip/lock/buy logic. It never
+                        calls handleCard itself, so watching the coin fly can
+                        never spend a token or change what's equipped — that
+                        stays gated behind the name/price footer below. */}
                     <div
-                      className={`pointer-events-none relative mb-2 h-20 overflow-hidden rounded-lg bg-background/60 flex items-center justify-center ${
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => {
+                        playSound();
+                        bump(skin.id);
+                        flashPreview(skin.id);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          playSound();
+                          bump(skin.id);
+                          flashPreview(skin.id);
+                        }
+                      }}
+                      className={`relative mb-2 h-20 overflow-hidden rounded-lg bg-background/60 flex items-center justify-center cursor-pointer active:scale-[0.98] transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                         previewSkin?.id === skin.id ? 'ring-2 ring-sky-400/70' : ''
                       }`}
                     >
                       {/* Static glyph base — visible at rest, fades out while this
                           card's own animation plays so it doesn't sit on top of it. */}
                       <span
-                        className={`absolute inset-0 flex items-center justify-center text-2xl transition-opacity duration-300 ${
+                        className={`pointer-events-none absolute inset-0 flex items-center justify-center text-2xl transition-opacity duration-300 ${
                           previewAnimating[skin.id] ? 'opacity-0' : 'opacity-40'
                         }`}
                       >
@@ -804,30 +823,33 @@ function TokenSkinShop({
                       </span>
 
                       {/* Animation layers (overlay on top of static glyph) */}
-                      <TokenVaultLayer
-                        animKey={previews[skin.id] ?? 0}
-                        skinOverride={skin}
-                        contained
-                      />
-                      <TokenEarnedLabel
-                        animKey={previews[skin.id] ?? 0}
-                        label="+2"
-                        skinOverride={skin}
-                        contained
-                      />
+                      <div className="pointer-events-none absolute inset-0">
+                        <TokenVaultLayer
+                          animKey={previews[skin.id] ?? 0}
+                          skinOverride={skin}
+                          contained
+                        />
+                        <TokenEarnedLabel
+                          animKey={previews[skin.id] ?? 0}
+                          label="+2"
+                          skinOverride={skin}
+                          contained
+                        />
+                      </div>
 
-                      {/* The "preview lens" toggle — the one interactive element
-                          inside this pointer-events-none stage (re-enabled just
-                          for itself). Doesn't buy or equip anything; it only
-                          decides which skin's look Motion (and any other
-                          tokens-based section) renders with, so a player can
-                          browse "this skin × that motion" combos before
-                          spending anything. */}
+                      {/* The "preview lens" toggle. Doesn't buy or equip
+                          anything either — it only decides which skin's look
+                          Motion (and any other tokens-based section) renders
+                          with, so a player can browse "this skin × that
+                          motion" combos before spending anything.
+                          stopPropagation so tapping it toggles the lens
+                          without also re-triggering the stage's own play. */}
                       <button
                         type="button"
-                        onClick={() =>
-                          onSetPreviewSkin(previewSkin?.id === skin.id ? null : skin)
-                        }
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSetPreviewSkin(previewSkin?.id === skin.id ? null : skin);
+                        }}
                         className={`pointer-events-auto absolute top-1 left-1 flex h-5 w-5 items-center justify-center rounded-full text-[10px] transition-colors ${
                           previewSkin?.id === skin.id
                             ? 'bg-sky-400 text-background'
@@ -843,9 +865,9 @@ function TokenSkinShop({
                       </button>
                     </div>
 
-                    {/* The actual buy/equip tap target — name, price, blurb and
-                        status only. Tapping the visualizer above does nothing
-                        but watch it play. */}
+                    {/* The buy/equip tap target — name, price, blurb and
+                        status. Tapping the visualizer above only plays the
+                        animation again; buying/equipping happens here. */}
                     <button
                       type="button"
                       onClick={() => handleCard(skin)}
@@ -1027,19 +1049,32 @@ function MotionShop({
             >
               {isSelected && <Check className="absolute top-2 right-2 w-3.5 h-3.5 text-primary" />}
 
-              {/* Live preview stage — not part of the buy tap target. Used to
-                  share one <button> with the whole card, so watching the
-                  animation and buying/equipping were the same tap; now only
-                  the name/price footer below triggers handleCard. */}
-              <div className="pointer-events-none relative mb-2 h-16 overflow-hidden rounded-lg bg-background/60">
-                <span className="absolute inset-0 flex items-center justify-center text-lg opacity-30">
+              {/* Live preview stage. Tapping it just replays the animation —
+                  bump() alone, never handleCard — so watching a motion can
+                  never spend a token or change what's equipped; that stays
+                  gated behind the name/price footer below. */}
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => bump(m.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    bump(m.id);
+                  }
+                }}
+                className="relative mb-2 h-16 overflow-hidden rounded-lg bg-background/60 cursor-pointer active:scale-[0.98] transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-lg opacity-30">
                   {skin?.glyph ?? '🪙'}
                 </span>
-                <TokenMotionPreview
-                  motion={resolveMotion(m)}
-                  glyph={skin?.glyph ?? '🪙'}
-                  animKey={previews[m.id] ?? 0}
-                />
+                <div className="pointer-events-none absolute inset-0">
+                  <TokenMotionPreview
+                    motion={resolveMotion(m)}
+                    glyph={skin?.glyph ?? '🪙'}
+                    animKey={previews[m.id] ?? 0}
+                  />
+                </div>
               </div>
 
               <button
